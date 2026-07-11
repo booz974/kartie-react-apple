@@ -1,0 +1,33 @@
+/* Mirror Vue App.vue global body styles (unlayered, after Tailwind base). */
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: #f3f4f6;
+}
+
+.animate-fade-in {
+  animation: feedFadeIn 0.3s ease-out;
+}
+
+@keyframes feedFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-5px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.group-reactions:hover .sm\:opacity-0 {
+  opacity: 1;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

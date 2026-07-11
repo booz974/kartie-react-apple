@@ -1,0 +1,91 @@
+/* ThemeSupa mirror — matches @supa-kit/auth-ui-vue default styling for visual parity */
+.supabase-auth-ui_ui-container {
+  width: 100%;
+}
+
+.supabase-auth-ui_ui-label {
+  display: block;
+  font-size: 14px;
+  line-height: 20px;
+  margin-bottom: 4px;
+  color: #6b7280;
+}
+
+.supabase-auth-ui_ui-input {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 20px;
+  color: #1f2937;
+  background-color: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.supabase-auth-ui_ui-input:focus {
+  border-color: #3ecf8e;
+  box-shadow: 0 0 0 1px #3ecf8e;
+}
+
+.supabase-auth-ui_ui-button {
+  display: block;
+  width: 100%;
+  padding: 10px 15px;
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 500;
+  color: #ffffff;
+  background-color: #3ecf8e;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 8px;
+}
+
+.supabase-auth-ui_ui-button:hover:not(:disabled) {
+  background-color: #38bb81;
+}
+
+.supabase-auth-ui_ui-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.supabase-auth-ui_ui-anchor {
+  display: block;
+  text-align: center;
+  margin-top: 16px;
+  font-size: 14px;
+  line-height: 20px;
+  color: #6b7280;
+}
+
+.supabase-auth-ui_ui-anchor button {
+  color: #3ecf8e;
+  font-weight: 500;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+.supabase-auth-ui_ui-anchor button:hover {
+  text-decoration: underline;
+}
+
+.supabase-auth-ui_ui-message {
+  font-size: 14px;
+  line-height: 20px;
+  color: #ef4444;
+  margin-top: 16px;
+  text-align: center;
+}
+
+.supabase-auth-ui_ui-divider {
+  margin-bottom: 16px;
+}
