@@ -338,7 +338,7 @@ export default function AssociationView() {
                 <Icon name="users" size={18} className="k-ink-tertiary mt-0.5" />
                 <div className="min-w-0">
                   <dt className="k-caption k-ink-tertiary">Communauté</dt>
-                  <dd className="k-subhead k-ink tabular-nums">{followersCount} abonné(s)</dd>
+                  <dd className="k-subhead k-ink tabular-nums">{followersCount} abonné{followersCount > 1 ? 's' : ''}</dd>
                 </div>
               </div>
             </dl>

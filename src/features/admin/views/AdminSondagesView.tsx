@@ -28,7 +28,7 @@ function SondageResults({ sondage }: { sondage: SondageAdminItem }) {
               <div className="mb-2 flex items-baseline justify-between gap-3">
                 <span className="k-subhead">{option.text}</span>
                 <span className="k-footnote k-ink-secondary shrink-0 tabular-nums">
-                  {option.votes} vote(s) · {percentage}%
+                  {option.votes} vote{option.votes > 1 ? 's' : ''} · {percentage}%
                 </span>
               </div>
               <Progress value={percentage} label={`${option.text} : ${percentage}%`} />
@@ -86,7 +86,7 @@ export default function AdminSondagesView() {
                     />
                     <span className="k-callout min-w-0 flex-1 font-medium">{sondage.title}</span>
                     <span className="k-footnote k-ink-tertiary shrink-0 tabular-nums">
-                      {totalSondageVotes(sondage)} vote(s)
+                      {totalSondageVotes(sondage)} vote{totalSondageVotes(sondage) > 1 ? 's' : ''}
                     </span>
                   </summary>
                   <SondageResults sondage={sondage} />

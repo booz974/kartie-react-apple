@@ -154,7 +154,7 @@ export default function QuartierAssociationsView() {
       <PageHeader
         back={{ to: `/quartiers/${quartier.id}`, label: 'Retour au quartier' }}
         eyebrow="Vie associative"
-        title={`Associations de ${quartier.name}`}
+        title={quartier.name ? `Associations de ${quartier.name}` : 'Associations du quartier'}
         description="Découvrez la vie associative locale, suivez vos initiatives préférées et retrouvez leurs événements dans le quartier."
         actions={
           session ? (
@@ -186,7 +186,10 @@ export default function QuartierAssociationsView() {
         description={
           isLoading
             ? undefined
-            : `${filteredAssociations.length} association(s) dans ${quartier.name}.`
+            : // L'accord se fait vraiment plutôt que par un « (s) » collé au mot.
+              `${filteredAssociations.length} association${
+                filteredAssociations.length > 1 ? 's' : ''
+              }${quartier.name ? ` dans ${quartier.name}` : ''}.`
         }
       >
         <div className="mb-6 flex flex-col gap-4">

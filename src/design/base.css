@@ -164,7 +164,9 @@ button,
 }
 
 ::placeholder {
-  color: var(--k-ink-quaternary);
+  /* Un texte de substitution reste du texte : il suit l'encre tertiaire, la
+     plus claire qui passe encore le contraste. */
+  color: var(--k-ink-tertiary);
   opacity: 1;
 }
 

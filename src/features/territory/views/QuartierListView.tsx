@@ -192,6 +192,9 @@ export default function QuartierListView() {
       return (
         <Page>
           <div className="max-w-lg py-16">
+            {/* Même en erreur, la page annonce ce qu'elle est : un écran sans
+                titre laisse le lecteur d'écran sans point de repère. */}
+            <h1 className="k-title-1 mb-4">Liste indisponible</h1>
             <Notice tone="danger">
               Cette liste n’a pas pu être chargée. Vérifiez votre connexion, puis réessayez.
             </Notice>

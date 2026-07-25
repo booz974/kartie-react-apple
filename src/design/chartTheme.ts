@@ -7,14 +7,14 @@
  */
 
 export const CHART_COLORS = {
-  accent: '#0e7c88',
-  accentSoft: 'rgba(14, 124, 136, 0.12)',
-  warm: '#c4503c',
-  warmSoft: 'rgba(196, 80, 60, 0.12)',
+  accent: '#0a6b76',
+  accentSoft: 'rgba(10, 107, 118, 0.12)',
+  warm: '#ad3d29',
+  warmSoft: 'rgba(173, 61, 41, 0.12)',
   success: '#16794b',
   ink: '#16181c',
-  inkSecondary: '#5a6068',
-  inkTertiary: '#868c95',
+  inkSecondary: '#4d535b',
+  inkTertiary: '#676c75',
   grid: 'rgba(22, 24, 28, 0.07)',
   surface: '#ffffff',
 } as const;
@@ -23,10 +23,10 @@ export const CHART_COLORS = {
 export const CHART_SERIES = [
   CHART_COLORS.accent,
   CHART_COLORS.warm,
-  '#359aa4',
+  '#2d8e99',
   '#9a6300',
   CHART_COLORS.success,
-  '#6bbac1',
+  '#63b3bb',
 ] as const;
 
 const FONT_FAMILY =

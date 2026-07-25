@@ -69,7 +69,7 @@ export default function AssociationCard({
       <div className="k-footnote k-ink-tertiary flex flex-wrap items-center gap-x-4 gap-y-1">
         <span className="inline-flex items-center gap-1.5">
           <Icon name="users" size={15} />
-          {association.followers_count || 0} abonné(s)
+          {association.followers_count || 0} abonné{(association.followers_count || 0) > 1 ? 's' : ''}
         </span>
         {association.contact_email ? (
           <span className="inline-flex min-w-0 items-center gap-1.5">

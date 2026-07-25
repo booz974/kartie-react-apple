@@ -341,7 +341,7 @@ export default function AssociationDashboardView() {
                 {association.status_label}
               </Badge>
             ) : null}
-            <Badge icon="users">{association.followers_count || 0} abonné(s)</Badge>
+            <Badge icon="users">{association.followers_count || 0} abonné{(association.followers_count || 0) > 1 ? 's' : ''}</Badge>
             {membership?.role ? <Badge icon="user">Rôle : {membership.role}</Badge> : null}
           </>
         }

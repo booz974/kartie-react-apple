@@ -237,7 +237,7 @@ export default function AdminAlaUneView() {
         <Modal
           onClose={() => setShowResultsModal(false)}
           title={selectedSondage?.title ?? 'Résultats du sondage'}
-          description={`${totalVotes} vote(s) au total`}
+          description={`${totalVotes} vote${totalVotes > 1 ? 's' : ''} au total`}
         >
           {selectedSondage && Array.isArray(selectedSondage.sondage_options) ? (
             <div className="flex flex-col gap-5">
@@ -257,7 +257,7 @@ export default function AdminAlaUneView() {
                       label={`${row.option_text ?? 'Option'} : ${percentage}%`}
                     />
                     <p className="k-footnote k-ink-tertiary mt-1.5">
-                      {row.vote_count || 0} vote(s)
+                      {row.vote_count || 0} vote{(row.vote_count || 0) > 1 ? 's' : ''}
                     </p>
                   </div>
                 );

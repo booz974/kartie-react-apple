@@ -14,6 +14,7 @@ import {
   usePetitionSupportStatus,
 } from '@/queries/democracy';
 import { useAuthStore } from '@/stores/authStore';
+import { useUiStore } from '@/stores/uiStore';
 
 function getThemeIcon(theme: string | null | undefined): IconName {
   if (!theme) return 'tag';
@@ -45,6 +46,7 @@ export default function PetitionView() {
   const petitionId = idParam ? parseInt(idParam, 10) : undefined;
 
   const session = useAuthStore((state) => state.session);
+  const openAuthModal = useUiStore((state) => state.openAuthModal);
   const toast = useToast();
 
   const { data: petition, isLoading, isError, refetch } = usePetition(petitionId);
@@ -187,15 +189,17 @@ export default function PetitionView() {
             size="lg"
             block
             className="mt-4 md:w-auto"
-            onClick={() => void handleSupport()}
-            disabled={isButtonDisabled}
+            // Sans compte, le bouton ouvre la connexion au lieu d'être grisé :
+            // un bouton désactivé qui dit « connectez-vous » est une impasse.
+            onClick={session ? () => void handleSupport() : openAuthModal}
+            disabled={session ? isButtonDisabled : false}
             loading={isUpdating}
             leading={isSupported ? <Icon name="check" size={19} /> : undefined}
           >
             {isSupported
               ? `Soutenu (${localSupports})`
               : !session
-                ? 'Connectez-vous pour soutenir'
+                ? 'Se connecter pour soutenir'
                 : `Soutenir cette pétition (${localSupports})`}
           </Button>
 

@@ -9,6 +9,7 @@ import CompleteProfileModal from '@/features/identity/CompleteProfileModal';
 import SelectQuartier from '@/features/territory/SelectQuartier';
 import { TabBar, TopBar, displayName } from '@/app/navigation';
 import { useAuthStore } from '@/stores/authStore';
+import { useUiStore } from '@/stores/uiStore';
 import type { ProfileUpsert } from '@/api/profiles';
 
 export default function AppShell() {
@@ -20,7 +21,11 @@ export default function AppShell() {
   const updateUserQuartier = useAuthStore((state) => state.updateUserQuartier);
   const setProfile = useAuthStore((state) => state.setProfile);
 
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  // La fenêtre de connexion est pilotée par le store : n'importe quelle vue
+  // peut l'ouvrir depuis une action réservée aux membres.
+  const showAuthModal = useUiStore((state) => state.isAuthModalOpen);
+  const openAuthModal = useUiStore((state) => state.openAuthModal);
+  const closeAuthModal = useUiStore((state) => state.closeAuthModal);
   const [showQuartierSelector, setShowQuartierSelector] = useState(false);
   const [showCompleteProfileModal, setShowCompleteProfileModal] = useState(false);
   const [showAccountSheet, setShowAccountSheet] = useState(false);
@@ -31,12 +36,12 @@ export default function AppShell() {
 
   useEffect(() => {
     if (session) {
-      setShowAuthModal(false);
+      closeAuthModal();
       setShowQuartierSelector(Boolean(profile && !profile.quartier_id));
     } else {
       setShowQuartierSelector(false);
     }
-  }, [session, profile]);
+  }, [session, profile, closeAuthModal]);
 
   async function handleSignOut() {
     await signOut();
@@ -116,7 +121,7 @@ export default function AppShell() {
       <TopBar
         session={session}
         profile={profile}
-        onSignIn={() => setShowAuthModal(true)}
+        onSignIn={openAuthModal}
         accountItems={accountItems}
       />
 
@@ -180,7 +185,7 @@ export default function AppShell() {
           isAuthenticated={Boolean(session)}
           onAccount={() => {
             if (session) setShowAccountSheet(true);
-            else setShowAuthModal(true);
+            else openAuthModal();
           }}
         />
       ) : null}
@@ -214,7 +219,7 @@ export default function AppShell() {
         </Modal>
       ) : null}
 
-      {showAuthModal ? <AuthModal onClose={() => setShowAuthModal(false)} /> : null}
+      {showAuthModal ? <AuthModal onClose={closeAuthModal} /> : null}
 
       {showCompleteProfileModal && session ? (
         <CompleteProfileModal

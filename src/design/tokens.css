@@ -20,10 +20,16 @@
   --k-surface-secondary: #f2f2ef;
   --k-surface-tertiary: #e9e9e5;
 
+  /*
+   * Les trois niveaux d'encre passent le 4.5:1 sur le canevas *et* sur les
+   * surfaces blanches — y compris le niveau tertiaire, qui porte les légendes
+   * et les étiquettes de section. Le quaternaire, lui, n'est jamais du texte :
+   * il ne sert qu'aux icônes décoratives et aux chevrons.
+   */
   --k-ink: #16181c;
-  --k-ink-secondary: #5a6068;
-  --k-ink-tertiary: #868c95;
-  --k-ink-quaternary: #b0b5bc;
+  --k-ink-secondary: #4d535b;
+  --k-ink-tertiary: #676c75;
+  --k-ink-quaternary: #8b9099;
   /* Encre posée sur une surface accentuée pleine. Nommée plutôt que codée en
    * dur, pour qu'un changement d'accent n'oblige pas à relire chaque vue. */
   --k-ink-on-accent: #ffffff;
@@ -33,25 +39,29 @@
   --k-separator-strong: rgb(22 24 28 / 16%);
   --k-hairline: 1px;
 
-  /* Accent « lagon » — le seul bleu-vert du produit, réservé à l'interactif. */
+  /*
+   * Accent « lagon » — le seul bleu-vert du produit, réservé à l'interactif.
+   * Sa valeur est calée pour rester lisible *sur sa propre teinte douce*
+   * (badges, onglet actif, pastilles), le cas le plus contraignant.
+   */
   --k-accent-50: #eaf6f7;
   --k-accent-100: #cfeaec;
-  --k-accent-200: #a3d6da;
-  --k-accent-300: #6bbac1;
-  --k-accent-400: #359aa4;
-  --k-accent: #0e7c88;
-  --k-accent-hover: #0a6b76;
-  --k-accent-active: #075a63;
-  --k-accent-soft: rgb(14 124 136 / 10%);
-  --k-accent-soft-hover: rgb(14 124 136 / 16%);
+  --k-accent-200: #9fd2d7;
+  --k-accent-300: #63b3bb;
+  --k-accent-400: #2d8e99;
+  --k-accent: #0a6b76;
+  --k-accent-hover: #075a63;
+  --k-accent-active: #054a52;
+  --k-accent-soft: rgb(10 107 118 / 10%);
+  --k-accent-soft-hover: rgb(10 107 118 / 16%);
 
   /* Accent chaud « flamboyant » — uniquement les moments de participation. */
   --k-warm-50: #fdf1ee;
-  --k-warm-100: #fadcd4;
-  --k-warm-200: #f2b3a5;
-  --k-warm: #c4503c;
-  --k-warm-hover: #ab4433;
-  --k-warm-soft: rgb(196 80 60 / 10%);
+  --k-warm-100: #f9d8d0;
+  --k-warm-200: #eeab9a;
+  --k-warm: #ad3d29;
+  --k-warm-hover: #96341f;
+  --k-warm-soft: rgb(173 61 41 / 10%);
 
   /* Sémantique. */
   --k-success: #16794b;
@@ -64,7 +74,7 @@
   --k-info: var(--k-accent);
   --k-info-soft: var(--k-accent-soft);
 
-  --k-focus-ring: rgb(14 124 136 / 45%);
+  --k-focus-ring: rgb(10 107 118 / 55%);
 
   /* ----------------------------------------------------------- Typographie
    * La police système embarque déjà l'optical sizing et les tables de crénage.

@@ -86,7 +86,7 @@ export default function AssociationHeader({
               ) : null}
               <span className="inline-flex items-center gap-1.5">
                 <Icon name="users" size={15} />
-                {followers} abonné(s)
+                {followers} abonné{followers > 1 ? 's' : ''}
               </span>
             </div>
           </div>

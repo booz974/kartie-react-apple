@@ -286,7 +286,7 @@
 }
 
 .k-input::placeholder {
-  color: var(--k-ink-quaternary);
+  color: var(--k-ink-tertiary);
 }
 
 .k-input:hover:not(:disabled):not(:focus) {
@@ -322,7 +322,7 @@ textarea.k-input {
 select.k-input {
   appearance: none;
   padding-right: var(--k-space-10);
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235a6068' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5.4 9.4 6.6 6.6 6.6-6.6'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234d535b' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5.4 9.4 6.6 6.6 6.6-6.6'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right var(--k-space-3) center;
   background-size: 1.125rem;
