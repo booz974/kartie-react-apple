@@ -5,7 +5,6 @@ import { useEscapeKey, useFocusTrap, useScrollLock } from '@/design/a11y';
 import { prefersReducedMotion } from '@/design/motion';
 import { useIsCompact } from '@/design/useMediaQuery';
 import { useSheetGesture } from '@/design/useSheetGesture';
-import { useVirtualKeyboardInset } from '@/design/useVirtualKeyboard';
 import Button from './Button';
 import Icon from './Icon';
 import LiquidGlassLayer from './LiquidGlassLayer';
@@ -72,7 +71,6 @@ export default function Modal({
   const containerRef = useFocusTrap(true);
   useScrollLock(true);
   useEscapeKey(dismissible, requestClose);
-  useVirtualKeyboardInset(true);
 
   /*
    * Remonter le champ qui vient de prendre le focus.

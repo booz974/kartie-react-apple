@@ -11,6 +11,7 @@ import SelectQuartier from '@/features/territory/SelectQuartier';
 import { TabBar, TopBar, displayName } from '@/app/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import { useUiStore } from '@/stores/uiStore';
+import { useVirtualKeyboardInset } from '@/design/useVirtualKeyboard';
 import type { ProfileUpsert } from '@/api/profiles';
 
 export default function AppShell() {
@@ -34,6 +35,12 @@ export default function AppShell() {
   // L'assistant occupe tout l'écran : sa zone de saisie et la barre d'onglets
   // se disputeraient le bas de l'écran.
   const isImmersive = location.pathname === '/chat';
+
+  // Mesure de la place prise par le clavier virtuel, publiée pour toute
+  // l'application. Elle vit ici plutôt que dans chaque surface concernée :
+  // feuilles modales et zone de saisie de l'assistant en dépendent, et une
+  // seule mesure vaut mieux qu'une par composant.
+  useVirtualKeyboardInset(true);
 
   useEffect(() => {
     if (session) {

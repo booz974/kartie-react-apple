@@ -71,6 +71,27 @@ export default function ChatView() {
     }
   }, [messages, isThinking, error]);
 
+  /*
+   * Le clavier fait rétrécir le fil par le bas. La position de défilement, elle,
+   * ne bouge pas : le dernier message se retrouve alors sous la ligne de flottaison,
+   * juste au moment où on s'apprête à répondre. On le ramène donc, mais seulement
+   * si la lecture était déjà en bas — remonter quelqu'un qui consultait
+   * l'historique serait pire que le mal.
+   */
+  useEffect(() => {
+    const el = chatWindowRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+
+    const observer = new ResizeObserver(() => {
+      if (!stickToBottomRef.current) return;
+      // Sans animation : c'est un rattrapage de mise en page, pas l'arrivée
+      // d'un message.
+      el.scrollTop = el.scrollHeight;
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   const sendMessage = useCallback(
     async (text?: string) => {
       const userMsg = (text ?? inputMessage).trim();
@@ -134,9 +155,15 @@ export default function ChatView() {
   return (
     // La vue est immersive : AppShell masque la barre d'onglets et le pied de
     // page, la hauteur restante est donc l'écran moins la barre supérieure.
+    //
+    // Moins, aussi, la place prise par le clavier. `100dvh` ne rétrécit pas à
+    // son ouverture sur iOS : sans ce retrait, la zone de saisie passerait
+    // derrière les touches, et on écrirait sans voir son texte.
     <div
       className="mx-auto flex w-full max-w-3xl flex-col px-4 md:px-6"
-      style={{ height: 'calc(100dvh - var(--k-nav-height))' }}
+      style={{
+        height: 'calc(100dvh - var(--k-nav-height) - var(--k-keyboard-inset, 0px))',
+      }}
     >
       <header className="k-hairline-bottom flex shrink-0 items-center gap-3 py-3">
         <Chip tone="accent" size={40}>
@@ -287,7 +314,13 @@ export default function ChatView() {
           c'est le seul endroit où le matériau translucide est justifié. */}
       <div
         className="k-material-chrome k-material-edge-top -mx-4 shrink-0 px-4 py-3 md:-mx-6 md:px-6"
-        style={{ paddingBottom: 'calc(0.75rem + var(--k-safe-bottom))' }}
+        style={{
+          // La réserve de zone sûre se résorbe à mesure que le clavier monte :
+          // le geste de retour à l'accueil n'existe plus quand les touches
+          // occupent le bas, et la réserve ne serait qu'un vide.
+          paddingBottom:
+            'calc(0.75rem + max(0px, calc(var(--k-safe-bottom) - var(--k-keyboard-inset, 0px))))',
+        }}
       >
         <div className="flex items-center gap-2">
           <Input

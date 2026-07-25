@@ -26,6 +26,13 @@ import { useEffect } from 'react';
  */
 const KEYBOARD_MIN = 120;
 
+/**
+ * Nombre de surfaces qui observent le clavier. Sans ce décompte, la première à
+ * se démonter effacerait la variable sous les pieds des autres, et la mesure
+ * ne reviendrait qu'au prochain soubresaut du viewport.
+ */
+let observers = 0;
+
 export function useVirtualKeyboardInset(active: boolean): void {
   useEffect(() => {
     if (!active) return;
@@ -33,6 +40,8 @@ export function useVirtualKeyboardInset(active: boolean): void {
     const viewport = window.visualViewport;
     const root = document.documentElement;
     if (!viewport) return;
+
+    observers += 1;
 
     function sync() {
       if (!viewport) return;
@@ -50,7 +59,8 @@ export function useVirtualKeyboardInset(active: boolean): void {
     return () => {
       viewport.removeEventListener('resize', sync);
       viewport.removeEventListener('scroll', sync);
-      root.style.removeProperty('--k-keyboard-inset');
+      observers -= 1;
+      if (observers === 0) root.style.removeProperty('--k-keyboard-inset');
     };
   }, [active]);
 }

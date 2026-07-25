@@ -114,6 +114,23 @@ describe('useVirtualKeyboardInset', () => {
     expect(listeners.get('scroll')?.size).toBe(0);
   });
 
+  it('garde la mesure tant qu\'une surface l\'observe encore', () => {
+    setLayoutHeight(844);
+    mockViewport(508);
+
+    const premier = renderHook(() => useVirtualKeyboardInset(true));
+    const second = renderHook(() => useVirtualKeyboardInset(true));
+    expect(inset()).toBe('336px');
+
+    // Fermer une feuille modale posée par-dessus l'assistant ne doit pas
+    // effacer la mesure dont l'assistant dépend encore.
+    premier.unmount();
+    expect(inset()).toBe('336px');
+
+    second.unmount();
+    expect(inset()).toBe('');
+  });
+
   it('ne fait rien tant qu\'aucune surface ne le demande', () => {
     setLayoutHeight(844);
     const { listeners } = mockViewport(508);
