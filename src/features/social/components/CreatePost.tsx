@@ -237,7 +237,7 @@ export default function CreatePost({ quartier, onSubmit, isSubmitting = false }:
               onClick={() => selectType(type.value)}
               className={`k-press k-subhead inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 font-medium ${
                 selected
-                  ? 'bg-accent text-white'
+                  ? 'bg-accent text-ink-on-accent'
                   : 'bg-surface-secondary k-ink-secondary hover:bg-surface-tertiary'
               }`}
             >

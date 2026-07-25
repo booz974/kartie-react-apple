@@ -312,25 +312,31 @@ export async function deleteDoc(docId: string | number): Promise<SyncResult> {
   return data;
 }
 
-/** Map ChatRagError to the exact Vue UI banner strings. */
+/**
+ * Traduit une ChatRagError en message affichable.
+ *
+ * Les messages ne portent plus de préfixe emoji : ils sont rendus dans un
+ * `Notice`, qui affiche déjà l'icône correspondant à la gravité. Le répéter
+ * dans le texte disait deux fois la même chose.
+ */
 export function chatErrorBannerMessage(err: unknown): string {
   const message =
     err instanceof Error ? err.message : typeof err === 'string' ? err : '';
   const code = err instanceof ChatRagError ? err.code : message;
 
   if (code === 'QUOTA_EXCEEDED' || message === 'QUOTA_EXCEEDED') {
-    return "⚠️ Le quota de l'API IA est épuisé. L'administrateur doit activer la facturation sur Google AI Studio.";
+    return "Le quota de l'API IA est épuisé. L'administrateur doit activer la facturation sur Google AI Studio.";
   }
   if (code === 'API_KEY_INVALID' || message === 'API_KEY_INVALID') {
-    return '⚠️ La clé API Gemini est invalide. Contactez l\'administrateur.';
+    return "La clé API Gemini est invalide. Contactez l'administrateur.";
   }
   if (code === 'NO_FILE_SEARCH_STORE' || message === 'NO_FILE_SEARCH_STORE') {
-    return "⚠️ La base de connaissances n'a pas été synchronisée. Cliquez sur 'Mettre à jour les connaissances'.";
+    return "La base de connaissances n'a pas encore été synchronisée. Un administrateur doit lancer « Mettre à jour les connaissances ».";
   }
   if (code === 'TIMEOUT' || message === 'TIMEOUT') {
-    return '⏱️ La requête a pris trop de temps (55s). Réessayez.';
+    return 'La requête a pris trop de temps (55 s). Réessayez.';
   }
-  return 'Erreur: ' + (message || 'Réessayez.');
+  return message || 'Une erreur est survenue. Réessayez dans un instant.';
 }
 
 export function syncErrorAlertMessage(err: unknown): string {

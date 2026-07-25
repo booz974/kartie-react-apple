@@ -224,13 +224,16 @@ describe('chatRag api', () => {
     });
   });
 
-  it('chatErrorBannerMessage maps typed codes to Vue strings', async () => {
+  it('chatErrorBannerMessage maps typed codes to readable messages', async () => {
     const { ChatRagError, chatErrorBannerMessage } = await import('./chatRag');
     expect(chatErrorBannerMessage(new ChatRagError('QUOTA_EXCEEDED', 'QUOTA_EXCEEDED'))).toContain(
       'quota',
     );
-    expect(chatErrorBannerMessage(new ChatRagError('TIMEOUT', 'TIMEOUT'))).toContain('55s');
-    expect(chatErrorBannerMessage(new Error('weird'))).toBe('Erreur: weird');
+    expect(chatErrorBannerMessage(new ChatRagError('TIMEOUT', 'TIMEOUT'))).toContain('55');
+    // Le message est rendu dans un Notice qui porte déjà l'icône de gravité :
+    // il ne se préfixe donc plus lui-même.
+    expect(chatErrorBannerMessage(new Error('weird'))).toBe('weird');
+    expect(chatErrorBannerMessage(new Error(''))).toContain('Réessayez');
   });
 
   it('uploadDocStatusMessage maps TIMEOUT and generic errors (Vue AdminRag)', async () => {

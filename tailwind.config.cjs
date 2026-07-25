@@ -29,6 +29,10 @@ module.exports = {
           secondary: 'var(--k-ink-secondary)',
           tertiary: 'var(--k-ink-tertiary)',
           quaternary: 'var(--k-ink-quaternary)',
+          // Encre posée sur une surface accentuée : elle suit l'accent si
+          // celui-ci change, là où un `text-white` figé ne suivrait pas.
+          'on-accent': 'var(--k-ink-on-accent)',
+          'on-warm': 'var(--k-ink-on-warm)',
         },
         accent: {
           DEFAULT: 'var(--k-accent)',

@@ -133,7 +133,7 @@ export default function QuartierPoll({
                       <span
                         aria-hidden="true"
                         className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 transition-colors ${
-                          selected ? 'border-warm bg-warm text-white' : 'border-ink-quaternary'
+                          selected ? 'border-warm bg-warm text-ink-on-warm' : 'border-ink-quaternary'
                         }`}
                       >
                         {selected ? <Icon name="check" size={13} strokeWidth={2.6} /> : null}

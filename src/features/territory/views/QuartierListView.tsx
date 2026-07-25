@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
+import Button from '@/components/ui/Button';
+import Notice from '@/components/ui/Notice';
 import { Page } from '@/components/ui/Page';
 import { SkeletonText } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
@@ -46,6 +48,7 @@ export default function QuartierListView() {
   const [quartier, setQuartier] = useState<Pick<Quartier, 'id' | 'name'> | null>(null);
   const [items, setItems] = useState<ListItem[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadFailed, setLoadFailed] = useState(false);
 
   const quartierId = id ? Number(id) : undefined;
 
@@ -77,6 +80,7 @@ export default function QuartierListView() {
   const loadData = useCallback(async () => {
     if (!quartierId || !type) return;
     setLoading(true);
+    setLoadFailed(false);
 
     try {
       if (!quartier || quartier.id !== quartierId) {
@@ -95,6 +99,9 @@ export default function QuartierListView() {
       }
     } catch (err) {
       console.error('Error loading list data:', err);
+      // Sans cet état, un échec laissait la page en squelette indéfiniment :
+      // aucune explication, et aucune sortie.
+      setLoadFailed(true);
     } finally {
       setLoading(false);
     }
@@ -181,6 +188,26 @@ export default function QuartierListView() {
   const quartierName = useMemo(() => quartier?.name ?? '', [quartier]);
 
   if (!quartier) {
+    if (loadFailed) {
+      return (
+        <Page>
+          <div className="max-w-lg py-16">
+            <Notice tone="danger">
+              Cette liste n’a pas pu être chargée. Vérifiez votre connexion, puis réessayez.
+            </Notice>
+            <div className="mt-4 flex flex-wrap gap-3">
+              <Button variant="primary" onClick={() => void loadData()}>
+                Réessayer
+              </Button>
+              <Button variant="secondary" onClick={handleBack}>
+                Retour au quartier
+              </Button>
+            </div>
+          </div>
+        </Page>
+      );
+    }
+
     return (
       <Page>
         <div className="max-w-xl py-16">

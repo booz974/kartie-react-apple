@@ -211,7 +211,7 @@ export default function ChatView() {
               key={index}
               className={
                 msg.role === 'user'
-                  ? 'k-animate-rise max-w-[85%] self-end rounded-2xl rounded-br-sm bg-accent px-4 py-2.5 text-white'
+                  ? 'k-animate-rise max-w-[85%] self-end rounded-2xl rounded-br-sm bg-accent px-4 py-2.5 text-ink-on-accent'
                   : 'k-animate-rise flex max-w-[92%] gap-3 self-start'
               }
             >

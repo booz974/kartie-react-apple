@@ -45,29 +45,41 @@ export default function QuartierCard({ quartier, compact = false }: QuartierCard
             onError={() => setImageError(true)}
           />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-ink-quaternary">
-            <Icon name="mapPin" size={40} />
+          <div className="flex h-full w-full items-end justify-end p-4 text-ink-quaternary">
+            <Icon name="mapPin" size={64} strokeWidth={1.1} className="opacity-40" />
           </div>
         )}
       </div>
 
-      {/*
-        Le voile ne couvre que la bande où le texte se pose, et il est calé sur
-        la hauteur réelle du contenu : assombrir toute l'image effacerait la
-        photographie qui donne son identité au quartier.
-      */}
-      <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/45 to-transparent pt-16" />
+      {showImage ? (
+        <>
+          {/*
+            Le voile ne couvre que la bande où le texte se pose : assombrir
+            toute l'image effacerait la photographie qui donne son identité au
+            quartier. Il descend jusqu'au noir sous le texte pour que le blanc
+            tienne quelle que soit la photo.
+          */}
+          <div className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/85 via-black/55 to-transparent" />
 
-      <div className="absolute inset-x-0 bottom-0 p-4 text-white md:p-5">
-        <h3 className={`${compact ? 'k-title-3' : 'k-title-2'} k-vibrant drop-shadow-sm`}>
-          {quartier.name}
-        </h3>
-        {description ? (
-          // Toujours visible : sur un écran tactile, un contenu révélé au survol
-          // n'existe pas.
-          <p className="k-footnote mt-1 line-clamp-2 text-white/85">{description}</p>
-        ) : null}
-      </div>
+          <div className="absolute inset-x-0 bottom-0 p-4 text-white md:p-5">
+            <h3 className={`${compact ? 'k-title-3' : 'k-title-2'} k-vibrant`}>{quartier.name}</h3>
+            {description ? (
+              // Toujours visible : sur un écran tactile, un contenu révélé au
+              // survol n'existe pas.
+              <p className="k-footnote mt-1 line-clamp-2 text-white/85">{description}</p>
+            ) : null}
+          </div>
+        </>
+      ) : (
+        // Sans photo, il n'y a rien à protéger : le texte reprend l'encre du
+        // produit plutôt qu'un blanc posé sur un fond clair.
+        <div className="absolute inset-x-0 bottom-0 p-4 md:p-5">
+          <h3 className={compact ? 'k-title-3' : 'k-title-2'}>{quartier.name}</h3>
+          {description ? (
+            <p className="k-footnote k-ink-secondary mt-1 line-clamp-2">{description}</p>
+          ) : null}
+        </div>
+      )}
     </Link>
   );
 }

@@ -907,6 +907,12 @@ select.k-input {
   margin-top: var(--k-space-16);
 }
 
+/* Deux sections posées côte à côte dans une grille ne s'empilent pas : le
+ * rythme vertical ne doit pas s'appliquer entre elles. */
+.k-section.k-section--flush {
+  margin-top: 0;
+}
+
 /* Grille réutilisée par les listes d'articles, d'événements, de quartiers et
  * d'associations. */
 .k-grid {

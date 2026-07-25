@@ -362,7 +362,7 @@ export default function QuartierView() {
 
       <div className="k-section grid gap-12 lg:grid-cols-3">
         <Section
-          className="lg:col-span-2"
+          className="k-section--flush lg:col-span-2"
           title="À ne pas manquer"
           action={
             <div className="flex gap-2">
@@ -426,6 +426,7 @@ export default function QuartierView() {
         </Section>
 
         <Section
+          className="k-section--flush"
           title="Dernières nouvelles"
           action={
             <div className="flex gap-2">

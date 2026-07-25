@@ -24,7 +24,10 @@
   --k-ink-secondary: #5a6068;
   --k-ink-tertiary: #868c95;
   --k-ink-quaternary: #b0b5bc;
+  /* Encre posée sur une surface accentuée pleine. Nommée plutôt que codée en
+   * dur, pour qu'un changement d'accent n'oblige pas à relire chaque vue. */
   --k-ink-on-accent: #ffffff;
+  --k-ink-on-warm: #ffffff;
 
   --k-separator: rgb(22 24 28 / 9%);
   --k-separator-strong: rgb(22 24 28 / 16%);

@@ -41,9 +41,12 @@ export function PageHeader({
         <Link
           to={back.to}
           className="k-btn k-btn--plain k-footnote mb-3 -ml-1 inline-flex items-center gap-1 font-medium"
+          // Un libellé issu des données peut arriver vide ; le lien ne doit
+          // jamais se réduire à un chevron sans nom accessible.
+          aria-label={back.label?.trim() ? undefined : 'Retour'}
         >
           <Icon name="chevronLeft" size={16} />
-          {back.label}
+          {back.label?.trim() || 'Retour'}
         </Link>
       ) : null}
 
