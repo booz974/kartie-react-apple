@@ -212,9 +212,6 @@ export default function HomeView() {
             </div>
           ))}
         </dl>
-        <p className="k-caption k-ink-tertiary mt-4">
-          Sources INSEE, Mairie de Saint-Denis, SIG et DEAL, de 2021 à 2025.
-        </p>
       </section>
 
       <Section

@@ -156,7 +156,10 @@ export default function AppShell() {
 
       {!isImmersive ? (
         <footer className="k-hairline-top mt-auto">
-          <div className="k-page flex flex-col gap-6 py-10 md:flex-row md:items-start md:justify-between">
+          {/* Deux blocs seulement : les écarter aux deux bords creuserait un
+              vide au milieu. Ils se suivent donc, séparés par un intervalle
+              franc. */}
+          <div className="k-page flex flex-col gap-6 py-10 md:flex-row md:items-start md:gap-16">
             <div className="max-w-sm">
               <p className="k-title-3">Kartie</p>
               <p className="k-footnote k-ink-secondary mt-2">
@@ -173,14 +176,6 @@ export default function AppShell() {
               <Link to="/chat" className="k-footnote k-ink-secondary hover:text-accent-ink">
                 Assistant Kartie
               </Link>
-            </div>
-
-            <div className="max-w-xs">
-              <p className="k-eyebrow">Sources</p>
-              <p className="k-caption k-ink-tertiary mt-2">
-                INSEE, Mairie de Saint-Denis, SIG et DEAL, de 2021 à 2025.
-              </p>
-              <p className="k-caption k-ink-tertiary mt-3">Portrait de Saint-Denis 2025</p>
             </div>
           </div>
         </footer>
