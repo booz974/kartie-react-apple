@@ -1,24 +1,26 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { CATEGORIES, type CategoryKey } from '@/design/categories';
+import { sanitizeStorageUrl } from '@/utils/imageUtils';
 
 type MediaProps = {
   src?: string | null;
+  /**
+   * Photo de secours, utilisée quand `src` est absent ou ne charge pas. C'est
+   * elle qui garde une grille photographique lorsque la donnée est incomplète.
+   */
+  fallbackSrc?: string | null;
   /**
    * Description de l'image. Laisse-la vide quand la photo est illustrative et
    * que le titre voisin dit déjà de quoi il s'agit : la répéter alourdit la
    * lecture au lecteur d'écran.
    */
   alt?: string;
-  /** Détermine le dégradé et l'émoji affichés à défaut de photo. */
+  /** Détermine la teinte et l'émoji affichés en dernier recours. */
   category: CategoryKey;
-  /** Émoji de repli plus précis que celui de la catégorie (thème, sujet). */
+  /** Émoji plus précis que celui de la catégorie (thème, sujet). */
   emoji?: string;
-  /**
-   * Dégradé de repli imposé. Utile quand une grille entière relève de la même
-   * catégorie : sans variation, douze vignettes sans photo formeraient un mur
-   * d'une seule couleur.
-   */
+  /** Dégradé imposé, quand une grille entière relève de la même catégorie. */
   gradient?: string;
   ratio?: string;
   className?: string;
@@ -31,14 +33,17 @@ type MediaProps = {
 };
 
 /**
- * Photo d'un contenu, avec un repli qui reste vivant.
+ * Photo d'un contenu.
  *
- * Une grille dont la moitié des vignettes seraient des rectangles gris perdrait
- * tout son entrain : le repli reprend la couleur du type de contenu et son
- * émoji.
+ * La photographie est ce qui donne sa vie à une carte : elle passe donc avant
+ * tout le reste, y compris via une image de secours. Le repli dessiné n'arrive
+ * qu'en dernier, quand il n'y a réellement aucune image à montrer, et il reste
+ * discret : une teinte douce et un petit repère, pas une bannière décorative
+ * qui prendrait la place d'une photo.
  */
 export default function Media({
   src,
+  fallbackSrc,
   alt = '',
   category,
   emoji,
@@ -50,22 +55,37 @@ export default function Media({
   rounded,
   loading = 'lazy',
 }: MediaProps) {
-  const [failed, setFailed] = useState(false);
-  const showImage = Boolean(src) && !failed;
+  const primary = sanitizeStorageUrl(src) || null;
+  const secondary = sanitizeStorageUrl(fallbackSrc) || null;
+
+  // `null` signifie « plus aucune image à tenter ».
+  const [current, setCurrent] = useState<string | null>(primary ?? secondary);
+
+  useEffect(() => {
+    setCurrent(primary ?? secondary);
+  }, [primary, secondary]);
+
+  function handleError() {
+    // La photo principale échoue : on tente celle de secours avant d'abandonner.
+    setCurrent((active) => (active === primary && secondary ? secondary : null));
+  }
 
   return (
     <div
-      className={['k-media', className].filter(Boolean).join(' ')}
+      className={['k-media', current ? '' : 'k-media--empty', className]
+        .filter(Boolean)
+        .join(' ')}
       style={{
         aspectRatio: ratio,
         borderRadius: rounded,
-        // Permet à la taille de l'émoji de repli de suivre celle de la vignette.
         containerType: 'inline-size',
-        backgroundImage: showImage ? undefined : (gradient ?? `var(--k-cat-${category}-gradient)`),
+        backgroundImage: current
+          ? undefined
+          : (gradient ?? `var(--k-cat-${category}-soft-fill)`),
       }}
     >
-      {showImage ? (
-        <img src={src as string} alt={alt} loading={loading} onError={() => setFailed(true)} />
+      {current ? (
+        <img src={current} alt={alt} loading={loading} onError={handleError} />
       ) : (
         <span className="k-media__fallback" aria-hidden="true">
           {emoji ?? CATEGORIES[category].emoji}

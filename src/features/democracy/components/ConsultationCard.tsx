@@ -29,7 +29,7 @@ export default function ConsultationCard({
 
   return (
     <article
-      className={surfaceClass({ className: 'group relative flex h-full flex-col overflow-hidden' })}
+      className={surfaceClass({ className: 'k-glass--consult group relative flex h-full flex-col overflow-hidden' })}
     >
       <AdminDeleteButton
         tableName="consultations"

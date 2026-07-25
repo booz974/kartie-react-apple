@@ -33,7 +33,7 @@ export default function ArticleCard({ article, onDelete }: ArticleCardProps) {
     <article
       className={surfaceClass({
         interactive: true,
-        className: 'group relative flex h-full flex-col overflow-hidden',
+        className: 'k-glass--project group relative flex h-full flex-col overflow-hidden',
       })}
     >
       <AdminDeleteButton tableName="realisations" itemId={article.id} onDeleted={onDelete} />

@@ -27,7 +27,7 @@ export default function NewsCard({ news, onDelete }: NewsCardProps) {
     <article
       className={surfaceClass({
         interactive: true,
-        className: 'group relative flex flex-col overflow-hidden',
+        className: 'k-glass--news group relative flex flex-col overflow-hidden',
       })}
     >
       <AdminDeleteButton tableName="actualites" itemId={news.id} onDeleted={onDelete} />

@@ -1091,10 +1091,11 @@ select.k-input {
   inset: 0;
   display: grid;
   place-items: center;
-  font-size: clamp(2.75rem, 22cqw, 5.5rem);
+  /* Repère discret, à l'échelle d'une icône et non d'une illustration. */
+  font-size: clamp(1.5rem, 9cqw, 2.25rem);
   line-height: 1;
   /* L'émoji de repli est un aplat de matière, pas un pictogramme à lire. */
-  filter: drop-shadow(0 2px 6px rgb(0 0 0 / 18%));
+  opacity: 0.5;
 }
 
 /* Voile posé sous un texte en surimpression. Il ne couvre que la bande utile :
@@ -1114,6 +1115,32 @@ select.k-input {
   bottom: 0;
   padding: var(--k-space-4);
   color: #fff;
+}
+
+/*
+ * Sans photo, un voile sombre ne protège plus rien : il grise la surface et le
+ * texte blanc perd son fond. La bande s'éclaircit alors et le texte reprend
+ * l'encre du produit.
+ */
+.k-media--empty .k-media__veil {
+  background: linear-gradient(
+    to top,
+    rgb(255 255 255 / 94%) 0%,
+    rgb(255 255 255 / 62%) 48%,
+    transparent 100%
+  );
+}
+
+.k-media--empty .k-media__caption {
+  color: var(--k-ink);
+  text-shadow: none;
+}
+
+/* Le repère de repli se place en haut, pour ne pas passer sous la légende. */
+.k-media--empty .k-media__fallback {
+  align-items: start;
+  justify-items: start;
+  padding: var(--k-space-4);
 }
 
 @media (min-width: 768px) {

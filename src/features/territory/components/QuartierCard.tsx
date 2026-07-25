@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Link } from 'react-router';
 import Media from '@/components/ui/Media';
 import { getStorageUrl } from '@/utils/imageUtils';
@@ -17,24 +17,16 @@ interface QuartierCardProps {
 }
 
 /**
- * Repli quand la photo manque. Chaque quartier reçoit son émoji et son dégradé,
- * dérivés de son identifiant : le repère reste stable dans le temps, et une
- * grille de quartiers sans photo garde de la variété au lieu de former un aplat.
+ * Photo de secours d'un quartier, héritée de la version d'origine.
+ *
+ * Une grille de quartiers est d'abord une grille de photos : quand la fiche
+ * n'en porte pas encore, mieux vaut une vue générique de l'île qu'un aplat
+ * coloré, qui ferait retomber la page à plat.
  */
-const FALLBACKS = [
-  { emoji: '🏝️', gradient: 'linear-gradient(135deg, #4fd8e6 0%, #06aec4 100%)' },
-  { emoji: '🌺', gradient: 'linear-gradient(135deg, #ff9fb1 0%, #e35a76 100%)' },
-  { emoji: '🏞️', gradient: 'linear-gradient(135deg, #5ce09a 0%, #16b364 100%)' },
-  { emoji: '🌊', gradient: 'linear-gradient(135deg, #7dabff 0%, #3b82f6 100%)' },
-  { emoji: '⛰️', gradient: 'linear-gradient(135deg, #c39bfb 0%, #9b5cf6 100%)' },
-  { emoji: '🌴', gradient: 'linear-gradient(135deg, #ffc046 0%, #f08c00 100%)' },
-  { emoji: '🏘️', gradient: 'linear-gradient(135deg, #ffa26b 0%, #ff6b4a 100%)' },
-  { emoji: '🌋', gradient: 'linear-gradient(135deg, #8adde6 0%, #0a8ba0 100%)' },
-];
+const FALLBACK_IMAGE =
+  'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?ixlib=rb-1.2.1&auto=format&fit=crop&w=800&q=80';
 
 export default function QuartierCard({ quartier, compact = false }: QuartierCardProps) {
-  const [failed, setFailed] = useState(false);
-
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const bucketUrl = `${supabaseUrl}/storage/v1/object/public/quartiers_images`;
 
@@ -44,19 +36,16 @@ export default function QuartierCard({ quartier, compact = false }: QuartierCard
   }, [bucketUrl, quartier.image_filename]);
 
   const description = quartier.catchphrase?.trim();
-  const fallback = FALLBACKS[quartier.id % FALLBACKS.length];
 
   return (
     <Link
       to={`/quartiers/${quartier.id}`}
-      className="k-card k-card--interactive group overflow-hidden p-0"
-      onErrorCapture={() => setFailed(true)}
+      className="k-card k-card--interactive k-glass--quartier group overflow-hidden p-0"
     >
       <Media
-        src={failed ? null : imageUrl}
+        src={imageUrl}
+        fallbackSrc={FALLBACK_IMAGE}
         category="quartier"
-        emoji={fallback.emoji}
-        gradient={fallback.gradient}
         ratio={compact ? '3 / 2' : '4 / 3'}
         overlay={
           <>
@@ -66,7 +55,7 @@ export default function QuartierCard({ quartier, compact = false }: QuartierCard
             {description ? (
               // Toujours visible : sur un écran tactile, un contenu révélé au
               // survol n'existe pas.
-              <p className="k-footnote mt-1 line-clamp-2 text-white/90">{description}</p>
+              <p className="k-footnote mt-1 line-clamp-2 opacity-90">{description}</p>
             ) : null}
           </>
         }

@@ -69,7 +69,7 @@ export default function PetitionCard({ petition, session, onDelete }: PetitionCa
     <article
       className={surfaceClass({
         interactive: true,
-        className: 'group relative flex h-full flex-col overflow-hidden',
+        className: 'k-glass--petition group relative flex h-full flex-col overflow-hidden',
       })}
     >
       <AdminDeleteButton tableName="petitions" itemId={petition.id} onDeleted={onDelete} />

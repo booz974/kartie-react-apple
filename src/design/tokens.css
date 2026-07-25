@@ -86,36 +86,43 @@
   --k-cat-event-ink: #b03a1e;
   --k-cat-event-soft: rgb(255 107 74 / 14%);
   --k-cat-event-gradient: linear-gradient(135deg, #ffa26b 0%, #ff6b4a 100%);
+  --k-cat-event-soft-fill: linear-gradient(140deg, rgb(255 107 74 / 18%) 0%, rgb(255 107 74 / 7%) 100%);
 
   --k-cat-news: #2e90fa;
   --k-cat-news-ink: #14528f;
   --k-cat-news-soft: rgb(46 144 250 / 14%);
   --k-cat-news-gradient: linear-gradient(135deg, #6bb6ff 0%, #2e90fa 100%);
+  --k-cat-news-soft-fill: linear-gradient(140deg, rgb(46 144 250 / 18%) 0%, rgb(46 144 250 / 7%) 100%);
 
   --k-cat-project: #9b5cf6;
   --k-cat-project-ink: #6321a8;
   --k-cat-project-soft: rgb(155 92 246 / 14%);
   --k-cat-project-gradient: linear-gradient(135deg, #c39bfb 0%, #9b5cf6 100%);
+  --k-cat-project-soft-fill: linear-gradient(140deg, rgb(155 92 246 / 18%) 0%, rgb(155 92 246 / 7%) 100%);
 
   --k-cat-petition: #f08c00;
   --k-cat-petition-ink: #8a5009;
   --k-cat-petition-soft: rgb(240 140 0 / 16%);
   --k-cat-petition-gradient: linear-gradient(135deg, #ffc046 0%, #f08c00 100%);
+  --k-cat-petition-soft-fill: linear-gradient(140deg, rgb(240 140 0 / 18%) 0%, rgb(240 140 0 / 7%) 100%);
 
   --k-cat-consult: #06aec4;
   --k-cat-consult-ink: #04697a;
   --k-cat-consult-soft: rgb(6 174 196 / 15%);
   --k-cat-consult-gradient: linear-gradient(135deg, #4fd8e6 0%, #06aec4 100%);
+  --k-cat-consult-soft-fill: linear-gradient(140deg, rgb(6 174 196 / 18%) 0%, rgb(6 174 196 / 7%) 100%);
 
   --k-cat-asso: #16b364;
   --k-cat-asso-ink: #07713f;
   --k-cat-asso-soft: rgb(22 179 100 / 15%);
   --k-cat-asso-gradient: linear-gradient(135deg, #5ce09a 0%, #16b364 100%);
+  --k-cat-asso-soft-fill: linear-gradient(140deg, rgb(22 179 100 / 18%) 0%, rgb(22 179 100 / 7%) 100%);
 
   --k-cat-quartier: #3b82f6;
   --k-cat-quartier-ink: #1d4ed8;
   --k-cat-quartier-soft: rgb(59 130 246 / 14%);
   --k-cat-quartier-gradient: linear-gradient(135deg, #7dabff 0%, #3b82f6 100%);
+  --k-cat-quartier-soft-fill: linear-gradient(140deg, rgb(59 130 246 / 18%) 0%, rgb(59 130 246 / 7%) 100%);
 
   /* Sémantique. */
   --k-success: #0a6b3d;

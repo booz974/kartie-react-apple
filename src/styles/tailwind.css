@@ -13,6 +13,7 @@
 @import '../design/tokens.css';
 @import '../design/base.css';
 @import '../design/components.css';
+@import '../design/liquidGlass.css';
 
 @tailwind base;
 @tailwind components;

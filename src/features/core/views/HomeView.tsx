@@ -170,31 +170,12 @@ export default function HomeView() {
         </div>
       </section>
 
-      <section aria-label="La commune en chiffres">
-        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          {KEY_FIGURES.map((figure) => (
-            <div key={figure.label} className="k-card flex flex-col gap-1 p-4">
-              <Chip tone={figure.tone} size={38} className="mb-1">
-                {figure.emoji}
-              </Chip>
-              {/* L'ordre visuel place la valeur avant son étiquette, mais le
-                  balisage garde la succession terme puis définition. */}
-              <dt className="k-caption k-ink-tertiary order-2">{figure.label}</dt>
-              <dd className="k-title-2 tabular-nums order-1">{figure.value}</dd>
-            </div>
-          ))}
-        </dl>
-        <p className="k-caption k-ink-tertiary mt-4">
-          Sources INSEE, Mairie de Saint-Denis, SIG et DEAL, de 2021 à 2025.
-        </p>
-      </section>
-
       {alaUneHighlight ? (
         <Section
           id="a-la-une"
           title="🔥 À la une"
-          description="Ce qui mobilise la ville en ce moment."
-          className="pt-16"
+          description="Les rendez-vous et les décisions à ne pas manquer, mis en avant par la ville."
+          className="pt-2"
           action={
             isAdmin ? (
               <Button variant="ghost" size="sm" onClick={() => navigate('/admin/alaune')}>
@@ -216,11 +197,30 @@ export default function HomeView() {
         </Section>
       ) : null}
 
+
+      <section aria-label="La commune en chiffres" className="k-section">
+        <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {KEY_FIGURES.map((figure) => (
+            <div key={figure.label} className="k-card flex flex-col gap-1 p-4">
+              <Chip tone={figure.tone} size={38} className="mb-1">
+                {figure.emoji}
+              </Chip>
+              {/* L'ordre visuel place la valeur avant son étiquette, mais le
+                  balisage garde la succession terme puis définition. */}
+              <dt className="k-caption k-ink-tertiary order-2">{figure.label}</dt>
+              <dd className="k-title-2 tabular-nums order-1">{figure.value}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="k-caption k-ink-tertiary mt-4">
+          Sources INSEE, Mairie de Saint-Denis, SIG et DEAL, de 2021 à 2025.
+        </p>
+      </section>
+
       <Section
         id="quartiers"
         title="📍 Zoom sur les territoires"
         description="Vingt quartiers, chacun avec son histoire, ses défis et ses projets."
-        className={alaUneHighlight ? undefined : 'pt-16'}
         action={
           <Link
             to="/quartiers"

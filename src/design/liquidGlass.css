@@ -1,0 +1,198 @@
+/*
+ * Kartie — verre liquide.
+ *
+ * Trois choses distinguent le verre liquide du verre dépoli :
+ *   1. le bord réfracte ce qui passe derrière, au lieu de le flouter à plat ;
+ *   2. la tranche capte la lumière, plus vive en haut à gauche qu'en bas à
+ *      droite, ce qui donne son épaisseur au matériau ;
+ *   3. la masse est légèrement teintée, donc le verre a une couleur propre au
+ *      lieu d'être un blanc translucide neutre.
+ *
+ * La réfraction dépend de `backdrop-filter: url()`, que seuls les navigateurs
+ * Chromium honorent aujourd'hui. Tout le reste (teinte, tranche, reflet) est
+ * du CSS ordinaire : ailleurs, la surface reste du verre dépoli soigné, et
+ * rien ne manque à la compréhension.
+ */
+
+:root {
+  /* Teinte du verre : une pointe de lagon, assez faible pour ne jamais
+   * concurrencer le contenu, assez présente pour que la matière ait une
+   * couleur au lieu d'être un blanc sale. */
+  --k-glass-tint: rgb(10 139 160 / 6%);
+  --k-glass-tint-strong: rgb(10 139 160 / 11%);
+
+  /* Lumière sur la tranche. Le haut-gauche reçoit la source, le bas-droite
+   * n'en garde qu'un écho : c'est ce déséquilibre qui donne du volume. */
+  --k-glass-rim:
+    inset 1.5px 1.5px 1px -1px rgb(255 255 255 / 92%),
+    inset -1px -1px 1px -1px rgb(255 255 255 / 40%),
+    inset 0 0 12px -6px rgb(255 255 255 / 55%);
+
+  --k-glass-rim-soft:
+    inset 1px 1px 1px -1px rgb(255 255 255 / 78%),
+    inset -1px -1px 1px -1px rgb(255 255 255 / 30%);
+}
+
+/* -------------------------------------------------------- Teinte et tranche
+ * Appliqué à toutes les surfaces de verre, sans condition de support.
+ */
+.k-glass,
+.k-glass-thin,
+.k-glass-thick,
+.k-card,
+.k-material-chrome,
+.k-modal,
+.k-toast {
+  background-image: linear-gradient(
+    135deg,
+    var(--k-glass-tint) 0%,
+    transparent 42%,
+    var(--k-glass-tint) 100%
+  );
+}
+
+.k-glass,
+.k-card {
+  box-shadow: var(--k-glass-rim), var(--k-shadow-sm);
+}
+
+.k-glass-thin {
+  box-shadow: var(--k-glass-rim-soft), var(--k-shadow-xs);
+}
+
+.k-glass-thick,
+.k-modal {
+  box-shadow: var(--k-glass-rim), var(--k-shadow-xl);
+}
+
+.k-card--raised {
+  box-shadow: var(--k-glass-rim), var(--k-shadow-lg);
+}
+
+.k-card--interactive:hover {
+  box-shadow: var(--k-glass-rim), var(--k-shadow-lg);
+}
+
+.k-card--interactive:active {
+  box-shadow: var(--k-glass-rim-soft), var(--k-shadow-sm);
+}
+
+.k-card--flat,
+.k-card--sunken {
+  background-image: none;
+  box-shadow: none;
+}
+
+/* Teintes de verre par nature de contenu : la carte d'un événement n'a pas
+ * tout à fait la même couleur de matière que celle d'une pétition. La nuance
+ * doit rester à la limite du perceptible. */
+.k-glass--event { --k-glass-tint: rgb(255 107 74 / 7%); }
+.k-glass--news { --k-glass-tint: rgb(46 144 250 / 7%); }
+.k-glass--project { --k-glass-tint: rgb(155 92 246 / 7%); }
+.k-glass--petition { --k-glass-tint: rgb(240 140 0 / 8%); }
+.k-glass--consult { --k-glass-tint: rgb(6 174 196 / 7%); }
+.k-glass--asso { --k-glass-tint: rgb(22 179 100 / 7%); }
+.k-glass--quartier { --k-glass-tint: rgb(59 130 246 / 7%); }
+.k-glass--warm { --k-glass-tint: rgb(227 90 53 / 8%); }
+
+/* ------------------------------------------------------------- Réfraction
+ * Le bord courbe ce qui passe derrière. Sans le support de `backdrop-filter:
+ * url()`, cette règle n'est simplement jamais appliquée.
+ */
+@supports (backdrop-filter: url('#k-liquid')) {
+  .k-card,
+  .k-glass {
+    backdrop-filter: url('#k-liquid') blur(14px) saturate(190%);
+    -webkit-backdrop-filter: url('#k-liquid') blur(14px) saturate(190%);
+  }
+
+  .k-glass-thin,
+  .k-material-chrome {
+    backdrop-filter: url('#k-liquid-thin') blur(10px) saturate(200%);
+    -webkit-backdrop-filter: url('#k-liquid-thin') blur(10px) saturate(200%);
+  }
+
+  .k-glass-thick,
+  .k-modal,
+  .k-material-popover {
+    backdrop-filter: url('#k-liquid-thick') blur(20px) saturate(200%);
+    -webkit-backdrop-filter: url('#k-liquid-thick') blur(20px) saturate(200%);
+  }
+
+  /* Une surface qui ne laisse rien passer derrière n'a rien à réfracter. */
+  .k-card--flat,
+  .k-card--sunken {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+/* --------------------------------------------------------------- Reflet
+ * Un halo doux en haut à gauche, comme une source ponctuelle qui glisse sur
+ * la surface. Il ne réagit pas au pointeur : une lumière qui suit la souris
+ * amuse cinq secondes puis distrait en permanence.
+ */
+.k-glass::before,
+.k-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(
+    120% 80% at 12% 0%,
+    rgb(255 255 255 / 42%) 0%,
+    rgb(255 255 255 / 10%) 34%,
+    transparent 62%
+  );
+  opacity: 0.85;
+  transition: opacity var(--k-duration-base) var(--k-ease-out);
+}
+
+.k-card {
+  position: relative;
+}
+
+/* Le reflet vit sous le contenu, jamais devant. */
+.k-card > * {
+  position: relative;
+  z-index: 1;
+}
+
+.k-card--interactive:hover::before {
+  opacity: 1;
+}
+
+.k-card--flat::before,
+.k-card--sunken::before {
+  display: none;
+}
+
+/*
+ * Transparence réduite : plus de teinte, plus de reflet, plus de réfraction.
+ * Le contraste renforcé fait de même, la matière cédant la place à la couleur
+ * franche.
+ */
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  .k-glass,
+  .k-glass-thin,
+  .k-glass-thick,
+  .k-card,
+  .k-material-chrome,
+  .k-modal,
+  .k-toast {
+    background-image: none;
+  }
+
+  .k-glass::before,
+  .k-card::before {
+    display: none;
+  }
+
+  .k-card,
+  .k-glass {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow: var(--k-shadow-sm);
+  }
+}

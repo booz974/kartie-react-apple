@@ -32,7 +32,7 @@ export default function EventCard({ event, onDelete }: EventCardProps) {
     <article
       className={surfaceClass({
         interactive: true,
-        className: 'group relative flex h-full flex-col overflow-hidden',
+        className: 'k-glass--event group relative flex h-full flex-col overflow-hidden',
       })}
     >
       <AdminDeleteButton
