@@ -1,4 +1,9 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
+import Button from '@/components/ui/Button';
+import Field, { Input, Textarea } from '@/components/ui/Field';
+import Icon from '@/components/ui/Icon';
+import Modal from '@/components/ui/Modal';
+import Segmented from '@/components/ui/Segmented';
 
 interface CreateCircleModalProps {
   isAdmin: boolean;
@@ -16,64 +21,95 @@ export default function CreateCircleModal({
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [type, setType] = useState<'public' | 'private'>('private');
+  const [nameError, setNameError] = useState('');
 
-  function handleSubmit() {
-    if (!name.trim()) return;
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+
+    if (!name.trim()) {
+      setNameError('Donnez un nom à votre cercle.');
+      return;
+    }
+
+    setNameError('');
     onSubmit({ name: name.trim(), description: description.trim(), type });
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white p-6 rounded-lg w-full max-w-md">
-        <h3 className="text-lg font-bold mb-4">Créer un nouveau cercle</h3>
-        <input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="Nom du cercle (ex: Jardiniers)"
-          className="w-full border p-2 mb-2 rounded"
-        />
-        <textarea
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="Description..."
-          className="w-full border p-2 mb-4 rounded"
-        />
-        <div className="flex gap-2 mb-4">
-          {isAdmin ? (
-            <label className="flex items-center gap-1 cursor-pointer">
-              <input
-                type="radio"
-                name="circle-type"
-                checked={type === 'public'}
-                onChange={() => setType('public')}
-              />
-              Public
-            </label>
-          ) : null}
-          <label className="flex items-center gap-1 cursor-pointer">
-            <input
-              type="radio"
-              name="circle-type"
-              checked={type === 'private'}
-              onChange={() => setType('private')}
-            />
-            Privé
-          </label>
-        </div>
-        <div className="flex justify-end gap-2">
-          <button type="button" onClick={onCancel} className="text-gray-600">
+    <Modal
+      onClose={onCancel}
+      size="narrow"
+      title="Créer un cercle"
+      description="Un espace de discussion réservé à celles et ceux qui le rejoignent."
+      footer={
+        <>
+          <Button variant="secondary" onClick={onCancel}>
             Annuler
-          </button>
-          <button
-            type="button"
-            onClick={handleSubmit}
-            disabled={isSubmitting}
-            className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+          </Button>
+          <Button
+            variant="primary"
+            form="create-circle-form"
+            type="submit"
+            loading={isSubmitting}
           >
-            {isSubmitting ? 'Création...' : 'Créer'}
-          </button>
-        </div>
-      </div>
-    </div>
+            Créer
+          </Button>
+        </>
+      }
+    >
+      <form id="create-circle-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <Field label="Nom du cercle" error={nameError || undefined}>
+          {(props) => (
+            <Input
+              {...props}
+              value={name}
+              onChange={(event) => {
+                setName(event.target.value);
+                if (nameError) setNameError('');
+              }}
+              placeholder="Jardiniers du Chaudron"
+              maxLength={80}
+              data-autofocus
+            />
+          )}
+        </Field>
+
+        <Field label="Description" optional hint="En une phrase : à qui s’adresse ce cercle ?">
+          {(props) => (
+            <Textarea
+              {...props}
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              placeholder="On échange nos boutures et nos coups de main au jardin."
+              rows={3}
+            />
+          )}
+        </Field>
+
+        {isAdmin ? (
+          <div className="k-field">
+            <span className="k-field__label">Visibilité</span>
+            <Segmented
+              label="Visibilité du cercle"
+              block
+              value={type}
+              onChange={setType}
+              options={[
+                { value: 'private', label: 'Privé', icon: 'lock' },
+                { value: 'public', label: 'Public', icon: 'globe' },
+              ]}
+            />
+            <p className="k-field__hint">
+              Un cercle public est visible et rejoignable par tout le quartier.
+            </p>
+          </div>
+        ) : (
+          <p className="k-footnote k-ink-tertiary flex items-start gap-2">
+            <Icon name="lock" size={15} className="mt-0.5" />
+            Votre cercle sera privé : seuls les membres invités y accèdent.
+          </p>
+        )}
+      </form>
+    </Modal>
   );
 }

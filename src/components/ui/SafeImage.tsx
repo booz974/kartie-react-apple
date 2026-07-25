@@ -1,5 +1,6 @@
 import { useEffect, useState, type HTMLAttributes, type ReactNode } from 'react';
 import { sanitizeStorageUrl } from '@/utils/imageUtils';
+import Icon from './Icon';
 
 interface SafeImageProps extends HTMLAttributes<HTMLImageElement | HTMLDivElement> {
   src?: string | null;
@@ -33,30 +34,15 @@ export default function SafeImage({
     );
   }
 
+  // Repli neutre : il occupe exactement la place de l'image, sans attirer l'œil
+  // ni faire sauter la mise en page au moment du remplacement.
   return (
     <div
-      className={`flex items-center justify-center bg-slate-200 text-slate-400 overflow-hidden ${className ?? ''}`}
+      className={`flex items-center justify-center overflow-hidden bg-surface-secondary text-ink-quaternary ${className ?? ''}`}
       title={alt}
       {...rest}
     >
-      {fallback ?? (
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="opacity-50"
-        >
-          <rect width="18" height="18" x="3" y="3" rx="2" ry="2" />
-          <circle cx="9" cy="9" r="2" />
-          <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
-        </svg>
-      )}
+      {fallback ?? <Icon name="image" size={24} />}
     </div>
   );
 }

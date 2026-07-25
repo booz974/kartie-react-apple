@@ -10,22 +10,25 @@ import {
   Tooltip,
 } from 'chart.js';
 import { getEngagementParQuartier } from '@/api/charts';
+import { Section } from '@/components/ui/Page';
+import { CHART_COLORS, baseChartOptions } from '@/design/chartTheme';
 
 ChartJS.register(Title, Tooltip, Legend, BarElement, CategoryScale, LinearScale);
+
+const DATASET_LABEL = 'Participants aux consultations';
 
 export default function ModuleQuartiers() {
   const [chartData, setChartData] = useState({
     labels: [] as string[],
     datasets: [
       {
-        label: 'Participants aux consultations',
-        backgroundColor: '#4A90E2',
+        label: DATASET_LABEL,
+        backgroundColor: CHART_COLORS.accent,
+        borderRadius: 6,
         data: [] as number[],
       },
     ],
   });
-
-  const chartOptions = { responsive: true };
 
   useEffect(() => {
     async function fetchData() {
@@ -36,8 +39,9 @@ export default function ModuleQuartiers() {
           labels: top3.map((d) => d.quartier_nom),
           datasets: [
             {
-              label: 'Participants aux consultations',
-              backgroundColor: '#4A90E2',
+              label: DATASET_LABEL,
+              backgroundColor: CHART_COLORS.accent,
+              borderRadius: 6,
               data: top3.map((d) => d.total_participants),
             },
           ],
@@ -48,12 +52,18 @@ export default function ModuleQuartiers() {
   }, []);
 
   return (
-    <section>
-      <h2 className="text-2xl font-semibold mb-4">Thermomètre des Quartiers</h2>
-      <div className="bg-white p-4 rounded-lg shadow">
-        <h3 className="font-bold mb-2">Top 3 de l&apos;Engagement</h3>
-        <Bar data={chartData} options={chartOptions} />
+    <Section title="Thermomètre des quartiers" description="Les trois quartiers les plus engagés.">
+      <div className="rounded-lg border border-separator bg-surface p-5">
+        {chartData.labels.length > 0 ? (
+          <div className="relative h-64">
+            <Bar data={chartData} options={baseChartOptions} />
+          </div>
+        ) : (
+          <p className="k-subhead k-ink-tertiary py-10 text-center">
+            Pas encore assez de participations pour établir un classement.
+          </p>
+        )}
       </div>
-    </section>
+    </Section>
   );
 }

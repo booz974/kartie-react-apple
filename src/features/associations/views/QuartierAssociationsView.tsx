@@ -2,6 +2,15 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import { ASSOCIATION_CATEGORIES, createAssociation } from '@/api/associations';
+import Button from '@/components/ui/Button';
+import EmptyState from '@/components/ui/EmptyState';
+import { Input, Select } from '@/components/ui/Field';
+import Icon from '@/components/ui/Icon';
+import Notice from '@/components/ui/Notice';
+import { Page, PageHeader, Section } from '@/components/ui/Page';
+import Skeleton, { SkeletonText } from '@/components/ui/Skeleton';
+import Surface from '@/components/ui/Surface';
+import { useToast } from '@/components/ui/Toast';
 import AssociationCard from '@/features/associations/components/AssociationCard';
 import AssociationForm, {
   type AssociationFormPayload,
@@ -11,9 +20,27 @@ import { useQuartier } from '@/queries/territory';
 import { useAuthStore } from '@/stores/authStore';
 import type { Association } from '@/lib/types/contract';
 
+/** Gabarit calqué sur AssociationCard : le remplacement ne déplace rien. */
+function AssociationCardSkeleton() {
+  return (
+    <Surface className="flex flex-col gap-4">
+      <div className="flex items-start gap-4">
+        <Skeleton width="3.5rem" height="3.5rem" radius="var(--k-radius-lg)" />
+        <div className="flex-1">
+          <Skeleton height="1.25rem" width="70%" />
+          <Skeleton height="1rem" width="40%" className="mt-2" />
+        </div>
+      </div>
+      <SkeletonText lines={3} />
+      <Skeleton height="2.75rem" width="9rem" radius="var(--k-radius-md)" />
+    </Surface>
+  );
+}
+
 export default function QuartierAssociationsView() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const toast = useToast();
   const { id: idParam } = useParams<{ id: string }>();
   const quartierId = idParam ? parseInt(idParam, 10) : undefined;
 
@@ -57,6 +84,7 @@ export default function QuartierAssociationsView() {
   }, [associations, search, selectedCategory]);
 
   const isLoading = quartierLoading || associationsLoading;
+  const hasFilters = Boolean(search.trim() || selectedCategory);
 
   function openAssociation(association: Association) {
     navigate(`/associations/${association.slug || association.id}`);
@@ -97,7 +125,7 @@ export default function QuartierAssociationsView() {
         result.error instanceof Error
           ? result.error.message
           : String((result.error as { message?: string })?.message || result.error);
-      alert(`Impossible de créer l'association : ${message}`);
+      toast.error("Impossible de créer l'association", message);
       return;
     }
 
@@ -108,102 +136,131 @@ export default function QuartierAssociationsView() {
     navigate(`/associations/${result.associationId}/dashboard`);
   }
 
-  if (!quartier && !isLoading) {
-    return (
-      <div className="p-10 text-center">
-        <p className="text-xl font-semibold text-slate-700">Chargement...</p>
-      </div>
-    );
-  }
-
   if (!quartier) {
     return (
-      <div className="p-10 text-center">
-        <p className="text-xl font-semibold text-slate-700">Chargement...</p>
-      </div>
+      <Page className="pt-6 md:pt-10">
+        <PageHeader eyebrow="Vie associative" title="Associations du quartier" />
+        <div className="k-grid k-grid--wide">
+          {Array.from({ length: 6 }, (_, index) => (
+            <AssociationCardSkeleton key={index} />
+          ))}
+        </div>
+      </Page>
     );
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={() => navigate(`/quartiers/${quartier.id}`)}
-          className="inline-flex items-center gap-2 rounded-full bg-white/70 px-5 py-2.5 text-sm font-bold text-slate-800 shadow transition hover:bg-white"
-        >
-          Retour au quartier
-        </button>
-
-        {session ? (
-          <button
-            type="button"
-            onClick={() => setShowCreateForm((prev) => !prev)}
-            className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800"
-          >
-            {showCreateForm ? 'Fermer le formulaire' : 'Proposer une association'}
-          </button>
-        ) : null}
-      </div>
-
-      <section className="desktop-glass-card mb-8 rounded-[2rem] p-6 md:p-8">
-        <h1 className="text-3xl font-black tracking-tight text-slate-900 md:text-5xl">
-          Associations de {quartier.name}
-        </h1>
-        <p className="mt-3 max-w-3xl text-base text-slate-700 md:text-lg">
-          Découvrez la vie associative locale, suivez vos initiatives préférées et retrouvez leurs
-          événements dans le quartier.
-        </p>
-      </section>
+    <Page className="pt-6 md:pt-10">
+      <PageHeader
+        back={{ to: `/quartiers/${quartier.id}`, label: 'Retour au quartier' }}
+        eyebrow="Vie associative"
+        title={`Associations de ${quartier.name}`}
+        description="Découvrez la vie associative locale, suivez vos initiatives préférées et retrouvez leurs événements dans le quartier."
+        actions={
+          session ? (
+            <Button
+              variant={showCreateForm ? 'secondary' : 'primary'}
+              onClick={() => setShowCreateForm((prev) => !prev)}
+              leading={<Icon name={showCreateForm ? 'close' : 'plus'} size={17} />}
+            >
+              {showCreateForm ? 'Fermer le formulaire' : 'Proposer une association'}
+            </Button>
+          ) : null
+        }
+      />
 
       {showCreateForm ? (
-        <AssociationForm
-          className="mb-8"
-          showCancel
-          submitLabel="Créer l’association"
-          onCancel={() => setShowCreateForm(false)}
-          onSubmit={handleCreateAssociation}
-        />
+        <Section>
+          <AssociationForm
+            showCancel
+            submitLabel="Créer l’association"
+            submitting={isCreating}
+            onCancel={() => setShowCreateForm(false)}
+            onSubmit={handleCreateAssociation}
+          />
+        </Section>
       ) : null}
 
-      <section className="desktop-glass-card rounded-[2rem] p-5 md:p-6">
-        <div className="mb-6 grid gap-4 md:grid-cols-[1fr_220px]">
-          <input
-            value={search}
-            onChange={(event) => setSearch(event.target.value)}
-            type="search"
-            placeholder="Rechercher une association..."
-            className="w-full rounded-2xl border border-white/30 bg-white/80 px-4 py-3"
-          />
-          <select
-            value={selectedCategory}
-            onChange={(event) => setSelectedCategory(event.target.value)}
-            className="w-full rounded-2xl border border-white/30 bg-white/80 px-4 py-3"
-          >
-            <option value="">Toutes les catégories</option>
-            {ASSOCIATION_CATEGORIES.map((category) => (
-              <option key={category.value} value={category.value}>
-                {category.label}
-              </option>
-            ))}
-          </select>
+      <Section
+        title="Toutes les associations"
+        description={
+          isLoading
+            ? undefined
+            : `${filteredAssociations.length} association(s) dans ${quartier.name}.`
+        }
+      >
+        <div className="mb-6 flex flex-col gap-4">
+          <div className="grid gap-3 md:grid-cols-[1fr_16rem]">
+            <Input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Rechercher une association"
+              aria-label="Rechercher une association"
+            />
+            <Select
+              value={selectedCategory}
+              onChange={(event) => setSelectedCategory(event.target.value)}
+              aria-label="Filtrer par catégorie"
+            >
+              <option value="">Toutes les catégories</option>
+              {ASSOCIATION_CATEGORIES.map((category) => (
+                <option key={category.value} value={category.value}>
+                  {category.label}
+                </option>
+              ))}
+            </Select>
+          </div>
+
+          {session ? (
+            <Notice tone="info">
+              Les associations en attente que vous gérez restent visibles ici pour vous, mais elles
+              ne sont pas encore publiques.
+            </Notice>
+          ) : null}
         </div>
 
-        {session ? (
-          <p className="mb-6 rounded-2xl bg-blue-50 px-4 py-3 text-sm font-medium text-blue-700">
-            Les associations en attente que vous gérez restent visibles ici pour vous, mais elles ne
-            sont pas encore publiques.
-          </p>
-        ) : null}
-
         {isLoading ? (
-          <div className="py-12 text-center text-slate-600">Chargement des associations...</div>
-        ) : filteredAssociations.length === 0 ? (
-          <div className="rounded-3xl bg-white/60 p-10 text-center text-slate-600">
-            Aucune association ne correspond à votre recherche.
+          <div className="k-grid k-grid--wide">
+            {Array.from({ length: 6 }, (_, index) => (
+              <AssociationCardSkeleton key={index} />
+            ))}
           </div>
+        ) : filteredAssociations.length === 0 ? (
+          <EmptyState
+            icon="handshake"
+            title={hasFilters ? 'Aucun résultat' : 'Aucune association pour l’instant'}
+            description={
+              hasFilters
+                ? 'Aucune association ne correspond à votre recherche dans ce quartier.'
+                : session
+                  ? 'Soyez le premier à référencer une association de votre quartier.'
+                  : 'Connectez-vous pour proposer la première association de ce quartier.'
+            }
+            action={
+              hasFilters ? (
+                <Button
+                  variant="secondary"
+                  onClick={() => {
+                    setSearch('');
+                    setSelectedCategory('');
+                  }}
+                >
+                  Réinitialiser les filtres
+                </Button>
+              ) : session ? (
+                <Button
+                  variant="primary"
+                  onClick={() => setShowCreateForm(true)}
+                  leading={<Icon name="plus" size={17} />}
+                >
+                  Proposer une association
+                </Button>
+              ) : null
+            }
+          />
         ) : (
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          <div className="k-grid k-grid--wide">
             {filteredAssociations.map((association) => (
               <AssociationCard
                 key={association.id}
@@ -219,7 +276,7 @@ export default function QuartierAssociationsView() {
             ))}
           </div>
         )}
-      </section>
-    </div>
+      </Section>
+    </Page>
   );
 }

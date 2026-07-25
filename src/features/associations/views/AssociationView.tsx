@@ -1,5 +1,13 @@
 import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
+import Badge from '@/components/ui/Badge';
+import Button from '@/components/ui/Button';
+import EmptyState from '@/components/ui/EmptyState';
+import Icon from '@/components/ui/Icon';
+import { Page } from '@/components/ui/Page';
+import Segmented from '@/components/ui/Segmented';
+import Skeleton, { SkeletonText } from '@/components/ui/Skeleton';
+import { useToast } from '@/components/ui/Toast';
 import AssociationEventCard from '@/features/associations/components/AssociationEventCard';
 import AssociationFollowButton from '@/features/associations/components/AssociationFollowButton';
 import AssociationHeader from '@/features/associations/components/AssociationHeader';
@@ -8,15 +16,16 @@ import { useAuthStore } from '@/stores/authStore';
 import type { AssociationEvent } from '@/lib/types/contract';
 
 const TABS = [
-  { id: 'about', label: 'À propos' },
-  { id: 'posts', label: 'Publications' },
-  { id: 'events', label: 'Événements' },
+  { value: 'about', label: 'À propos' },
+  { value: 'posts', label: 'Publications' },
+  { value: 'events', label: 'Événements' },
 ] as const;
 
-type TabId = (typeof TABS)[number]['id'];
+type TabId = (typeof TABS)[number]['value'];
 
 export default function AssociationView() {
   const navigate = useNavigate();
+  const toast = useToast();
   const { id: idParam } = useParams<{ id: string }>();
 
   const session = useAuthStore((state) => state.session);
@@ -54,51 +63,79 @@ export default function AssociationView() {
   }
 
   function handleAuthRequired() {
-    alert('Connectez-vous pour suivre cette association.');
+    toast.info('Connectez-vous pour suivre cette association.');
   }
 
   if (isLoading) {
     return (
-      <div className="p-10 text-center">
-        <p className="text-xl font-semibold text-slate-700">Chargement de l'association...</p>
-      </div>
+      <Page className="pt-6 md:pt-10">
+        <div className="flex flex-col gap-5">
+          <Skeleton height="9rem" radius="var(--k-radius-xl)" />
+          <div className="flex items-start gap-4">
+            <Skeleton width="4rem" height="4rem" radius="var(--k-radius-xl)" />
+            <div className="flex-1">
+              <Skeleton height="1rem" width="8rem" />
+              <Skeleton height="2rem" width="60%" className="mt-3" />
+              <Skeleton height="1rem" width="80%" className="mt-3" />
+            </div>
+          </div>
+        </div>
+        <div className="mt-10">
+          <SkeletonText lines={5} />
+        </div>
+      </Page>
     );
   }
 
   if (isNotFound || !association) {
     return (
-      <div className="p-10 text-center">
-        <p className="text-xl font-semibold text-slate-700">Association introuvable.</p>
-      </div>
+      <Page className="pt-6 md:pt-10">
+        <h1 className="k-visually-hidden">Association introuvable</h1>
+        <EmptyState
+          icon="handshake"
+          title="Association introuvable"
+          description="Cette association n’existe pas ou n’est plus publiée."
+          action={
+            <Button variant="primary" onClick={() => navigate('/quartiers')}>
+              Parcourir les quartiers
+            </Button>
+          }
+        />
+      </Page>
     );
   }
 
   const followersCount = Math.max(0, (association.followers_count || 0) + followersDelta);
+  const activities = Array.isArray(association.activities) ? association.activities : [];
+  const audiences = Array.isArray(association.audiences) ? association.audiences : [];
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6">
+    <Page className="pt-6 md:pt-10">
       <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <button
-          type="button"
+        <Button
+          variant="plain"
           onClick={goBack}
-          className="inline-flex items-center gap-2 rounded-full bg-white/70 px-5 py-2.5 text-sm font-bold text-slate-800 shadow transition hover:bg-white"
+          className="-ml-1"
+          leading={<Icon name="chevronLeft" size={16} />}
         >
           Retour
-        </button>
+        </Button>
 
         {canManage ? (
-          <button
-            type="button"
+          <Button
+            variant="secondary"
             onClick={() => navigate(`/associations/${association.id}/dashboard`)}
-            className="rounded-full bg-slate-900 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-slate-800"
+            leading={<Icon name="settings" size={17} />}
           >
-            Gérer l'association
-          </button>
+            Gérer l’association
+          </Button>
         ) : null}
       </div>
 
       <AssociationHeader
         association={association}
+        quartierName={quartierName}
+        followersCount={followersCount}
         actions={
           <AssociationFollowButton
             associationId={association.id}
@@ -110,163 +147,222 @@ export default function AssociationView() {
         }
       />
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
-        <div className="space-y-8">
-          <section className="rounded-3xl bg-white p-6 shadow-lg">
-            <div className="mb-4 flex gap-2">
-              {TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={[
-                    'rounded-full px-4 py-2 text-sm font-bold transition',
-                    activeTab === tab.id
-                      ? 'bg-slate-900 text-white'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200',
-                  ].join(' ')}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
+      <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:gap-14">
+        <div>
+          <Segmented
+            label="Contenus de l’association"
+            value={activeTab}
+            onChange={setActiveTab}
+            options={TABS}
+            className="mb-7"
+          />
 
-            {activeTab === 'about' ? (
-              <div className="space-y-5">
-                {association.full_description ? (
-                  <div>
-                    <h2 className="mb-2 text-xl font-black text-slate-900">À propos</h2>
-                    <p className="whitespace-pre-line text-slate-700">
-                      {association.full_description as string}
-                    </p>
-                  </div>
-                ) : null}
-                {association.mission ? (
-                  <div>
-                    <h3 className="mb-2 text-lg font-bold text-slate-900">Mission</h3>
-                    <p className="whitespace-pre-line text-slate-700">
-                      {association.mission as string}
-                    </p>
-                  </div>
-                ) : null}
-                {Array.isArray(association.activities) && association.activities.length > 0 ? (
-                  <div>
-                    <h3 className="mb-2 text-lg font-bold text-slate-900">Activités</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {association.activities.map((activity) => (
-                        <span
-                          key={String(activity)}
-                          className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700"
-                        >
-                          {String(activity)}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-                {Array.isArray(association.audiences) && association.audiences.length > 0 ? (
-                  <div>
-                    <h3 className="mb-2 text-lg font-bold text-slate-900">Publics concernés</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {association.audiences.map((audience) => (
-                        <span
-                          key={String(audience)}
-                          className="rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-700"
-                        >
+          {activeTab === 'about' ? (
+            <div className="flex flex-col gap-8">
+              {association.full_description ? (
+                <section>
+                  <h2 className="k-title-3">À propos</h2>
+                  <p className="k-body k-ink-secondary k-measure mt-3 whitespace-pre-line">
+                    {association.full_description as string}
+                  </p>
+                </section>
+              ) : null}
+
+              {association.mission ? (
+                <section>
+                  <h2 className="k-title-3">Mission</h2>
+                  <p className="k-body k-ink-secondary k-measure mt-3 whitespace-pre-line">
+                    {association.mission as string}
+                  </p>
+                </section>
+              ) : null}
+
+              {activities.length > 0 ? (
+                <section>
+                  <h2 className="k-title-3">Activités</h2>
+                  <ul className="mt-3 flex flex-wrap gap-2">
+                    {activities.map((activity) => (
+                      <li key={String(activity)}>
+                        <Badge pill>{String(activity)}</Badge>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
+
+              {audiences.length > 0 ? (
+                <section>
+                  <h2 className="k-title-3">Publics concernés</h2>
+                  <ul className="mt-3 flex flex-wrap gap-2">
+                    {audiences.map((audience) => (
+                      <li key={String(audience)}>
+                        <Badge tone="accent" pill>
                           {String(audience)}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            ) : null}
+                        </Badge>
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ) : null}
 
-            {activeTab === 'posts' ? (
-              <div className="space-y-4">
-                {posts.length === 0 ? (
-                  <div className="rounded-2xl bg-slate-50 p-8 text-center text-slate-500">
-                    Aucune publication pour le moment.
-                  </div>
-                ) : (
-                  posts.map((post) => (
-                    <article key={post.id} className="rounded-2xl border border-slate-200 p-5">
-                      {post.title ? (
-                        <p className="mb-2 text-lg font-bold text-slate-900">{post.title}</p>
-                      ) : null}
-                      <p className="mb-3 whitespace-pre-line text-slate-700">
-                        {post.content as string}
-                      </p>
-                      {post.image_url ? (
-                        <img
-                          src={post.image_url}
-                          alt={post.title || association.name}
-                          className="max-h-80 w-full rounded-2xl object-cover"
-                        />
-                      ) : null}
-                    </article>
-                  ))
-                )}
-              </div>
-            ) : null}
+              {!association.full_description &&
+              !association.mission &&
+              activities.length === 0 &&
+              audiences.length === 0 ? (
+                <EmptyState
+                  icon="document"
+                  title="Présentation à venir"
+                  description="Cette association n’a pas encore détaillé ses activités."
+                />
+              ) : null}
+            </div>
+          ) : null}
 
-            {activeTab === 'events' ? (
-              <div className="space-y-4">
-                {events.length === 0 ? (
-                  <div className="rounded-2xl bg-slate-50 p-8 text-center text-slate-500">
-                    Aucun événement publié.
-                  </div>
-                ) : (
-                  events.map((event) => (
-                    <AssociationEventCard key={event.id} event={event} onOpen={openEvent} />
-                  ))
-                )}
+          {activeTab === 'posts' ? (
+            posts.length === 0 ? (
+              <EmptyState
+                icon="megaphone"
+                title="Aucune publication"
+                description="Les publications de l’association apparaîtront ici, ainsi que dans le fil du quartier."
+              />
+            ) : (
+              <div className="k-list">
+                {posts.map((post) => (
+                  <article key={post.id} className="py-6 first:pt-0">
+                    {post.title ? <h2 className="k-title-3">{post.title}</h2> : null}
+                    <p className="k-body k-ink-secondary k-measure mt-2 whitespace-pre-line">
+                      {post.content as string}
+                    </p>
+                    {post.image_url ? (
+                      <img
+                        src={post.image_url}
+                        alt={post.title || association.name}
+                        loading="lazy"
+                        className="mt-4 max-h-80 w-full rounded-lg border border-separator object-cover"
+                      />
+                    ) : null}
+                  </article>
+                ))}
               </div>
-            ) : null}
-          </section>
+            )
+          ) : null}
+
+          {activeTab === 'events' ? (
+            events.length === 0 ? (
+              <EmptyState
+                icon="calendar"
+                title="Aucun événement publié"
+                description="Dès qu’un événement est programmé, il apparaît ici et dans l’agenda du quartier."
+              />
+            ) : (
+              <div className="k-grid">
+                {events.map((event) => (
+                  <AssociationEventCard key={event.id} event={event} onOpen={openEvent} />
+                ))}
+              </div>
+            )
+          ) : null}
         </div>
 
-        <aside className="space-y-6">
-          <section className="rounded-3xl bg-white p-6 shadow-lg">
-            <h2 className="mb-4 text-xl font-black text-slate-900">Infos pratiques</h2>
-            <div className="space-y-3 text-sm text-slate-700">
-              {association.address_text ? <p>{association.address_text as string}</p> : null}
-              {association.contact_email ? <p>{association.contact_email as string}</p> : null}
-              {association.contact_phone ? <p>{association.contact_phone as string}</p> : null}
-              {association.website_url ? (
-                <p>
-                  <a
-                    href={association.website_url as string}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="font-semibold text-blue-600 hover:underline"
-                  >
-                    Site web
-                  </a>
-                </p>
+        <aside className="flex flex-col gap-10">
+          <section>
+            <h2 className="k-title-3">Infos pratiques</h2>
+            <dl className="k-list mt-3">
+              {association.address_text ? (
+                <div className="flex items-start gap-3 py-3 first:pt-0">
+                  <Icon name="mapPin" size={18} className="k-ink-tertiary mt-0.5" />
+                  <div className="min-w-0">
+                    <dt className="k-caption k-ink-tertiary">Adresse</dt>
+                    <dd className="k-subhead k-ink break-words">
+                      {association.address_text as string}
+                    </dd>
+                  </div>
+                </div>
               ) : null}
-              <p>{followersCount} abonné(s)</p>
-            </div>
+
+              {association.contact_email ? (
+                <div className="flex items-start gap-3 py-3 first:pt-0">
+                  <Icon name="mail" size={18} className="k-ink-tertiary mt-0.5" />
+                  <div className="min-w-0">
+                    <dt className="k-caption k-ink-tertiary">E-mail</dt>
+                    <dd className="k-subhead break-words">
+                      <a
+                        href={`mailto:${association.contact_email as string}`}
+                        className="text-accent hover:underline"
+                      >
+                        {association.contact_email as string}
+                      </a>
+                    </dd>
+                  </div>
+                </div>
+              ) : null}
+
+              {association.contact_phone ? (
+                <div className="flex items-start gap-3 py-3 first:pt-0">
+                  <Icon name="phone" size={18} className="k-ink-tertiary mt-0.5" />
+                  <div className="min-w-0">
+                    <dt className="k-caption k-ink-tertiary">Téléphone</dt>
+                    <dd className="k-subhead break-words">
+                      <a
+                        href={`tel:${association.contact_phone as string}`}
+                        className="text-accent hover:underline"
+                      >
+                        {association.contact_phone as string}
+                      </a>
+                    </dd>
+                  </div>
+                </div>
+              ) : null}
+
+              {association.website_url ? (
+                <div className="flex items-start gap-3 py-3 first:pt-0">
+                  <Icon name="link" size={18} className="k-ink-tertiary mt-0.5" />
+                  <div className="min-w-0">
+                    <dt className="k-caption k-ink-tertiary">Site web</dt>
+                    <dd className="k-subhead break-words">
+                      <a
+                        href={association.website_url as string}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-1.5 text-accent hover:underline"
+                      >
+                        Ouvrir le site
+                        <Icon name="externalLink" size={15} />
+                      </a>
+                    </dd>
+                  </div>
+                </div>
+              ) : null}
+
+              <div className="flex items-start gap-3 py-3 first:pt-0">
+                <Icon name="users" size={18} className="k-ink-tertiary mt-0.5" />
+                <div className="min-w-0">
+                  <dt className="k-caption k-ink-tertiary">Communauté</dt>
+                  <dd className="k-subhead k-ink tabular-nums">{followersCount} abonné(s)</dd>
+                </div>
+              </div>
+            </dl>
           </section>
 
-          <section className="rounded-3xl bg-white p-6 shadow-lg">
-            <h2 className="mb-4 text-xl font-black text-slate-900">Présence locale</h2>
-            <p className="text-sm leading-relaxed text-slate-700">
+          <section>
+            <h2 className="k-title-3">Présence locale</h2>
+            <p className="k-subhead k-ink-secondary mt-3">
               Cette association est rattachée au quartier {quartierName} et ses publications peuvent
               apparaître dans le fil local.
             </p>
             {association.quartier_id ? (
-              <button
-                type="button"
+              <Button
+                variant="secondary"
+                className="mt-4"
                 onClick={() => navigate(`/quartiers/${association.quartier_id}/associations`)}
-                className="mt-4 rounded-full bg-slate-100 px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-200"
+                trailing={<Icon name="arrowRight" size={16} />}
               >
-                Voir toutes les associations du quartier
-              </button>
+                Associations du quartier
+              </Button>
             ) : null}
           </section>
         </aside>
       </div>
-    </div>
+    </Page>
   );
 }

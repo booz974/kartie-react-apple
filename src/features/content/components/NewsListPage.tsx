@@ -1,3 +1,7 @@
+import Button from '@/components/ui/Button';
+import EmptyState from '@/components/ui/EmptyState';
+import Icon from '@/components/ui/Icon';
+import { Page, PageHeader, Section } from '@/components/ui/Page';
 import NewsCard from '@/features/content/components/NewsCard';
 import type { News } from '@/lib/types/contract';
 
@@ -15,34 +19,42 @@ export default function NewsListPage({
   onDelete,
 }: NewsListPageProps) {
   return (
-    <div className="bg-white rounded-2xl p-4 md:p-8 shadow-lg max-w-6xl mx-auto">
-      <button
-        type="button"
+    <Page className="k-page--reading">
+      <Button
+        variant="plain"
         onClick={onBack}
-        className="mb-8 inline-flex items-center gap-2 bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-full transition hover:bg-gray-300"
+        leading={<Icon name="chevronLeft" size={16} />}
+        className="k-footnote -ml-1 mb-3 font-medium"
       >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
-          <path
-            fillRule="evenodd"
-            d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-            clipRule="evenodd"
-          />
-        </svg>
         Retour au quartier
-      </button>
-      <h2 className="text-4xl font-bold text-center mb-8">
-        Toutes les actualités pour {quartierName}
-      </h2>
-      <div className="grid md:grid-cols-2 gap-8">
-        {newsItems.map((news, index) => (
-          <NewsCard key={news.id ?? index} news={news} onDelete={onDelete} />
-        ))}
-      </div>
-    </div>
+      </Button>
+
+      <PageHeader
+        eyebrow="Actualités"
+        title={`Toutes les actualités pour ${quartierName}`}
+        description="Les informations publiées par la ville et les acteurs du quartier."
+      />
+
+      <Section>
+        {newsItems.length > 0 ? (
+          <div className="k-list">
+            {newsItems.map((news, index) => (
+              <NewsCard key={news.id ?? index} news={news} onDelete={onDelete} />
+            ))}
+          </div>
+        ) : (
+          <EmptyState
+            icon="newspaper"
+            title="Aucune actualité publiée"
+            description={`Rien n'a encore été annoncé pour ${quartierName}. Revenez au quartier pour découvrir ce qui s'y passe.`}
+            action={
+              <Button variant="tinted" onClick={onBack}>
+                Retour au quartier
+              </Button>
+            }
+          />
+        )}
+      </Section>
+    </Page>
   );
 }

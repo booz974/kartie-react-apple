@@ -1,4 +1,5 @@
 import type { Consultation, ConsultationDetails, Petition } from '@/lib/types/contract';
+import type { IconName } from '@/components/ui/Icon';
 
 export interface ConsultationOptionLike {
   id: number;
@@ -25,10 +26,7 @@ export function getConsultationOptions(
   return [];
 }
 
-export function getResultPercentage(
-  votes: number,
-  details: ConsultationDetails | null,
-): number {
+export function getResultPercentage(votes: number, details: ConsultationDetails | null): number {
   if (!details?.options) return 0;
   const totalVotes = details.options.reduce(
     (total, opt) => total + ((opt as ConsultationOptionLike).votes || 0),
@@ -38,52 +36,54 @@ export function getResultPercentage(
   return Math.round((votes / totalVotes) * 100);
 }
 
-export function getVoteButtonClass(index: number): string {
-  const classes = [
-    'bg-gradient-to-r from-green-400/40 to-emerald-500/40 hover:from-green-400/60 hover:to-emerald-500/60 text-green-900',
-    'bg-gradient-to-r from-red-400/40 to-rose-500/40 hover:from-red-400/60 hover:to-rose-500/60 text-red-900',
-    'bg-gradient-to-r from-gray-400/40 to-slate-500/40 hover:from-gray-400/60 hover:to-slate-500/60 text-gray-900',
-    'bg-gradient-to-r from-blue-400/40 to-indigo-500/40 hover:from-blue-400/60 hover:to-indigo-500/60 text-blue-900',
-    'bg-gradient-to-r from-purple-400/40 to-violet-500/40 hover:from-purple-400/60 hover:to-violet-500/60 text-purple-900',
-    'bg-gradient-to-r from-orange-400/40 to-amber-500/40 hover:from-orange-400/60 hover:to-amber-500/60 text-orange-900',
-  ];
-  return classes[index % classes.length] || classes[0];
-}
-
-export function getVoteEmoji(index: number): string {
-  const emojis = ['✅', '❌', '➖', '👍', '👎', '🤷'];
-  return emojis[index] || '✅';
-}
-
 export function formatDateShort(dateString: string | null | undefined): string {
-  if (!dateString) return '📅';
+  if (!dateString) return '—';
   try {
     const date = new Date(dateString);
+    if (Number.isNaN(date.getTime())) return '—';
     const day = date.getDate();
-    const month = date.toLocaleDateString('fr-FR', { month: 'short' });
+    const month = date.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '');
     return `${day} ${month}`;
   } catch {
-    return '📅';
+    return '—';
   }
 }
 
+/**
+ * Teinte d'une catégorie de réalisation.
+ *
+ * Les catégories sont des repères de lecture, pas des alertes : elles restent
+ * neutres et n'empruntent qu'à la palette du produit, pour que la couleur
+ * garde son sens là où elle signale vraiment quelque chose.
+ */
 export function getCategoryColor(category: string | null | undefined): string {
-  const colors: Record<string, string> = {
-    Travaux: 'bg-blue-500/20 text-blue-900',
-    Culture: 'bg-purple-500/20 text-purple-900',
-    Social: 'bg-green-500/20 text-green-900',
-    Économie: 'bg-amber-500/20 text-amber-900',
-    Environnement: 'bg-emerald-500/20 text-emerald-900',
-    Sport: 'bg-red-500/20 text-red-900',
-    Éducation: 'bg-indigo-500/20 text-indigo-900',
+  const emphasised: Record<string, string> = {
+    Travaux: 'bg-accent-soft text-accent',
+    Environnement: 'bg-success-soft text-success',
+    Social: 'bg-success-soft text-success',
+    Culture: 'bg-warm-soft text-warm',
+    Sport: 'bg-warm-soft text-warm',
   };
-  return colors[category ?? ''] || 'bg-slate-500/20 text-slate-900';
+  return emphasised[category ?? ''] ?? 'bg-surface-secondary text-ink-secondary';
 }
 
-export function formatStatValue(
-  value: unknown,
-  removePercent = false,
-): string {
+/** Icône associée à un thème de pétition, pour éviter un mur de puces identiques. */
+export function getPetitionThemeIcon(theme: string | null | undefined): IconName {
+  const value = (theme ?? '').toLowerCase();
+  if (value.includes('transport') || value.includes('mobilité')) return 'road';
+  if (value.includes('sécurité') || value.includes('sécurite')) return 'shield';
+  if (value.includes('environnement') || value.includes('écologie') || value.includes('ecologie')) {
+    return 'leaf';
+  }
+  if (value.includes('logement') || value.includes('habitat')) return 'building';
+  if (value.includes('emploi') || value.includes('économie') || value.includes('economie')) {
+    return 'briefcase';
+  }
+  if (value.includes('culture') || value.includes('sport')) return 'trophy';
+  return 'megaphone';
+}
+
+export function formatStatValue(value: unknown, removePercent = false): string {
   if (!value && value !== 0) return 'N/A';
   const cleanValue = String(value).replace(/%/g, '');
   if (removePercent) {
@@ -97,38 +97,6 @@ export function getPetitionProgress(petition: Petition): number {
   const goal = 100;
   const progress = Math.min((supports / goal) * 100, 100);
   return Math.round(progress);
-}
-
-export function getPetitionThemeColor(theme: string | null | undefined): string {
-  if (!theme) return 'bg-slate-500/20 text-slate-900';
-  const themeLower = theme.toLowerCase();
-  if (themeLower.includes('transport') || themeLower.includes('mobilité')) {
-    return 'bg-blue-500/20 text-blue-900';
-  }
-  if (themeLower.includes('sécurité') || themeLower.includes('sécurite')) {
-    return 'bg-red-500/20 text-red-900';
-  }
-  if (
-    themeLower.includes('environnement') ||
-    themeLower.includes('écologie') ||
-    themeLower.includes('ecologie')
-  ) {
-    return 'bg-green-500/20 text-green-900';
-  }
-  if (themeLower.includes('logement') || themeLower.includes('habitat')) {
-    return 'bg-purple-500/20 text-purple-900';
-  }
-  if (
-    themeLower.includes('emploi') ||
-    themeLower.includes('économie') ||
-    themeLower.includes('economie')
-  ) {
-    return 'bg-amber-500/20 text-amber-900';
-  }
-  if (themeLower.includes('culture') || themeLower.includes('sport')) {
-    return 'bg-pink-500/20 text-pink-900';
-  }
-  return 'bg-slate-500/20 text-slate-900';
 }
 
 export function getOptionText(option: ConsultationOptionLike): string {

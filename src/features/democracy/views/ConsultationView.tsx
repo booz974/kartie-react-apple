@@ -1,5 +1,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
+import Badge from '@/components/ui/Badge';
+import Button from '@/components/ui/Button';
+import EmptyState from '@/components/ui/EmptyState';
+import Icon from '@/components/ui/Icon';
+import Notice from '@/components/ui/Notice';
+import { Page } from '@/components/ui/Page';
+import Progress from '@/components/ui/Progress';
+import Skeleton, { SkeletonText } from '@/components/ui/Skeleton';
+import { useToast } from '@/components/ui/Toast';
 import { castVotes } from '@/api/democracy';
 import { useConsultationDetails } from '@/queries/territory';
 import { useUserConsultationVotes } from '@/queries/democracy';
@@ -17,12 +26,26 @@ function getPercentage(votes: number, totalVotes: number): number {
   return Math.round((votes / totalVotes) * 100);
 }
 
+function BackButton({ onClick }: { onClick: () => void }) {
+  return (
+    <Button
+      variant="plain"
+      onClick={onClick}
+      leading={<Icon name="chevronLeft" size={16} />}
+      className="k-footnote -ml-1 mb-3 font-medium"
+    >
+      Retour
+    </Button>
+  );
+}
+
 export default function ConsultationView() {
   const navigate = useNavigate();
   const { id: idParam } = useParams<{ id: string }>();
   const consultationId = idParam ? parseInt(idParam, 10) : undefined;
 
   const session = useAuthStore((state) => state.session);
+  const toast = useToast();
 
   const {
     data: fetchedConsultation,
@@ -38,6 +61,7 @@ export default function ConsultationView() {
   const [hasVoted, setHasVoted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedOptions, setSelectedOptions] = useState<number | number[] | null>(null);
+  const [selectionError, setSelectionError] = useState('');
 
   useEffect(() => {
     if (fetchedConsultation) {
@@ -83,17 +107,20 @@ export default function ConsultationView() {
         : [];
 
     if (selection.length === 0 || selection[0] === null) {
-      alert('Veuillez sélectionner au moins une option.');
+      // Une erreur de saisie reste au contact du formulaire : elle dit quoi
+      // corriger, à l'endroit où on le corrige.
+      setSelectionError('Sélectionnez au moins une option avant de valider.');
       return;
     }
 
+    setSelectionError('');
     setIsSubmitting(true);
 
     try {
       const result = await castVotes(session.user.id, selection);
       if (!result.success) throw result.error;
 
-      alert('Votre vote a bien été pris en compte !');
+      toast.success('Votre vote est enregistré', 'Merci pour votre participation.');
       setHasVoted(true);
 
       setDetailedConsultation((prev) => {
@@ -110,10 +137,13 @@ export default function ConsultationView() {
       console.error("Erreur lors de l'enregistrement du vote:", err);
       const error = err as { code?: string };
       if (error.code === '23505') {
-        alert('Vous avez déjà voté pour ce sondage.');
+        toast.info('Vous avez déjà voté', 'Voici les résultats de ce sondage.');
         setHasVoted(true);
       } else {
-        alert("Une erreur est survenue lors de l'enregistrement de votre vote.");
+        toast.error(
+          "Votre vote n'a pas pu être enregistré",
+          'Vérifiez votre connexion, puis réessayez.',
+        );
       }
     } finally {
       setIsSubmitting(false);
@@ -121,6 +151,7 @@ export default function ConsultationView() {
   }
 
   function handleOptionChange(optionId: number, checked: boolean, multiple: boolean) {
+    setSelectionError('');
     if (multiple) {
       setSelectedOptions((prev) => {
         const current = Array.isArray(prev) ? prev : [];
@@ -145,161 +176,179 @@ export default function ConsultationView() {
 
   if (isLoading) {
     return (
-      <div className="text-center p-10">
-        <p className="text-xl font-semibold text-gray-700">Chargement du sondage...</p>
-      </div>
+      <Page className="k-page--reading pt-6">
+        <div className="flex flex-col gap-4" aria-busy="true">
+          <Skeleton height="14rem" radius="var(--k-radius-lg)" />
+          <Skeleton height="2rem" className="mt-2" />
+          <SkeletonText lines={3} />
+          <Skeleton height="1.25rem" width="70%" className="mt-6" />
+          <Skeleton height="3.25rem" radius="var(--k-radius-md)" />
+          <Skeleton height="3.25rem" radius="var(--k-radius-md)" />
+          <Skeleton height="3.25rem" radius="var(--k-radius-md)" />
+        </div>
+      </Page>
     );
   }
 
   if (isError) {
     return (
-      <div className="text-center p-10">
-        <p className="text-red-500 font-bold">Erreur : Impossible de charger le sondage.</p>
-        <button
-          type="button"
-          onClick={() => void refetch()}
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          Réessayer
-        </button>
-      </div>
+      <Page className="k-page--reading pt-6">
+        <BackButton onClick={goBack} />
+        <h1 className="k-title-1 mb-4">Consultation</h1>
+        <Notice tone="danger">
+          <p className="font-medium">Impossible de charger ce sondage.</p>
+          <p className="k-footnote mt-1">Vérifiez votre connexion, puis réessayez.</p>
+          <Button variant="secondary" size="sm" className="mt-3" onClick={() => void refetch()}>
+            Réessayer
+          </Button>
+        </Notice>
+      </Page>
     );
   }
 
   if (!detailedConsultation) {
     return (
-      <div className="text-center p-10">
-        <p>Sondage introuvable.</p>
-        <button
-          type="button"
-          onClick={() => navigate('/')}
-          className="mt-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-        >
-          Retour à l&apos;accueil
-        </button>
-      </div>
+      <Page className="k-page--reading pt-6">
+        <h1 className="k-visually-hidden">Sondage introuvable</h1>
+        <EmptyState
+          icon="ballot"
+          title="Ce sondage est introuvable"
+          description="Il a peut-être été clos, ou l'adresse est incorrecte."
+          action={
+            <Button variant="primary" onClick={() => navigate('/')}>
+              Retour à l&apos;accueil
+            </Button>
+          }
+        />
+      </Page>
     );
   }
 
-  const options = detailedConsultation.options as ConsultationOptionWithVotes[];
+  // Une consultation renvoyée sans tableau d'options faisait planter le rendu
+  // entier ; on dégrade vers un état vide explicite.
+  const options = (detailedConsultation.options ?? []) as ConsultationOptionWithVotes[];
   const showResults = !session || hasVoted;
+  const multiple = Boolean(detailedConsultation.multiple_choices);
+  const coverImage = detailedConsultation.cover_image as string | undefined;
+  const description = detailedConsultation.description as string | undefined;
 
   return (
-    <div className="bg-white rounded-2xl p-4 md:p-8 shadow-lg max-w-3xl mx-auto my-8">
-      <button
-        type="button"
-        onClick={goBack}
-        className="mb-8 inline-flex items-center gap-2 bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-full transition hover:bg-gray-300"
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          className="h-5 w-5"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
-          <path
-            fillRule="evenodd"
-            d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-            clipRule="evenodd"
-          />
-        </svg>
-        Retour
-      </button>
+    <Page className="k-page--reading pt-6">
+      <BackButton onClick={goBack} />
 
-      <div>
-        {detailedConsultation.cover_image ? (
+      <article>
+        {coverImage ? (
           <img
-            src={detailedConsultation.cover_image as string}
-            alt={detailedConsultation.title ?? ''}
-            className="w-full h-64 object-cover rounded-xl mb-6"
+            src={coverImage}
+            alt=""
+            className="mb-6 h-64 w-full rounded-lg bg-canvas-sunken object-cover"
           />
         ) : null}
-        <h2 className="text-4xl font-bold text-gray-900 mb-3">{detailedConsultation.title}</h2>
-        <p className="text-gray-800 leading-relaxed mb-8">
-          {detailedConsultation.description as string}
-        </p>
 
-        <div className="bg-gray-50 border border-gray-200 p-6 rounded-xl">
-          <h3 className="text-xl font-bold mb-4">{detailedConsultation.question}</h3>
+        {/* Un sondage ouvert est un moment de participation : c'est le seul
+            endroit de la page où l'accent chaud apparaît. */}
+        {!showResults ? (
+          <Badge tone="warm" dot live className="mb-3">
+            Vote ouvert
+          </Badge>
+        ) : null}
+
+        <h1 className="k-title-large text-balance">{detailedConsultation.title}</h1>
+
+        {description ? (
+          <p className="k-callout k-ink-secondary k-measure mt-4">{description}</p>
+        ) : null}
+
+        <section className="k-hairline-top mt-8 pt-6">
+          <h2 className="k-title-2 text-balance">{detailedConsultation.question}</h2>
 
           {showResults ? (
-            <div>
-              {!session ? (
-                <p className="font-semibold text-blue-700 mb-4">
-                  Connectez-vous pour participer ! Voici les résultats actuels :
-                </p>
-              ) : (
-                <p className="font-semibold text-green-700 mb-4">
-                  Merci d&apos;avoir voté ! Voici les résultats :
-                </p>
-              )}
-
-              {options.map((option) => (
-                <div key={option.id} className="mb-3">
-                  <div className="flex justify-between items-center mb-1 text-sm">
-                    <span className="font-bold">{option.option_text}</span>
-                    <span className="text-gray-600">
-                      {option.votes ?? 0} vote(s) ({getPercentage(option.votes ?? 0, totalVotes)}%)
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-4">
-                    <div
-                      className="bg-indigo-500 h-4 rounded-full"
-                      style={{
-                        width: `${getPercentage(option.votes ?? 0, totalVotes)}%`,
-                      }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div>
-              <p className="text-sm text-gray-500 mb-4">
-                {detailedConsultation.multiple_choices
-                  ? 'Plusieurs choix possibles.'
-                  : 'Un seul choix possible.'}
+            <>
+              <p className="k-subhead k-ink-secondary mt-2">
+                {!session
+                  ? 'Connectez-vous pour participer. Voici les résultats actuels.'
+                  : 'Merci d’avoir voté. Voici les résultats.'}
               </p>
-              <div className="space-y-3">
-                {options.map((option) => (
-                  <label
-                    key={option.id}
-                    className="flex items-center p-3 rounded-lg border bg-white hover:bg-gray-100 cursor-pointer"
-                  >
-                    <input
-                      type={detailedConsultation.multiple_choices ? 'checkbox' : 'radio'}
-                      name="vote-option"
-                      value={option.id}
-                      checked={
-                        detailedConsultation.multiple_choices
-                          ? Array.isArray(selectedOptions) && selectedOptions.includes(option.id)
-                          : selectedOptions === option.id
-                      }
-                      onChange={(e) =>
-                        handleOptionChange(
-                          option.id,
-                          e.target.checked,
-                          Boolean(detailedConsultation.multiple_choices),
-                        )
-                      }
-                      className="h-5 w-5 text-indigo-600 border-gray-300 focus:ring-indigo-500"
-                    />
-                    <span className="ml-3 font-medium text-gray-800">{option.option_text}</span>
-                  </label>
-                ))}
-              </div>
-              <button
-                type="button"
+
+              <ul className="mt-6 flex flex-col gap-5">
+                {options.map((option) => {
+                  const votes = option.votes ?? 0;
+                  const percentage = getPercentage(votes, totalVotes);
+                  return (
+                    <li key={option.id}>
+                      <div className="mb-2 flex items-baseline justify-between gap-4">
+                        <span className="k-subhead font-medium">{option.option_text}</span>
+                        <span className="k-footnote k-ink-tertiary shrink-0 tabular-nums">
+                          {percentage}% · {votes} {votes > 1 ? 'votes' : 'vote'}
+                        </span>
+                      </div>
+                      <Progress
+                        value={percentage}
+                        label={`${option.option_text ?? 'Option'} : ${percentage}%`}
+                      />
+                    </li>
+                  );
+                })}
+              </ul>
+
+              <p className="k-footnote k-ink-tertiary mt-5 tabular-nums">
+                {totalVotes} {totalVotes > 1 ? 'votes exprimés' : 'vote exprimé'}
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="k-subhead k-ink-tertiary mt-2">
+                {multiple ? 'Plusieurs choix possibles.' : 'Un seul choix possible.'}
+              </p>
+
+              <fieldset className="mt-5">
+                <legend className="k-visually-hidden">{detailedConsultation.question}</legend>
+
+                <div className="k-list k-hairline-all overflow-hidden rounded-lg bg-surface">
+                  {options.map((option) => (
+                    <label
+                      key={option.id}
+                      className="k-press-subtle flex cursor-pointer items-center gap-3 px-4 py-3.5 hover:bg-surface-secondary"
+                    >
+                      <input
+                        type={multiple ? 'checkbox' : 'radio'}
+                        name="vote-option"
+                        value={option.id}
+                        checked={
+                          multiple
+                            ? Array.isArray(selectedOptions) && selectedOptions.includes(option.id)
+                            : selectedOptions === option.id
+                        }
+                        onChange={(e) => handleOptionChange(option.id, e.target.checked, multiple)}
+                        className="h-5 w-5 shrink-0 accent-accent"
+                      />
+                      <span className="k-body">{option.option_text}</span>
+                    </label>
+                  ))}
+                </div>
+              </fieldset>
+
+              {selectionError ? (
+                <Notice tone="danger" className="mt-4">
+                  {selectionError}
+                </Notice>
+              ) : null}
+
+              <Button
+                variant="warm"
+                size="lg"
+                block
+                className="mt-6"
                 onClick={() => void submitVote()}
                 disabled={isSubmitting}
-                className="mt-6 w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition disabled:bg-gray-400"
+                loading={isSubmitting}
               >
-                {isSubmitting ? 'Vote en cours...' : 'Valider mon choix'}
-              </button>
-            </div>
+                Valider mon choix
+              </Button>
+            </>
           )}
-        </div>
-      </div>
-    </div>
+        </section>
+      </article>
+    </Page>
   );
 }

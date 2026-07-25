@@ -1,9 +1,9 @@
 /*
  * Point d'entrée des styles.
  *
- * Ordre de la cascade : tokens, fondations Kartie, primitives, couche de
- * compatibilité, puis les utilitaires Tailwind — qui arrivent en dernier et
- * gardent donc le dernier mot sur les primitives.
+ * Ordre de la cascade : tokens, fondations Kartie, primitives, puis les
+ * utilitaires Tailwind — qui arrivent en dernier et gardent donc le dernier
+ * mot sur les primitives.
  *
  * Rien n'est placé dans un `@layer` Tailwind : cette couche est élaguée en
  * fonction des chaînes littérales trouvées dans les sources, et les classes
@@ -13,7 +13,6 @@
 @import '../design/tokens.css';
 @import '../design/base.css';
 @import '../design/components.css';
-@import './legacy.css';
 
 @tailwind base;
 @tailwind components;

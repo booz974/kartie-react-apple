@@ -1,5 +1,6 @@
-import { useNavigate } from 'react-router';
+import { Link } from 'react-router';
 import AdminDeleteButton from '@/components/ui/AdminDeleteButton';
+import Icon from '@/components/ui/Icon';
 import type { News } from '@/lib/types/contract';
 
 interface NewsCardProps {
@@ -7,30 +8,39 @@ interface NewsCardProps {
   onDelete: (id: number) => void;
 }
 
+/**
+ * Rangée d'actualité.
+ *
+ * Une actualité est du texte : elle se lit mieux dans une liste séparée par
+ * des filets que dans une carte de plus. Le conteneur (`k-list`) porte le
+ * filet, la rangée ne porte que son rythme.
+ */
 export default function NewsCard({ news, onDelete }: NewsCardProps) {
-  const navigate = useNavigate();
-
-  function navigateToNews() {
-    navigate(`/actualites/${news.id}`);
-  }
-
   return (
-    <div
-      className="relative news-card bg-gray-50 p-6 rounded-xl h-full cursor-pointer hover:shadow-md transition-all"
-      onClick={navigateToNews}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          navigateToNews();
-        }
-      }}
-      role="button"
-      tabIndex={0}
-    >
+    <article className="k-press-subtle relative py-5">
       <AdminDeleteButton tableName="actualites" itemId={news.id} onDeleted={onDelete} />
-      <p className="text-sm text-gray-500 mb-2">{news.date}</p>
-      <h4 className="font-bold text-lg text-gray-800 mb-3">{news.title}</h4>
-      <p className="text-sm text-gray-700">{news.content}</p>
-    </div>
+
+      <div className="pr-12">
+        {news.date ? <p className="k-caption k-ink-tertiary mb-1.5">{news.date}</p> : null}
+
+        <h3 className="k-title-3 text-balance">
+          <Link
+            to={`/actualites/${news.id}`}
+            className="after:absolute after:inset-0 after:content-['']"
+          >
+            {news.title}
+          </Link>
+        </h3>
+
+        {news.content ? (
+          <p className="k-body k-ink-secondary k-measure mt-2 line-clamp-3">{news.content}</p>
+        ) : null}
+
+        <p className="k-footnote mt-3 flex items-center gap-1 font-medium text-accent">
+          Lire l&apos;actualité
+          <Icon name="arrowRight" size={15} />
+        </p>
+      </div>
+    </article>
   );
 }

@@ -1,3 +1,7 @@
+import Badge from '@/components/ui/Badge';
+import Button from '@/components/ui/Button';
+import Icon from '@/components/ui/Icon';
+import Surface from '@/components/ui/Surface';
 import type { AssociationEvent } from '@/lib/types/contract';
 
 const STATUS_LABELS: Record<string, string> = {
@@ -8,13 +12,24 @@ const STATUS_LABELS: Record<string, string> = {
   removed: 'Retiré',
 };
 
-const STATUS_CLASSES: Record<string, string> = {
-  draft: 'bg-amber-100 text-amber-700',
-  published: 'bg-emerald-100 text-emerald-700',
-  cancelled: 'bg-rose-100 text-rose-700',
-  archived: 'bg-slate-100 text-slate-700',
-  removed: 'bg-red-100 text-red-700',
+type StatusTone = 'neutral' | 'success' | 'warning' | 'danger';
+
+const STATUS_TONES: Record<string, StatusTone> = {
+  draft: 'warning',
+  published: 'success',
+  cancelled: 'danger',
+  archived: 'neutral',
+  removed: 'danger',
 };
+
+/** Libellé lisible d'un statut d'événement — la donnée reste inchangée. */
+export function eventStatusLabel(status: string): string {
+  return STATUS_LABELS[status] || status;
+}
+
+export function eventStatusTone(status: string): StatusTone {
+  return STATUS_TONES[status] || 'neutral';
+}
 
 interface AssociationEventCardProps {
   event: AssociationEvent;
@@ -29,63 +44,52 @@ export default function AssociationEventCard({
   onOpen,
   onEdit,
 }: AssociationEventCardProps) {
-  const statusLabel = STATUS_LABELS[event.status] || event.status;
-  const statusClass = STATUS_CLASSES[event.status] || 'bg-slate-100 text-slate-700';
-
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-all hover:-translate-y-1 hover:shadow-lg">
-      <div className="mb-4 flex items-start justify-between gap-3">
-        <div>
-          <p className="mb-1 text-xs font-bold uppercase tracking-wide text-blue-600">
-            {event.display_date}
-          </p>
-          <h3 className="text-lg font-bold text-slate-900">{event.title}</h3>
+    <Surface className="flex h-full flex-col gap-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="k-eyebrow text-accent">{event.display_date}</p>
+          <h3 className="k-title-3 mt-1 text-balance">{event.title}</h3>
         </div>
-        <span
-          className={`rounded-full px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide ${statusClass}`}
-        >
-          {statusLabel}
-        </span>
+        <Badge tone={eventStatusTone(event.status)}>{eventStatusLabel(event.status)}</Badge>
       </div>
 
-      <p className="mb-4 line-clamp-3 text-sm leading-relaxed text-slate-700">
-        {event.description as string}
-      </p>
+      <p className="k-subhead k-ink-secondary line-clamp-3">{event.description as string}</p>
 
-      <div className="space-y-2 text-sm text-slate-600">
-        <p>{event.location}</p>
+      <div className="k-footnote k-ink-tertiary flex flex-col gap-1.5">
+        {event.location ? (
+          <span className="inline-flex items-start gap-1.5">
+            <Icon name="mapPin" size={15} className="mt-0.5" />
+            <span className="min-w-0 break-words">{event.location}</span>
+          </span>
+        ) : null}
         {event.external_url ? (
-          <p>
-            <a
-              href={event.external_url as string}
-              target="_blank"
-              rel="noreferrer"
-              className="font-semibold text-blue-600 hover:underline"
-            >
-              Lien externe
-            </a>
-          </p>
+          <a
+            href={event.external_url as string}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex w-fit items-center gap-1.5 font-medium text-accent hover:underline"
+          >
+            <Icon name="externalLink" size={15} />
+            Lien externe
+          </a>
         ) : null}
       </div>
 
-      <div className="mt-4 flex gap-2">
-        <button
-          type="button"
+      <div className="k-hairline-top mt-auto flex flex-wrap items-center gap-2 pt-4">
+        <Button
+          variant="tinted"
           onClick={() => onOpen(event)}
-          className="rounded-full bg-slate-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-800"
+          trailing={<Icon name="chevronRight" size={16} />}
         >
           Voir le détail
-        </button>
+        </Button>
         {canEdit && onEdit ? (
-          <button
-            type="button"
-            onClick={() => onEdit(event)}
-            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-200"
-          >
+          <Button variant="ghost" onClick={() => onEdit(event)} leading={<Icon name="pencil" size={16} />}>
             Modifier
-          </button>
+          </Button>
         ) : null}
       </div>
-    </div>
+    </Surface>
   );
 }

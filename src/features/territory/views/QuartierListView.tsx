@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
+import { Page } from '@/components/ui/Page';
+import { SkeletonText } from '@/components/ui/Skeleton';
+import { useToast } from '@/components/ui/Toast';
 import CreateArticleForm from '@/features/content/components/CreateArticleForm';
 import CreateEventForm from '@/features/content/components/CreateEventForm';
 import CreateNewsForm from '@/features/content/components/CreateNewsForm';
@@ -35,6 +38,7 @@ export default function QuartierListView() {
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const session = useAuthStore((state) => state.session);
+  const toast = useToast();
 
   const type = searchParams.get('type') as ListType | null;
   const isCreating = searchParams.get('create') === 'true';
@@ -170,42 +174,27 @@ export default function QuartierListView() {
     } catch (err) {
       console.error('Erreur création réalisation :', err);
       const message = err instanceof Error ? err.message : 'Erreur inconnue';
-      alert(`Erreur: ${message}`);
+      toast.error('Réalisation non créée', message);
     }
   }
 
   const quartierName = useMemo(() => quartier?.name ?? '', [quartier]);
 
   if (!quartier) {
-    return <div className="text-center p-10">Chargement...</div>;
+    return (
+      <Page>
+        <div className="max-w-xl py-16">
+          <div className="k-skeleton mb-4 h-9 w-1/2 rounded-md" aria-hidden="true" />
+          <SkeletonText lines={4} />
+        </div>
+      </Page>
+    );
   }
 
   return (
-    <div>
-      <div className="max-w-6xl mx-auto mb-6 px-4">
-        <button
-          type="button"
-          onClick={handleBack}
-          className="inline-flex items-center gap-2 bg-white/30 text-slate-800 font-semibold py-2 px-5 rounded-full transition-all hover:bg-white/50 hover:scale-105 shadow backdrop-blur-sm"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Retour au quartier
-        </button>
-      </div>
-
+    <Page>
       {isCreating ? (
-        <div className="max-w-4xl mx-auto px-4">
+        <div className="mx-auto max-w-3xl pt-8">
           {type === 'events' ? (
             <CreateEventForm onCancel={cancelCreate} onCreateEvent={handleCreateEvent} />
           ) : null}
@@ -220,9 +209,11 @@ export default function QuartierListView() {
           ) : null}
         </div>
       ) : loading ? (
-        <div className="text-center p-10">Chargement...</div>
+        <div className="max-w-xl py-16">
+          <SkeletonText lines={5} />
+        </div>
       ) : (
-        <div>
+        <div className="pt-8">
           {type === 'events' ? (
             <EventListPage
               events={items as AgendaEvent[]}
@@ -269,6 +260,6 @@ export default function QuartierListView() {
           ) : null}
         </div>
       )}
-    </div>
+    </Page>
   );
 }

@@ -1,5 +1,9 @@
 import { useEffect, useId, useState } from 'react';
 import { uploadImage } from '@/api/storage';
+import Button from './Button';
+import Icon from './Icon';
+import Notice from './Notice';
+import Spinner from './Spinner';
 
 interface ImageUploaderProps {
   initialImageUrl?: string | null;
@@ -8,6 +12,10 @@ interface ImageUploaderProps {
   onUploadError?: (error: Error) => void;
 }
 
+/**
+ * Dépôt d'image : une seule zone, qui montre l'aperçu dès qu'il existe plutôt
+ * que d'empiler un cadre autour d'un cadre.
+ */
 export default function ImageUploader({
   initialImageUrl = null,
   bucketName = 'uploads',
@@ -64,28 +72,30 @@ export default function ImageUploader({
   }
 
   return (
-    <div
-      className={`p-4 border-2 border-dashed rounded-lg text-center ${
-        isDragging ? 'border-blue-400' : ''
-      }`}
-    >
+    <div className="flex flex-col gap-3">
       {imageUrl ? (
-        <div>
+        <div className="flex flex-col items-start gap-3">
           <img
             src={imageUrl}
             alt="Aperçu de l'image"
-            className="max-w-xs mx-auto rounded-lg shadow-md"
+            className="max-h-56 w-full rounded-lg border border-separator object-cover"
           />
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={resetUploader}
-            className="mt-4 text-sm text-red-600 hover:text-red-800"
+            leading={<Icon name="refresh" size={15} />}
           >
-            Changer l'image
-          </button>
+            Changer l&apos;image
+          </Button>
         </div>
       ) : (
         <div
+          // La bordure suit le geste : elle se teinte dès que le fichier survole
+          // la zone, sans attendre le dépôt.
+          className={`rounded-lg border border-dashed p-6 text-center transition-colors ${
+            isDragging ? 'border-accent bg-accent-soft' : 'border-separator-strong bg-surface-secondary'
+          }`}
           onDragOver={(event) => {
             event.preventDefault();
             setIsDragging(true);
@@ -97,47 +107,35 @@ export default function ImageUploader({
           onDrop={handleFileDrop}
         >
           {isUploading ? (
-            <div className="flex flex-col items-center justify-center p-8">
-              <div className="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-              <p className="mt-4 text-gray-600">Envoi en cours...</p>
+            <div className="flex flex-col items-center gap-3 py-4">
+              <Spinner size={22} className="text-accent" label="Envoi de l'image en cours" />
+              <p className="k-subhead k-ink-secondary">Envoi en cours…</p>
             </div>
           ) : (
-            <div>
-              <label htmlFor={inputId} className="cursor-pointer">
-                <svg
-                  className="mx-auto h-12 w-12 text-gray-400"
-                  stroke="currentColor"
-                  fill="none"
-                  viewBox="0 0 48 48"
-                  aria-hidden="true"
-                >
-                  <path
-                    d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-                <p className="text-sm text-gray-600 mt-2">
-                  <span className="font-semibold text-blue-600">Cliquez pour choisir</span>{' '}
-                  ou glissez-déposez une image.
-                </p>
-                <p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF jusqu'à 2Mo</p>
-              </label>
+            <label
+              htmlFor={inputId}
+              className="k-press flex cursor-pointer flex-col items-center gap-2 rounded-md focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[color:var(--k-focus-ring)]"
+            >
+              <Icon name="image" size={26} className="k-ink-tertiary" />
+              <span className="k-subhead k-ink">
+                <span className="font-semibold text-accent">Cliquez pour choisir</span> ou
+                glissez-déposez une image
+              </span>
+              <span className="k-caption k-ink-tertiary">PNG, JPG, GIF jusqu&apos;à 2 Mo</span>
               <input
                 id={inputId}
                 name={inputId}
                 type="file"
-                className="sr-only"
+                className="k-visually-hidden"
                 onChange={handleFileSelect}
                 accept="image/png, image/jpeg, image/gif"
               />
-            </div>
+            </label>
           )}
         </div>
       )}
 
-      {errorMessage ? <p className="mt-2 text-sm text-red-500">{errorMessage}</p> : null}
+      {errorMessage ? <Notice tone="danger">{errorMessage}</Notice> : null}
     </div>
   );
 }

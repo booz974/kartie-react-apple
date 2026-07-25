@@ -1,4 +1,7 @@
 import { useState } from 'react';
+import Button from '@/components/ui/Button';
+import Field, { Input, Textarea } from '@/components/ui/Field';
+import Modal from '@/components/ui/Modal';
 
 interface CreateNewsFormProps {
   onCancel: () => void;
@@ -22,45 +25,49 @@ export default function CreateNewsForm({ onCancel, onCreateNews }: CreateNewsFor
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white rounded-2xl p-8 shadow-lg w-full max-w-lg">
-        <h2 className="text-2xl font-bold mb-6">Publier une actualité</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <input
+    <Modal
+      onClose={onCancel}
+      title="Publier une actualité"
+      description={`Elle sera datée du ${form.date}.`}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onCancel}>
+            Annuler
+          </Button>
+          <Button type="submit" form="create-news-form" variant="primary">
+            Publier
+          </Button>
+        </>
+      }
+    >
+      <form id="create-news-form" onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <Field label="Titre de l'actualité">
+          {(props) => (
+            <Input
+              {...props}
+              type="text"
+              required
+              placeholder="Ex : Nouvelle ligne de bus dès lundi"
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-              type="text"
-              placeholder="Titre de l'actualité"
-              required
-              className="w-full p-2 border rounded-md"
+              data-autofocus
             />
-            <textarea
+          )}
+        </Field>
+
+        <Field label="Contenu">
+          {(props) => (
+            <Textarea
+              {...props}
+              required
+              rows={7}
+              placeholder="L'essentiel d'abord : ce qui change, à partir de quand, pour qui."
               value={form.content}
               onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
-              placeholder="Contenu de l'actualité"
-              required
-              className="w-full p-2 border rounded-md"
-              rows={5}
             />
-          </div>
-          <div className="flex justify-end gap-4 mt-6">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400"
-            >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              className="bg-purple-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-700"
-            >
-              Publier
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+          )}
+        </Field>
+      </form>
+    </Modal>
   );
 }

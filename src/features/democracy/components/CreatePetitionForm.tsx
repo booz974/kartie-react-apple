@@ -1,5 +1,8 @@
 import { useState } from 'react';
+import Button from '@/components/ui/Button';
+import Field, { Input, Select, Textarea } from '@/components/ui/Field';
 import ImageUploader from '@/components/ui/ImageUploader';
+import Modal from '@/components/ui/Modal';
 
 interface CreatePetitionFormProps {
   onCancel: () => void;
@@ -11,6 +14,8 @@ interface CreatePetitionFormProps {
     image: string | null;
   }) => void;
 }
+
+const THEMES = ['Logement', 'Sécurité', 'Environnement', 'Transport', 'Emploi', 'Autre'];
 
 export default function CreatePetitionForm({
   onCancel,
@@ -30,77 +35,89 @@ export default function CreatePetitionForm({
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white rounded-2xl p-8 shadow-lg w-full max-w-lg">
-        <h2 className="text-2xl font-bold mb-6">Lancer une nouvelle pétition</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <input
+    <Modal
+      onClose={onCancel}
+      title="Lancer une pétition"
+      description="Formulez une demande claire : c'est elle que vos voisins soutiendront."
+      footer={
+        <>
+          <Button variant="secondary" onClick={onCancel}>
+            Annuler
+          </Button>
+          <Button type="submit" form="create-petition-form" variant="warm">
+            Lancer
+          </Button>
+        </>
+      }
+    >
+      <form id="create-petition-form" onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <Field label="Titre de la pétition">
+          {(props) => (
+            <Input
+              {...props}
+              type="text"
+              required
+              placeholder="Ex : Un passage piéton devant l'école"
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-              type="text"
-              placeholder="Titre de la pétition"
-              required
-              className="w-full p-2 border rounded-md"
+              data-autofocus
             />
-            <select
+          )}
+        </Field>
+
+        <Field label="Thème">
+          {(props) => (
+            <Select
+              {...props}
+              required
               value={form.theme}
               onChange={(e) => setForm((f) => ({ ...f, theme: e.target.value }))}
-              required
-              className="w-full p-2 border rounded-md bg-white"
             >
               <option disabled value="">
                 Choisissez un thème
               </option>
-              <option>Logement</option>
-              <option>Sécurité</option>
-              <option>Environnement</option>
-              <option>Transport</option>
-              <option>Emploi</option>
-              <option>Autre</option>
-            </select>
-            <textarea
+              {THEMES.map((theme) => (
+                <option key={theme}>{theme}</option>
+              ))}
+            </Select>
+          )}
+        </Field>
+
+        <Field label="Résumé" hint="C'est ce qui s'affiche dans la liste des pétitions.">
+          {(props) => (
+            <Textarea
+              {...props}
+              required
+              rows={3}
+              placeholder="Une description courte de ce que vous demandez."
               value={form.summary}
               onChange={(e) => setForm((f) => ({ ...f, summary: e.target.value }))}
-              placeholder="Résumé (description courte)"
-              required
-              className="w-full p-2 border rounded-md"
-              rows={3}
             />
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Image (Optionnel)
-              </label>
-              <ImageUploader
-                onUploadSuccess={(url) => setForm((f) => ({ ...f, image: url }))}
-              />
-            </div>
-            <textarea
+          )}
+        </Field>
+
+        {/* L'uploader porte son propre libellé lié à son input : on ne
+            l'enveloppe pas dans un Field, dont le `for` ne viserait rien. */}
+        <div className="k-field">
+          <p className="k-field__label">
+            Image <span className="k-field__optional">— facultatif</span>
+          </p>
+          <ImageUploader onUploadSuccess={(url) => setForm((f) => ({ ...f, image: url }))} />
+        </div>
+
+        <Field label="Source / contexte" hint="D'où vient la demande, ce qui l'a déclenchée.">
+          {(props) => (
+            <Textarea
+              {...props}
+              required
+              rows={2}
+              placeholder="Ex : demande évoquée lors du conseil de quartier du 3 mars."
               value={form.source}
               onChange={(e) => setForm((f) => ({ ...f, source: e.target.value }))}
-              placeholder="Source / Contexte"
-              required
-              className="w-full p-2 border rounded-md"
-              rows={2}
             />
-          </div>
-          <div className="flex justify-end gap-4 mt-6">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400"
-            >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              className="bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700"
-            >
-              Lancer
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+          )}
+        </Field>
+      </form>
+    </Modal>
   );
 }

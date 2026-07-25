@@ -1,6 +1,14 @@
 import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router';
+import Button from '@/components/ui/Button';
+import EmptyState from '@/components/ui/EmptyState';
+import Icon from '@/components/ui/Icon';
+import Notice from '@/components/ui/Notice';
+import { Page, PageHeader, Section } from '@/components/ui/Page';
+import Segmented from '@/components/ui/Segmented';
+import Skeleton, { SkeletonText } from '@/components/ui/Skeleton';
+import { useToast } from '@/components/ui/Toast';
 import CircleList from '@/features/social/components/CircleList';
 import CreateCircleModal from '@/features/social/components/CreateCircleModal';
 import type { CreatePostPayload } from '@/features/social/components/CreatePost';
@@ -24,12 +32,12 @@ import { useAuthStore } from '@/stores/authStore';
 import type { Circle, FeedPost as FeedPostType } from '@/lib/types/contract';
 
 const tabs = [
-  { id: 'all', label: 'Tout' },
-  { id: 'village', label: '🏟️ Place du Village' },
-  { id: 'circles', label: '👥 Cercles' },
+  { value: 'all', label: 'Tout' },
+  { value: 'village', label: 'Place du Village', icon: 'stadium' },
+  { value: 'circles', label: 'Cercles', icon: 'users' },
 ] as const;
 
-type TabId = (typeof tabs)[number]['id'];
+type TabId = (typeof tabs)[number]['value'];
 
 function filterPosts(
   feed: FeedPostType[],
@@ -55,11 +63,30 @@ function getEmptyMessage(activeTab: TabId, selectedCircle: Circle | null): strin
   return 'Soyez le premier à publier dans ce quartier !';
 }
 
+/** Le gabarit reprend la forme réelle d'une publication : rien ne saute au remplacement. */
+function FeedSkeleton() {
+  return (
+    <div className="k-list" aria-hidden="true">
+      {[0, 1, 2].map((index) => (
+        <div key={index} className="flex gap-3 py-6">
+          <Skeleton width="2.5rem" height="2.5rem" radius="var(--k-radius-full)" />
+          <div className="min-w-0 flex-1">
+            <Skeleton width="9rem" height="0.9rem" />
+            <Skeleton width="6rem" height="0.75rem" className="mt-2" />
+            <SkeletonText lines={3} className="mt-4" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function QuartierFeedView() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const quartierId = id ? Number(id) : undefined;
+  const toast = useToast();
 
   const session = useAuthStore((s) => s.session);
   const profile = useAuthStore((s) => s.profile);
@@ -123,7 +150,10 @@ export default function QuartierFeedView() {
       if (!checkProfile()) return;
 
       if (type === 'public' && !isAdmin) {
-        window.alert('Seuls les administrateurs peuvent créer des cercles publics.');
+        toast.error(
+          'Cercle public impossible',
+          'Seuls les administrateurs peuvent créer des cercles publics.',
+        );
         return;
       }
 
@@ -143,19 +173,20 @@ export default function QuartierFeedView() {
           throw createError;
         }
         setShowCreateCircleModal(false);
+        toast.success('Cercle créé', `« ${name} » est en ligne.`);
       } catch (err) {
         console.error('Erreur lors de la création du cercle:', err);
         const message = err instanceof Error ? err.message : String(err);
-        window.alert(`Erreur lors de la création du cercle: ${message}`);
+        toast.error('Création impossible', message);
       }
     },
-    [checkProfile, createCircleMutation, isAdmin, quartier, session],
+    [checkProfile, createCircleMutation, isAdmin, quartier, session, toast],
   );
 
   const handleJoinCircle = useCallback(
     async (circle: Circle) => {
       if (!session?.user) {
-        window.alert('Connectez-vous pour rejoindre un cercle.');
+        toast.info('Connexion requise', 'Connectez-vous pour rejoindre un cercle.');
         return;
       }
       if (!checkProfile()) return;
@@ -166,17 +197,17 @@ export default function QuartierFeedView() {
           memberId: session.user.id,
         });
         if (success) {
-          window.alert(`Vous avez rejoint le cercle ${circle.name} !`);
+          toast.success('Cercle rejoint', `Vous faites désormais partie de « ${circle.name} ».`);
         } else {
           console.error(error);
-          window.alert('Impossible de rejoindre le cercle.');
+          toast.error('Impossible de rejoindre le cercle', 'Réessayez dans un instant.');
         }
       } catch (err) {
         console.error('Error joining circle:', err);
-        window.alert('Impossible de rejoindre le cercle.');
+        toast.error('Impossible de rejoindre le cercle', 'Réessayez dans un instant.');
       }
     },
-    [checkProfile, joinCircleMutation, session],
+    [checkProfile, joinCircleMutation, session, toast],
   );
 
   const handleOpenCircle = useCallback((circle: Circle) => {
@@ -215,10 +246,10 @@ export default function QuartierFeedView() {
       } catch (err) {
         console.error('Erreur lors de la publication du post:', err);
         const message = err instanceof Error ? err.message : String(err);
-        window.alert(`Erreur lors de la publication : ${message}`);
+        toast.error('Publication impossible', message);
       }
     },
-    [checkProfile, createPostMutation, profile, quartier, selectedCircle, session],
+    [checkProfile, createPostMutation, profile, quartier, selectedCircle, session, toast],
   );
 
   const handleLike = useCallback(
@@ -287,53 +318,58 @@ export default function QuartierFeedView() {
         } catch (err) {
           console.error("Erreur lors de l'ajout du commentaire:", err);
           const message = err instanceof Error ? err.message : String(err);
-          window.alert(`Erreur lors de l'ajout du commentaire : ${message}`);
+          toast.error("Commentaire non publié", message);
         }
       })();
     },
-    [addCommentMutation, checkProfile, session],
+    [addCommentMutation, checkProfile, session, toast],
   );
 
   if (isLoading) {
     return (
-      <div className="p-10 text-center">
-        <p className="text-xl font-semibold text-gray-700">Chargement du fil d&apos;actualité...</p>
-      </div>
+      <Page>
+        <PageHeader eyebrow="Fil d’actualité" title="Chargement…" />
+        <FeedSkeleton />
+      </Page>
     );
   }
 
   if (error) {
     return (
-      <div className="p-10 text-center">
-        <p className="text-red-500 font-bold">Erreur : Impossible de charger le fil d&apos;actualité.</p>
-        <button
-          type="button"
-          onClick={() => refetchQuartier()}
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          Réessayer
-        </button>
-      </div>
+      <Page>
+        <PageHeader eyebrow="Fil d’actualité" title="Le fil n’a pas pu être chargé" />
+        <Notice tone="danger">
+          Impossible de charger le fil d’actualité. Vérifiez votre connexion, puis réessayez.
+        </Notice>
+        <div className="mt-4">
+          <Button variant="primary" leading={<Icon name="refresh" size={17} />} onClick={() => void refetchQuartier()}>
+            Réessayer
+          </Button>
+        </div>
+      </Page>
     );
   }
 
   if (!quartier) {
     return (
-      <div className="p-10 text-center">
-        <p>Quartier introuvable.</p>
-        <button
-          type="button"
-          onClick={() => navigate('/')}
-          className="mt-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-        >
-          Retour à l&apos;accueil
-        </button>
-      </div>
+      <Page>
+        <PageHeader title="Quartier introuvable" />
+        <EmptyState
+          icon="map"
+          title="Ce quartier n’existe pas"
+          description="Le lien est peut-être erroné ou le quartier a été renommé."
+          action={
+            <Button variant="primary" onClick={() => navigate('/')}>
+              Retour à l’accueil
+            </Button>
+          }
+        />
+      </Page>
     );
   }
 
   return (
-    <div className="bg-white rounded-2xl p-4 md:p-8 shadow-lg max-w-4xl mx-auto">
+    <Page className="k-page--reading">
       {showCreateCircleModal ? (
         <CreateCircleModal
           isAdmin={isAdmin}
@@ -352,105 +388,116 @@ export default function QuartierFeedView() {
         />
       ) : null}
 
-      <button
-        type="button"
-        onClick={() => navigate(`/quartiers/${quartier.id}`)}
-        className="mb-8 inline-flex items-center gap-2 bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-full transition hover:bg-gray-300"
-      >
-        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-          <path
-            fillRule="evenodd"
-            d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-            clipRule="evenodd"
-          />
-        </svg>
-        Retour au quartier {quartier.name}
-      </button>
+      <PageHeader
+        back={{ to: `/quartiers/${quartier.id}`, label: quartier.name }}
+        eyebrow="Fil d’actualité"
+        title={quartier.name}
+        description="Ce qui se dit, s’organise et se signale dans le quartier."
+      />
 
-      <h2 className="text-3xl font-bold text-center mb-6">Fil d&apos;actualité de {quartier.name}</h2>
-
-      <div className="flex space-x-4 border-b border-gray-200 mb-6">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => switchTab(tab.id)}
-            className={`py-2 px-4 font-medium text-sm focus:outline-none transition-colors ${
-              activeTab === tab.id
-                ? 'border-b-2 border-blue-500 text-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <Segmented
+        label="Filtrer le fil"
+        className="mb-6"
+        value={activeTab}
+        onChange={switchTab}
+        options={tabs}
+      />
 
       {selectedCircle ? (
-        <div className="mb-6 bg-blue-50 p-4 rounded-lg flex justify-between items-center">
-          <div>
-            <h3 className="text-xl font-bold text-blue-900">{selectedCircle.name}</h3>
-            <p className="text-blue-700">{String(selectedCircle.description ?? '')}</p>
+        <div className="k-hairline-all mb-6 flex flex-wrap items-start justify-between gap-3 rounded-lg p-4">
+          <div className="min-w-0">
+            <h2 className="k-title-3">{selectedCircle.name}</h2>
+            {selectedCircle.description ? (
+              <p className="k-subhead k-ink-secondary mt-1">
+                {String(selectedCircle.description)}
+              </p>
+            ) : null}
           </div>
-          <button
-            type="button"
+          <Button
+            size="sm"
+            variant="ghost"
+            leading={<Icon name="chevronLeft" size={16} />}
             onClick={() => setSelectedCircle(null)}
-            className="text-blue-600 underline text-sm"
           >
-            Retour à la liste des cercles
-          </button>
+            Tous les cercles
+          </Button>
         </div>
       ) : null}
 
       {showCreatePost ? (
-        <Suspense fallback={null}>
-          <CreatePost
-            quartier={quartier}
-            onSubmit={(payload) => void handleAddPost(payload)}
-            isSubmitting={createPostMutation.isPending}
-          />
-        </Suspense>
+        <Section className="mb-8">
+          <Suspense fallback={<Skeleton height="12rem" radius="var(--k-radius-lg)" />}>
+            <CreatePost
+              quartier={quartier}
+              onSubmit={(payload) => void handleAddPost(payload)}
+              isSubmitting={createPostMutation.isPending}
+            />
+          </Suspense>
+        </Section>
       ) : null}
 
       {activeTab === 'circles' && !selectedCircle ? (
-        <div>
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold">Cercles de Voisins</h3>
-            {session ? (
-              <button
-                type="button"
+        <Section
+          title="Cercles de voisins"
+          description="Des espaces plus petits, autour d’un sujet commun."
+          action={
+            session ? (
+              <Button
+                size="sm"
+                variant="tinted"
+                leading={<Icon name="plus" size={16} />}
                 onClick={handleCreateCircleClick}
-                className="bg-blue-600 text-white px-3 py-1 rounded text-sm"
               >
-                + Créer un cercle
-              </button>
-            ) : null}
-          </div>
+                Créer un cercle
+              </Button>
+            ) : null
+          }
+        >
           <CircleList
             circles={circles}
             onJoinCircle={(circle) => void handleJoinCircle(circle)}
             onOpenCircle={handleOpenCircle}
             onCreateCircle={handleCreateCircleClick}
           />
-        </div>
+        </Section>
       ) : (
-        <div id="posts-container" className="space-y-6">
+        <section id="posts-container" aria-label="Publications">
           {filteredPosts.length > 0 ? (
-            filteredPosts.map((post) => (
-              <FeedPost
-                key={post.id}
-                post={post}
-                session={session}
-                onReact={handleLike}
-                onComment={handleComment}
-                isCommentSubmitting={addCommentMutation.isPending}
-              />
-            ))
+            <div className="k-list">
+              {filteredPosts.map((post) => (
+                <FeedPost
+                  key={post.id}
+                  post={post}
+                  session={session}
+                  onReact={handleLike}
+                  onComment={handleComment}
+                  isCommentSubmitting={addCommentMutation.isPending}
+                />
+              ))}
+            </div>
           ) : (
-            <p className="text-center text-gray-500 py-8">{getEmptyMessage(activeTab, selectedCircle)}</p>
+            <EmptyState
+              icon="chatLines"
+              title="Rien à lire pour le moment"
+              description={getEmptyMessage(activeTab, selectedCircle)}
+              action={
+                session && showCreatePost ? (
+                  <Button
+                    variant="primary"
+                    onClick={() => {
+                      document
+                        .getElementById('create-post-title')
+                        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }}
+                  >
+                    Publier le premier message
+                  </Button>
+                ) : null
+              }
+            />
           )}
-        </div>
+        </section>
       )}
-    </div>
+    </Page>
   );
 }

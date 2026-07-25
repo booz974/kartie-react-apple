@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
+import Button from '@/components/ui/Button';
+import Icon from '@/components/ui/Icon';
+import { Input } from '@/components/ui/Field';
 import {
   debounce,
   reverseGeocode,
@@ -46,20 +49,21 @@ function MapMoveHandler({ onMoveEnd }: { onMoveEnd: (lat: number, lng: number) =
   return null;
 }
 
-function Crosshair({ variant }: { variant: 'blue' | 'gray' }) {
-  const ring = variant === 'blue' ? 'border-blue-600 bg-blue-500/10' : 'border-gray-600 bg-gray-500/10';
-  const dot = variant === 'blue' ? 'bg-blue-600' : 'bg-gray-600';
-  const line = variant === 'blue' ? 'bg-blue-600' : 'bg-gray-600';
-
+/**
+ * Le viseur reste immobile pendant que la carte glisse dessous : c'est la carte
+ * qu'on déplace, pas un marqueur qu'on pose. Une seule teinte — l'accent — quel
+ * que soit le contexte d'appel.
+ */
+function Crosshair() {
   return (
-    <div className="absolute inset-0 pointer-events-none flex items-center justify-center z-[1000]">
-      <div className="relative">
-        <div className={`w-8 h-8 border-2 rounded-full shadow-sm ${ring}`} />
-        <div className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-1 rounded-full ${dot}`} />
-        <div className={`absolute top-1/2 left-full w-2 h-0.5 -translate-y-1/2 ${line}`} />
-        <div className={`absolute top-1/2 right-full w-2 h-0.5 -translate-y-1/2 ${line}`} />
-        <div className={`absolute left-1/2 top-full h-2 w-0.5 -translate-x-1/2 ${line}`} />
-        <div className={`absolute left-1/2 bottom-full h-2 w-0.5 -translate-x-1/2 ${line}`} />
+    <div className="pointer-events-none absolute inset-0 z-[1000] flex items-center justify-center">
+      <div className="relative text-accent">
+        <div className="h-8 w-8 rounded-full border-2 border-current bg-accent-soft" />
+        <div className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-current" />
+        <div className="absolute left-full top-1/2 h-0.5 w-2 -translate-y-1/2 bg-current" />
+        <div className="absolute right-full top-1/2 h-0.5 w-2 -translate-y-1/2 bg-current" />
+        <div className="absolute left-1/2 top-full h-2 w-0.5 -translate-x-1/2 bg-current" />
+        <div className="absolute bottom-full left-1/2 h-2 w-0.5 -translate-x-1/2 bg-current" />
       </div>
     </div>
   );
@@ -79,6 +83,7 @@ export default function LocationPicker({
 }: LocationPickerProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<NominatimSearchResult[]>([]);
+  const [searchError, setSearchError] = useState('');
   const [center, setCenter] = useState<[number, number]>(() => {
     if (quartierLat != null && quartierLng != null) {
       return [quartierLat, quartierLng];
@@ -103,12 +108,6 @@ export default function LocationPicker({
     }
   }, [quartierLat, quartierLng]);
 
-  const borderClass = variant === 'blue' ? 'border-blue-200' : 'border-gray-300';
-  const searchBtnClass = variant === 'blue' ? 'bg-blue-600' : 'bg-gray-600';
-  const addressBoxClass =
-    variant === 'blue' ? 'bg-blue-50 border-blue-100 text-blue-900' : 'bg-gray-50 border-gray-200 text-gray-700';
-  const addressInputBorder = variant === 'blue' ? 'border-blue-200' : 'border-gray-300';
-
   const handleMapMoveEnd = useCallback(
     (lat: number, lng: number) => {
       onLocationChange({ lat, lng });
@@ -119,11 +118,13 @@ export default function LocationPicker({
 
   async function handleSearch() {
     if (searchQuery.length < 3) return;
+    setSearchError('');
     try {
       const results = await searchLocations(searchQuery);
       setSearchResults(results);
     } catch (err) {
       console.error('Search error:', err);
+      setSearchError('La recherche de lieu est indisponible. Déplacez la carte pour viser.');
     }
   }
 
@@ -140,43 +141,51 @@ export default function LocationPicker({
   const mapKey = useMemo(() => `${center[0]}-${center[1]}`, [center]);
 
   return (
-    <div className={compact ? 'space-y-2' : 'mb-3 space-y-2'}>
-      <div className="flex gap-2 relative">
-        <input
+    <div className={compact ? 'flex flex-col gap-2' : 'mb-3 flex flex-col gap-2'}>
+      <div className="relative flex gap-2">
+        <Input
+          type="search"
           value={searchQuery}
           onChange={(event) => setSearchQuery(event.target.value)}
           onKeyDown={(event) => {
             if (event.key === 'Enter') {
+              event.preventDefault();
               void handleSearch();
             }
           }}
-          placeholder="Rechercher un lieu (ex: Eglise du Chaudron)..."
-          className={`flex-1 p-2 rounded-lg border text-sm focus:ring-500 ${borderClass}`}
+          placeholder="Rechercher un lieu (ex : Église du Chaudron)"
+          aria-label="Rechercher un lieu"
+          className="min-w-0 flex-1"
         />
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          iconOnly
           onClick={() => void handleSearch()}
-          className={`${searchBtnClass} text-white px-4 rounded-lg text-sm font-bold`}
+          aria-label="Rechercher ce lieu"
         >
-          🔍
-        </button>
+          <Icon name="search" size={18} />
+        </Button>
+
         {searchResults.length > 0 ? (
-          <div className="absolute top-full left-0 right-0 bg-white shadow-lg rounded-lg mt-1 z-50 border border-gray-100 max-h-48 overflow-y-auto">
+          <ul className="k-card k-card--raised k-list absolute left-0 right-0 top-full z-50 mt-1 max-h-48 overflow-y-auto p-1">
             {searchResults.map((result) => (
-              <button
-                key={result.place_id}
-                type="button"
-                onClick={() => selectSearchResult(result)}
-                className="w-full text-left p-2 hover:bg-gray-50 text-xs text-gray-700 border-b border-gray-50 last:border-0"
-              >
-                {result.display_name}
-              </button>
+              <li key={result.place_id}>
+                <button
+                  type="button"
+                  onClick={() => selectSearchResult(result)}
+                  className="k-press k-footnote k-ink-secondary w-full rounded-sm px-3 py-2.5 text-left hover:bg-surface-secondary"
+                >
+                  {result.display_name}
+                </button>
+              </li>
             ))}
-          </div>
+          </ul>
         ) : null}
       </div>
 
-      <div className={`h-48 rounded-lg overflow-hidden border relative z-0 ${borderClass}`}>
+      {searchError ? <p className="k-footnote text-danger">{searchError}</p> : null}
+
+      <div className="relative z-0 h-48 overflow-hidden rounded-md border border-separator">
         <MapContainer
           key={mapKey}
           center={center}
@@ -190,30 +199,34 @@ export default function LocationPicker({
           <MapCenterUpdater center={center} />
           <MapMoveHandler onMoveEnd={handleMapMoveEnd} />
         </MapContainer>
-        <Crosshair variant={variant} />
+        <Crosshair />
       </div>
 
-      <div className={`p-3 rounded-lg border text-sm ${addressBoxClass}`}>
-        <div className="flex items-start gap-2 mb-2">
-          <span className="text-lg">📍</span>
-          <div>
-            <p className="font-bold text-xs uppercase tracking-wide">Secteur détecté</p>
-            <p>{automaticAddress || 'Déplacez la carte...'}</p>
+      <div className="rounded-md bg-surface-secondary p-3">
+        <div className="mb-2 flex items-start gap-2">
+          <Icon name="mapPin" size={17} className="mt-0.5 text-accent" />
+          <div className="min-w-0">
+            <p className="k-eyebrow">Secteur détecté</p>
+            <p className="k-subhead k-ink mt-0.5">
+              {automaticAddress || 'Déplacez la carte pour viser un point.'}
+            </p>
           </div>
         </div>
-        <input
+
+        <Input
           value={manualPrecision}
           onChange={(event) => onManualPrecisionChange(event.target.value)}
+          aria-label="Précision de la localisation"
           placeholder={
             variant === 'blue'
-              ? 'Précision (ex: Face au stade, à côté de la boulangerie...)'
-              : 'Précision (ex: Devant le n°42, près du panneau...)'
+              ? 'Précision (ex : face au stade, à côté de la boulangerie)'
+              : 'Précision (ex : devant le n°42, près du panneau)'
           }
-          className={`w-full p-2 rounded border text-sm focus:ring-500 bg-white ${addressInputBorder}`}
         />
+
         {location ? (
-          <p className="sr-only">
-            Selected location {location.lat}, {location.lng}
+          <p className="k-visually-hidden">
+            Point sélectionné : {location.lat}, {location.lng}
           </p>
         ) : null}
       </div>

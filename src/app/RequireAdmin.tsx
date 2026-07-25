@@ -1,4 +1,5 @@
 import { Navigate, Outlet } from 'react-router';
+import Spinner from '@/components/ui/Spinner';
 import { useAuthStore } from '@/stores/authStore';
 
 export default function RequireAdmin() {
@@ -7,9 +8,11 @@ export default function RequireAdmin() {
   const profile = useAuthStore((state) => state.profile);
 
   if (!ready) {
+    // Attente courte et silencieuse : la session se résout presque toujours en
+    // quelques dizaines de millisecondes.
     return (
-      <div className="min-h-[40vh] flex items-center justify-center">
-        <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+      <div className="flex min-h-[40vh] items-center justify-center">
+        <Spinner size={24} className="k-ink-tertiary" label="Vérification de vos droits" />
       </div>
     );
   }

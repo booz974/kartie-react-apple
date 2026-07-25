@@ -1,4 +1,9 @@
-import { useParams, useNavigate } from 'react-router';
+import { Link, useNavigate, useParams } from 'react-router';
+import Button, { buttonClass } from '@/components/ui/Button';
+import EmptyState from '@/components/ui/EmptyState';
+import Notice from '@/components/ui/Notice';
+import { Page } from '@/components/ui/Page';
+import { SkeletonText } from '@/components/ui/Skeleton';
 import QuartierInfos from '@/features/territory/components/QuartierInfos';
 import { useQuartier } from '@/queries/territory';
 
@@ -10,38 +15,45 @@ export default function QuartierInfosView() {
   const { data: quartier, isLoading, isError, refetch } = useQuartier(quartierId);
 
   if (isLoading) {
-    return <div className="p-10 text-center">Chargement des informations du quartier...</div>;
+    return (
+      <Page className="k-page--reading">
+        <div className="py-16">
+          <div className="k-skeleton mb-5 h-10 w-2/3 rounded-md" aria-hidden="true" />
+          <SkeletonText lines={6} />
+        </div>
+      </Page>
+    );
   }
 
   if (isError) {
     return (
-      <div className="p-10 text-center">
-        <p className="text-red-500 font-bold">
-          Erreur : Impossible de charger les informations du quartier.
-        </p>
-        <button
-          type="button"
-          onClick={() => void refetch()}
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          Réessayer
-        </button>
-      </div>
+      <Page className="k-page--reading">
+        <div className="max-w-lg py-16">
+          <Notice tone="danger">
+            Les informations de ce quartier n’ont pas pu être chargées.
+          </Notice>
+          <Button variant="primary" className="mt-4" onClick={() => void refetch()}>
+            Réessayer
+          </Button>
+        </div>
+      </Page>
     );
   }
 
   if (!quartier) {
     return (
-      <div className="p-10 text-center">
-        <p>Quartier introuvable.</p>
-        <button
-          type="button"
-          onClick={() => navigate('/')}
-          className="mt-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-        >
-          Retour à l&apos;accueil
-        </button>
-      </div>
+      <Page className="k-page--reading">
+        <EmptyState
+          icon="mapPin"
+          title="Quartier introuvable"
+          description="Ce quartier n’existe pas ou n’est plus accessible."
+          action={
+            <Link to="/quartiers" className={buttonClass({ variant: 'primary' })}>
+              Voir tous les quartiers
+            </Link>
+          }
+        />
+      </Page>
     );
   }
 

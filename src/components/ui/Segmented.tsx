@@ -20,6 +20,14 @@ type SegmentedProps<T extends string> = {
   className?: string;
   /** Filets soulignés plutôt que pastille glissante — pour la nav de section. */
   variant?: 'segmented' | 'underline';
+  /**
+   * Renvoie l'identifiant du panneau piloté par chaque segment. Le fournir bascule
+   * le composant sur la sémantique d'onglets (`tablist`/`tab`/`aria-controls`),
+   * qui n'est valide que si des `role="tabpanel"` correspondants existent
+   * réellement. Sans lui, le groupe reste un ensemble de bascules — ce qu'il est
+   * dans la plupart des usages, où il ne fait que filtrer une même liste.
+   */
+  panelIdFor?: (value: T) => string;
 };
 
 /**
@@ -37,6 +45,7 @@ export default function Segmented<T extends string>({
   block,
   className,
   variant = 'segmented',
+  panelIdFor,
 }: SegmentedProps<T>) {
   const listRef = useRef<HTMLDivElement | null>(null);
   const itemsRef = useRef(new Map<string, HTMLButtonElement>());
@@ -92,11 +101,12 @@ export default function Segmented<T extends string>({
   }
 
   const isUnderline = variant === 'underline';
+  const asTabs = Boolean(panelIdFor);
 
   return (
     <div
       ref={listRef}
-      role="tablist"
+      role={asTabs ? 'tablist' : 'group'}
       aria-label={label}
       onKeyDown={onKeyDown}
       className={[
@@ -129,9 +139,15 @@ export default function Segmented<T extends string>({
               else itemsRef.current.delete(option.value);
             }}
             type="button"
-            role="tab"
-            aria-selected={selected}
+            role={asTabs ? 'tab' : undefined}
+            aria-selected={asTabs ? selected : undefined}
+            aria-controls={asTabs ? panelIdFor?.(option.value) : undefined}
+            aria-pressed={asTabs ? undefined : selected}
+            // Le focus clavier ne visite que le segment actif, les flèches
+            // parcourent les autres : le comportement attendu d'un groupe de
+            // bascules comme d'un jeu d'onglets.
             tabIndex={selected ? 0 : -1}
+            data-selected={selected ? 'true' : 'false'}
             className={isUnderline ? 'k-tabs__item' : 'k-segmented__item'}
             onClick={() => onChange(option.value)}
           >

@@ -1,4 +1,14 @@
 import { useNavigate, useParams } from 'react-router';
+import Badge from '@/components/ui/Badge';
+import Button from '@/components/ui/Button';
+import EmptyState from '@/components/ui/EmptyState';
+import Icon from '@/components/ui/Icon';
+import { Page, PageHeader } from '@/components/ui/Page';
+import Skeleton, { SkeletonText } from '@/components/ui/Skeleton';
+import {
+  eventStatusLabel,
+  eventStatusTone,
+} from '@/features/associations/components/AssociationEventCard';
 import { useAssociationEvent } from '@/queries/associations';
 
 export default function AssociationEventView() {
@@ -18,69 +28,105 @@ export default function AssociationEventView() {
 
   if (isLoading) {
     return (
-      <div className="p-10 text-center">
-        <p className="text-xl font-semibold text-slate-700">Chargement de l'événement...</p>
-      </div>
+      <Page className="k-page--reading pt-6 md:pt-10">
+        <Skeleton height="14rem" radius="var(--k-radius-xl)" />
+        <Skeleton height="1rem" width="10rem" className="mt-6" />
+        <Skeleton height="2.25rem" width="75%" className="mt-3" />
+        <SkeletonText lines={6} className="mt-6" />
+      </Page>
     );
   }
 
   if (isError || !event) {
     return (
-      <div className="p-10 text-center">
-        <p className="text-xl font-semibold text-slate-700">Événement introuvable.</p>
-      </div>
+      <Page className="k-page--reading pt-6 md:pt-10">
+        <h1 className="k-visually-hidden">Événement introuvable</h1>
+        <EmptyState
+          icon="calendar"
+          title="Événement introuvable"
+          description="Cet événement n’existe pas ou n’est plus publié."
+          action={
+            <Button variant="primary" onClick={() => navigate(-1)}>
+              Revenir en arrière
+            </Button>
+          }
+        />
+      </Page>
     );
   }
 
   return (
-    <div className="mx-auto my-8 max-w-4xl rounded-3xl bg-white p-6 shadow-xl md:p-8">
-      <button
-        type="button"
+    <Page className="k-page--reading pt-6 md:pt-10">
+      <Button
+        variant="plain"
         onClick={goBack}
-        className="mb-6 inline-flex items-center gap-2 rounded-full bg-slate-100 px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-200"
+        className="-ml-1 mb-4"
+        leading={<Icon name="chevronLeft" size={16} />}
       >
         Retour
-      </button>
+      </Button>
 
       {event.image_url ? (
         <img
           src={event.image_url}
-          alt={event.title}
-          className="mb-6 h-64 w-full rounded-3xl object-cover"
+          alt=""
+          className="mb-7 h-56 w-full rounded-xl border border-separator object-cover md:h-72"
         />
       ) : null}
 
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-blue-700">
-          {event.display_date}
-        </span>
-        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold uppercase tracking-wide text-slate-700">
-          {event.status}
-        </span>
-      </div>
+      <PageHeader
+        eyebrow={event.association?.name || 'Association locale'}
+        title={event.title}
+        meta={
+          <>
+            <Badge tone="accent" icon="calendar">
+              {event.display_date}
+            </Badge>
+            <Badge tone={eventStatusTone(event.status)} dot>
+              {eventStatusLabel(event.status)}
+            </Badge>
+          </>
+        }
+      />
 
-      <h1 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">{event.title}</h1>
-      <p className="mt-3 text-sm font-semibold text-slate-500">
-        {event.association?.name || 'Association locale'}
+      <p className="k-callout k-ink-secondary k-measure whitespace-pre-line">
+        {event.description as string}
       </p>
 
-      <p className="mt-6 whitespace-pre-line text-slate-700">{event.description as string}</p>
-
-      <div className="mt-6 space-y-3 rounded-3xl bg-slate-50 p-5">
-        <p className="text-sm text-slate-700">{event.location}</p>
-        {event.external_url ? (
-          <p>
-            <a
-              href={event.external_url as string}
-              target="_blank"
-              rel="noreferrer"
-              className="font-semibold text-blue-600 hover:underline"
-            >
-              Ouvrir le lien externe
-            </a>
-          </p>
+      <dl
+        className="k-list k-hairline-top mt-8 pt-2"
+        hidden={!event.location && !event.external_url}
+      >
+        {event.location ? (
+          <div className="flex items-start gap-3 py-4">
+            <Icon name="mapPin" size={18} className="k-ink-tertiary mt-0.5" />
+            <div className="min-w-0">
+              <dt className="k-caption k-ink-tertiary">Lieu</dt>
+              <dd className="k-subhead k-ink break-words">{event.location}</dd>
+            </div>
+          </div>
         ) : null}
-      </div>
-    </div>
+
+        {event.external_url ? (
+          <div className="flex items-start gap-3 py-4">
+            <Icon name="link" size={18} className="k-ink-tertiary mt-0.5" />
+            <div className="min-w-0">
+              <dt className="k-caption k-ink-tertiary">En savoir plus</dt>
+              <dd className="k-subhead break-words">
+                <a
+                  href={event.external_url as string}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-1.5 text-accent hover:underline"
+                >
+                  Ouvrir le lien externe
+                  <Icon name="externalLink" size={15} />
+                </a>
+              </dd>
+            </div>
+          </div>
+        ) : null}
+      </dl>
+    </Page>
   );
 }

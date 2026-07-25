@@ -1,18 +1,30 @@
 import { Link } from 'react-router';
+import { buttonClass } from '@/components/ui/Button';
+import Icon from '@/components/ui/Icon';
 
 export default function NotFoundView() {
   return (
-    <div className="h-screen flex flex-col items-center justify-center text-center p-6">
-      <h1 className="text-6xl font-black text-slate-800 mb-4">404</h1>
-      <p className="text-xl text-slate-600 mb-8">
-        Oups ! La page que vous cherchez n'existe pas.
-      </p>
-      <Link
-        to="/"
-        className="bg-blue-600 text-white font-bold py-3 px-8 rounded-full hover:bg-blue-700 transition"
-      >
-        Retour à l'accueil
-      </Link>
+    // On dit où l'on est, pourquoi, et par où repartir : un cul-de-sac sans
+    // sortie est ce qui fait quitter un produit.
+    <div className="flex min-h-[60vh] items-center justify-center px-5 py-16">
+      <div className="flex max-w-md flex-col items-center text-center">
+        <span className="mb-4 grid h-14 w-14 place-items-center rounded-full bg-surface-secondary text-ink-tertiary">
+          <Icon name="compass" size={26} />
+        </span>
+        <p className="k-eyebrow mb-2">Erreur 404</p>
+        <h1 className="k-title-1">Cette page n&apos;existe pas</h1>
+        <p className="k-callout k-ink-secondary mt-3">
+          Le lien est peut-être ancien, ou l&apos;adresse comporte une faute de frappe.
+        </p>
+        <div className="mt-7 flex flex-wrap justify-center gap-3">
+          <Link to="/" className={buttonClass({ variant: 'primary' })}>
+            Retour à l&apos;accueil
+          </Link>
+          <Link to="/quartiers" className={buttonClass({ variant: 'secondary' })}>
+            Voir les quartiers
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }

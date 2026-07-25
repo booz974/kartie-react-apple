@@ -3,6 +3,9 @@ import {
   ASSOCIATION_CATEGORIES,
   ASSOCIATION_EVENT_STATUS_OPTIONS,
 } from '@/api/associations';
+import Button from '@/components/ui/Button';
+import Field, { Input, Select, Textarea } from '@/components/ui/Field';
+import Icon from '@/components/ui/Icon';
 import ImageUploader from '@/components/ui/ImageUploader';
 import type { AssociationEvent } from '@/lib/types/contract';
 
@@ -22,6 +25,8 @@ interface AssociationEventFormProps {
   modelValue?: Partial<AssociationEvent> | null;
   showCancel?: boolean;
   submitLabel?: string;
+  /** Affiche l'état d'envoi sur le bouton de validation. */
+  submitting?: boolean;
   onSubmit: (payload: AssociationEventFormPayload) => void;
   onCancel?: () => void;
 }
@@ -69,6 +74,7 @@ export default function AssociationEventForm({
   modelValue = null,
   showCancel = false,
   submitLabel = 'Enregistrer l’événement',
+  submitting = false,
   onSubmit,
   onCancel,
 }: AssociationEventFormProps) {
@@ -94,127 +100,137 @@ export default function AssociationEventForm({
   }
 
   return (
-    <div className="rounded-3xl bg-white p-6 shadow-lg">
-      <div className="mb-6 flex items-start justify-between gap-3">
-        <div>
-          <h3 className="text-xl font-black text-slate-900">{submitLabel}</h3>
-          <p className="mt-1 text-sm text-slate-600">
+    <section className="flex flex-col gap-6">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h2 className="k-title-3 text-balance">{submitLabel}</h2>
+          <p className="k-subhead k-ink-secondary k-measure mt-1.5">
             Publiez un événement visible sur la page de l’association et dans le quartier.
           </p>
         </div>
         {showCancel ? (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-200"
-          >
+          <Button variant="ghost" onClick={onCancel} leading={<Icon name="close" size={17} />}>
             Fermer
-          </button>
+          </Button>
         ) : null}
       </div>
 
-      <form className="space-y-4" onSubmit={handleSubmit}>
-        <div>
-          <label className="mb-1 block text-sm font-bold text-slate-700">Titre</label>
-          <input
-            value={form.title}
-            onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
-            required
-            className="w-full rounded-2xl border border-slate-200 px-4 py-3"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-bold text-slate-700">Description</label>
-          <textarea
-            value={form.description}
-            onChange={(event) => setForm((prev) => ({ ...prev, description: event.target.value }))}
-            rows={4}
-            required
-            className="w-full rounded-2xl border border-slate-200 px-4 py-3"
-          />
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-sm font-bold text-slate-700">Catégorie</label>
-            <select
-              value={form.category}
-              onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3"
-            >
-              <option value="">Sans catégorie</option>
-              {ASSOCIATION_CATEGORIES.map((category) => (
-                <option key={category.value} value={category.value}>
-                  {category.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-bold text-slate-700">Statut</label>
-            <select
-              value={form.status}
-              onChange={(event) => setForm((prev) => ({ ...prev, status: event.target.value }))}
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3"
-            >
-              {ASSOCIATION_EVENT_STATUS_OPTIONS.map((status) => (
-                <option key={status.value} value={status.value}>
-                  {status.label}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-sm font-bold text-slate-700">Début</label>
-            <input
-              value={form.start_at}
-              onChange={(event) => setForm((prev) => ({ ...prev, start_at: event.target.value }))}
-              type="datetime-local"
+      <form className="flex flex-col gap-5" onSubmit={handleSubmit}>
+        <Field label="Titre">
+          {(props) => (
+            <Input
+              {...props}
+              value={form.title}
+              onChange={(event) => setForm((prev) => ({ ...prev, title: event.target.value }))}
               required
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3"
             />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-bold text-slate-700">Fin</label>
-            <input
-              value={form.end_at}
-              onChange={(event) => setForm((prev) => ({ ...prev, end_at: event.target.value }))}
-              type="datetime-local"
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3"
+          )}
+        </Field>
+
+        <Field label="Description">
+          {(props) => (
+            <Textarea
+              {...props}
+              value={form.description}
+              onChange={(event) =>
+                setForm((prev) => ({ ...prev, description: event.target.value }))
+              }
+              rows={4}
+              required
             />
-          </div>
+          )}
+        </Field>
+
+        <div className="grid gap-5 md:grid-cols-2">
+          <Field label="Catégorie" optional>
+            {(props) => (
+              <Select
+                {...props}
+                value={form.category}
+                onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
+              >
+                <option value="">Sans catégorie</option>
+                {ASSOCIATION_CATEGORIES.map((category) => (
+                  <option key={category.value} value={category.value}>
+                    {category.label}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </Field>
+
+          <Field label="Statut">
+            {(props) => (
+              <Select
+                {...props}
+                value={form.status}
+                onChange={(event) => setForm((prev) => ({ ...prev, status: event.target.value }))}
+              >
+                {ASSOCIATION_EVENT_STATUS_OPTIONS.map((status) => (
+                  <option key={status.value} value={status.value}>
+                    {status.label}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </Field>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-sm font-bold text-slate-700">Lieu</label>
-            <input
-              value={form.location_text}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, location_text: event.target.value }))
-              }
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-bold text-slate-700">Lien externe</label>
-            <input
-              value={form.external_url}
-              onChange={(event) =>
-                setForm((prev) => ({ ...prev, external_url: event.target.value }))
-              }
-              type="url"
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3"
-            />
-          </div>
+        <div className="grid gap-5 md:grid-cols-2">
+          <Field label="Début">
+            {(props) => (
+              <Input
+                {...props}
+                type="datetime-local"
+                value={form.start_at}
+                onChange={(event) => setForm((prev) => ({ ...prev, start_at: event.target.value }))}
+                required
+              />
+            )}
+          </Field>
+
+          <Field label="Fin" optional>
+            {(props) => (
+              <Input
+                {...props}
+                type="datetime-local"
+                value={form.end_at}
+                onChange={(event) => setForm((prev) => ({ ...prev, end_at: event.target.value }))}
+              />
+            )}
+          </Field>
         </div>
 
-        <div>
-          <label className="mb-2 block text-sm font-bold text-slate-700">Image</label>
+        <div className="grid gap-5 md:grid-cols-2">
+          <Field label="Lieu" optional>
+            {(props) => (
+              <Input
+                {...props}
+                value={form.location_text}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, location_text: event.target.value }))
+                }
+              />
+            )}
+          </Field>
+
+          <Field label="Lien externe" optional>
+            {(props) => (
+              <Input
+                {...props}
+                type="url"
+                placeholder="https://"
+                value={form.external_url}
+                onChange={(event) =>
+                  setForm((prev) => ({ ...prev, external_url: event.target.value }))
+                }
+              />
+            )}
+          </Field>
+        </div>
+
+        <div className="k-field">
+          <p className="k-field__label">Image</p>
           <ImageUploader
             bucketName="post_images"
             initialImageUrl={form.image_url || null}
@@ -222,15 +238,17 @@ export default function AssociationEventForm({
           />
         </div>
 
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            className="rounded-full bg-slate-900 px-6 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
-          >
+        <div className="k-hairline-top flex flex-wrap justify-end gap-2 pt-5">
+          {showCancel ? (
+            <Button variant="ghost" onClick={onCancel}>
+              Annuler
+            </Button>
+          ) : null}
+          <Button type="submit" variant="primary" loading={submitting}>
             {submitLabel}
-          </button>
+          </Button>
         </div>
       </form>
-    </div>
+    </section>
   );
 }

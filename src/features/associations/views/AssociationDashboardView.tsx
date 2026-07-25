@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import {
+  ASSOCIATION_POST_STATUS_OPTIONS,
   createAssociationEvent,
   createAssociationPost,
   getAssociationDashboardData,
@@ -12,6 +13,16 @@ import {
   updateAssociationEvent,
   updateAssociationPost,
 } from '@/api/associations';
+import Badge from '@/components/ui/Badge';
+import Button from '@/components/ui/Button';
+import { useConfirm } from '@/components/ui/Confirm';
+import EmptyState from '@/components/ui/EmptyState';
+import Icon from '@/components/ui/Icon';
+import Notice from '@/components/ui/Notice';
+import { Page, PageHeader } from '@/components/ui/Page';
+import Segmented from '@/components/ui/Segmented';
+import Skeleton, { SkeletonText } from '@/components/ui/Skeleton';
+import { useToast } from '@/components/ui/Toast';
 import AssociationEventCard from '@/features/associations/components/AssociationEventCard';
 import AssociationEventForm, {
   type AssociationEventFormPayload,
@@ -34,11 +45,22 @@ import type {
 
 type DashboardTab = 'profile' | 'posts' | 'events';
 
-const tabs: { id: DashboardTab; label: string }[] = [
-  { id: 'profile', label: 'Fiche' },
-  { id: 'posts', label: 'Posts' },
-  { id: 'events', label: 'Événements' },
+const tabs = [
+  { value: 'profile' as const, label: 'Fiche', icon: 'document' as const },
+  { value: 'posts' as const, label: 'Posts', icon: 'megaphone' as const },
+  { value: 'events' as const, label: 'Événements', icon: 'calendar' as const },
 ];
+
+const POST_STATUS_TONES: Record<string, 'neutral' | 'success' | 'warning' | 'danger'> = {
+  draft: 'warning',
+  published: 'success',
+  archived: 'neutral',
+  removed: 'danger',
+};
+
+function postStatusLabel(status: string): string {
+  return ASSOCIATION_POST_STATUS_OPTIONS.find((item) => item.value === status)?.label ?? status;
+}
 
 function errorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
@@ -48,6 +70,8 @@ function errorMessage(error: unknown): string {
 export default function AssociationDashboardView() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const toast = useToast();
+  const confirm = useConfirm();
   const { id } = useParams<{ id: string }>();
   const session = useAuthStore((state) => state.session);
   const profile = useAuthStore((state) => state.profile);
@@ -60,6 +84,14 @@ export default function AssociationDashboardView() {
   const [activeTab, setActiveTab] = useState<DashboardTab>('profile');
   const [editingPost, setEditingPost] = useState<AssociationPost | null>(null);
   const [editingEvent, setEditingEvent] = useState<AssociationEvent | null>(null);
+
+  // États d'action : ce qui est en cours doit se voir sur le bouton qui l'a
+  // déclenché, pas seulement dans une notification à la fin.
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isSavingPost, setIsSavingPost] = useState(false);
+  const [isSavingEvent, setIsSavingEvent] = useState(false);
+  const [removingPostId, setRemovingPostId] = useState<number | null>(null);
+  const [isRemovingEvent, setIsRemovingEvent] = useState(false);
 
   const loadDashboard = useCallback(async () => {
     if (!id || !session?.user) {
@@ -108,11 +140,13 @@ export default function AssociationDashboardView() {
   async function handleUpdateAssociation(payload: AssociationFormPayload) {
     if (!association) return;
 
+    setIsSavingProfile(true);
     const previousStatus = association.status;
     const result = await updateAssociation(association.id, { ...payload });
 
     if (!result.success) {
-      alert(`Impossible de mettre à jour la fiche : ${errorMessage(result.error)}`);
+      setIsSavingProfile(false);
+      toast.error('Impossible de mettre à jour la fiche', errorMessage(result.error));
       return;
     }
 
@@ -135,11 +169,14 @@ export default function AssociationDashboardView() {
       queryKey: associationKeys.dashboard(association.id, session?.user?.id ?? ''),
     });
     await queryClient.invalidateQueries({ queryKey: associationKeys.adminReview() });
+    setIsSavingProfile(false);
+    toast.success('Fiche mise à jour');
   }
 
   async function handleSavePost(payload: AssociationPostFormPayload) {
     if (!association || !session?.user) return;
 
+    setIsSavingPost(true);
     const request = editingPost
       ? updateAssociationPost(editingPost.id, payload, session.user.id)
       : createAssociationPost(
@@ -155,37 +192,54 @@ export default function AssociationDashboardView() {
     const result = await request;
 
     if (!result.success) {
-      alert(`Impossible d'enregistrer le post : ${errorMessage(result.error)}`);
+      setIsSavingPost(false);
+      toast.error("Impossible d'enregistrer le post", errorMessage(result.error));
       return;
     }
 
+    const wasEditing = Boolean(editingPost);
     setEditingPost(null);
     await loadDashboard();
     setActiveTab('posts');
     await invalidateContentRelatedQueries(association.id, association.quartier_id as number | null);
+    setIsSavingPost(false);
+    toast.success(wasEditing ? 'Post mis à jour' : 'Post enregistré');
   }
 
   async function handleRemovePost(post: AssociationPost) {
     if (!session?.user || !association) return;
 
+    const confirmed = await confirm({
+      title: 'Retirer ce post ?',
+      message: 'Il ne sera plus visible sur la page de l’association ni dans le fil du quartier.',
+      confirmLabel: 'Retirer',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
+
+    setRemovingPostId(post.id);
     const result = await removeAssociationPost(post.id, session.user.id);
     if (!result.success) {
-      alert(`Impossible de retirer le post : ${errorMessage(result.error)}`);
+      setRemovingPostId(null);
+      toast.error('Impossible de retirer le post', errorMessage(result.error));
       return;
     }
 
     setEditingPost(null);
     await loadDashboard();
     await invalidateContentRelatedQueries(association.id, association.quartier_id as number | null);
+    setRemovingPostId(null);
+    toast.success('Post retiré');
   }
 
   async function handleSaveEvent(payload: AssociationEventFormPayload) {
     if (!association || !session?.user) return;
     if (!payload.start_at) {
-      alert("Impossible d'enregistrer l'événement : date de début requise");
+      toast.error("Impossible d'enregistrer l'événement", 'La date de début est requise.');
       return;
     }
 
+    setIsSavingEvent(true);
     const request = editingEvent
       ? updateAssociationEvent(editingEvent.id, payload, session.user.id)
       : createAssociationEvent(
@@ -201,168 +255,189 @@ export default function AssociationDashboardView() {
     const result = await request;
 
     if (!result.success) {
-      alert(`Impossible d'enregistrer l'événement : ${errorMessage(result.error)}`);
+      setIsSavingEvent(false);
+      toast.error("Impossible d'enregistrer l'événement", errorMessage(result.error));
       return;
     }
 
+    const wasEditing = Boolean(editingEvent);
     setEditingEvent(null);
     await loadDashboard();
     setActiveTab('events');
     await invalidateContentRelatedQueries(association.id, association.quartier_id as number | null);
+    setIsSavingEvent(false);
+    toast.success(wasEditing ? 'Événement mis à jour' : 'Événement enregistré');
   }
 
   async function handleRemoveEvent(event: AssociationEvent) {
     if (!session?.user || !association) return;
 
+    const confirmed = await confirm({
+      title: 'Retirer cet événement ?',
+      message: `« ${event.title} » ne sera plus visible dans l’agenda du quartier.`,
+      confirmLabel: 'Retirer',
+      tone: 'danger',
+    });
+    if (!confirmed) return;
+
+    setIsRemovingEvent(true);
     const result = await removeAssociationEvent(event.id, session.user.id);
     if (!result.success) {
-      alert(`Impossible de retirer l'événement : ${errorMessage(result.error)}`);
+      setIsRemovingEvent(false);
+      toast.error("Impossible de retirer l'événement", errorMessage(result.error));
       return;
     }
 
     setEditingEvent(null);
     await loadDashboard();
     await invalidateContentRelatedQueries(association.id, association.quartier_id as number | null);
+    setIsRemovingEvent(false);
+    toast.success('Événement retiré');
   }
 
   if (isLoading) {
     return (
-      <div className="p-10 text-center">
-        <p className="text-xl font-semibold text-slate-700">Chargement du dashboard...</p>
-      </div>
+      <Page className="pt-6 md:pt-10">
+        <Skeleton height="1rem" width="9rem" />
+        <Skeleton height="2.5rem" width="60%" className="mt-3" />
+        <Skeleton height="1rem" width="80%" className="mt-3" />
+        <Skeleton height="2.5rem" width="18rem" radius="var(--k-radius-md)" className="mt-8" />
+        <SkeletonText lines={6} className="mt-8" />
+      </Page>
     );
   }
 
   if (!association) {
     return (
-      <div className="space-y-4 p-10 text-center">
-        <p className="text-xl font-semibold text-slate-700">Accès impossible à ce dashboard.</p>
-        <p className="text-sm text-slate-500">
-          Vous n&apos;êtes pas membre de cette association, ou l&apos;association n&apos;existe pas.
-        </p>
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-6 py-2.5 text-sm font-bold text-white shadow transition hover:bg-slate-800"
-        >
-          Retour
-        </button>
-      </div>
+      <Page className="pt-6 md:pt-10">
+        <h1 className="k-visually-hidden">Accès impossible à ce tableau de bord</h1>
+        <EmptyState
+          icon="lock"
+          title="Accès impossible à ce tableau de bord"
+          description="Vous n’êtes pas membre de cette association, ou l’association n’existe pas."
+          action={
+            <Button variant="primary" onClick={() => navigate(-1)}>
+              Revenir en arrière
+            </Button>
+          }
+        />
+      </Page>
     );
   }
 
+  const quartierId = association.quartier_id as number | null | undefined;
+
   return (
-    <div className="mx-auto max-w-6xl px-4 py-6">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={() => navigate(`/associations/${association.id}`)}
-          className="inline-flex items-center gap-2 rounded-full bg-white/70 px-5 py-2.5 text-sm font-bold text-slate-800 shadow transition hover:bg-white"
-        >
-          Retour à la page publique
-        </button>
+    <Page className="pt-6 md:pt-10">
+      <PageHeader
+        back={{ to: `/associations/${association.id}`, label: 'Retour à la page publique' }}
+        eyebrow="Espace de gestion"
+        title={association.name}
+        description="Gérez la fiche, les publications et les événements de votre association sans quitter Kartie."
+        meta={
+          <>
+            {association.status_label ? (
+              <Badge tone={association.is_publicly_visible ? 'success' : 'warning'} dot>
+                {association.status_label}
+              </Badge>
+            ) : null}
+            <Badge icon="users">{association.followers_count || 0} abonné(s)</Badge>
+            {membership?.role ? <Badge icon="user">Rôle : {membership.role}</Badge> : null}
+          </>
+        }
+      />
 
-        <div className="flex flex-wrap items-center gap-3">
-          <span className="rounded-full bg-white/70 px-4 py-2 text-sm font-bold text-slate-700 shadow">
-            {association.followers_count || 0} abonné(s)
-          </span>
-          <span className="rounded-full bg-slate-900 px-4 py-2 text-sm font-bold text-white">
-            {association.status_label}
-          </span>
-          {membership?.role ? (
-            <span className="rounded-full bg-white/70 px-4 py-2 text-sm font-bold text-slate-700 shadow">
-              Rôle : {membership.role}
-            </span>
-          ) : null}
-        </div>
-      </div>
-
-      <section className="desktop-glass-card mb-8 rounded-[2rem] p-6 md:p-8">
-        <h1 className="text-3xl font-black tracking-tight text-slate-900 md:text-5xl">
-          Dashboard {association.name}
-        </h1>
-        <p className="mt-3 max-w-3xl text-base text-slate-700 md:text-lg">
-          Gérez la fiche, les publications et les événements de votre association sans quitter
-          Kartie.
-        </p>
-      </section>
-
-      <div className="mb-6 flex flex-wrap gap-2">
-        {tabs.map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActiveTab(tab.id)}
-            className={[
-              'rounded-full px-4 py-2 text-sm font-bold transition',
-              activeTab === tab.id
-                ? 'bg-slate-900 text-white'
-                : 'bg-white/70 text-slate-700 hover:bg-white',
-            ].join(' ')}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <Segmented
+        label="Sections du tableau de bord"
+        value={activeTab}
+        onChange={setActiveTab}
+        options={tabs}
+        className="mb-8"
+      />
 
       {activeTab === 'profile' ? (
         <AssociationForm
           modelValue={association}
           allowModerationFields={profile?.role === 'admin'}
           submitLabel="Mettre à jour la fiche"
+          submitting={isSavingProfile}
           onSubmit={handleUpdateAssociation}
         />
       ) : null}
 
       {activeTab === 'posts' ? (
-        <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-14">
           <AssociationPostComposer
             modelValue={editingPost}
             submitLabel={editingPost ? 'Mettre à jour le post' : 'Créer un post'}
+            submitting={isSavingPost}
+            showCancel={Boolean(editingPost)}
+            onCancel={() => setEditingPost(null)}
             onSubmit={handleSavePost}
           />
 
-          <section className="rounded-3xl bg-white p-6 shadow-lg">
-            <h2 className="mb-4 text-xl font-black text-slate-900">Publications</h2>
+          <section>
+            <div className="mb-4 flex items-end justify-between gap-3">
+              <h2 className="k-title-3">Publications</h2>
+              <span className="k-footnote k-ink-tertiary tabular-nums">{posts.length}</span>
+            </div>
+
             {posts.length === 0 ? (
-              <div className="rounded-2xl bg-slate-50 p-8 text-center text-slate-500">
-                Aucun post enregistré.
-              </div>
+              <EmptyState
+                icon="megaphone"
+                title="Aucun post enregistré"
+                description="Rédigez votre première publication : elle apparaîtra sur la page de l’association et dans le fil du quartier."
+              />
             ) : (
-              <div className="space-y-4">
-                {posts.map((post) => (
-                  <article key={post.id} className="rounded-2xl border border-slate-200 p-4">
-                    <div className="mb-3 flex items-start justify-between gap-3">
-                      <div>
-                        {post.title ? (
-                          <p className="font-bold text-slate-900">{post.title}</p>
-                        ) : null}
-                        <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                          {post.status}
-                        </p>
+              <div className="k-list">
+                {posts.map((post) => {
+                  const isEditing = editingPost?.id === post.id;
+                  return (
+                    <article key={post.id} className="py-5 first:pt-0">
+                      <div className="flex flex-wrap items-start justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          {post.title ? (
+                            <h3 className="k-callout font-semibold">{post.title}</h3>
+                          ) : null}
+                          <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                            <Badge tone={POST_STATUS_TONES[post.status] ?? 'neutral'}>
+                              {postStatusLabel(post.status)}
+                            </Badge>
+                            {isEditing ? (
+                              <Badge tone="accent" icon="pencil">
+                                En cours d’édition
+                              </Badge>
+                            ) : null}
+                          </div>
+                        </div>
+
+                        <div className="flex shrink-0 items-center gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => setEditingPost(post)}
+                            leading={<Icon name="pencil" size={15} />}
+                          >
+                            Modifier
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="danger-tinted"
+                            loading={removingPostId === post.id}
+                            onClick={() => void handleRemovePost(post)}
+                            leading={<Icon name="trash" size={15} />}
+                          >
+                            Retirer
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setEditingPost(post)}
-                          className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:bg-slate-200"
-                        >
-                          Modifier
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => void handleRemovePost(post)}
-                          className="rounded-full bg-rose-100 px-3 py-1.5 text-xs font-bold text-rose-700 transition hover:bg-rose-200"
-                        >
-                          Retirer
-                        </button>
-                      </div>
-                    </div>
-                    <p className="whitespace-pre-line text-sm text-slate-700">
-                      {String(post.content || '')}
-                    </p>
-                  </article>
-                ))}
+
+                      <p className="k-subhead k-ink-secondary mt-2 line-clamp-3 whitespace-pre-line">
+                        {String(post.content || '')}
+                      </p>
+                    </article>
+                  );
+                })}
               </div>
             )}
           </section>
@@ -370,23 +445,52 @@ export default function AssociationDashboardView() {
       ) : null}
 
       {activeTab === 'events' ? (
-        <div className="grid gap-6 lg:grid-cols-[0.85fr_1.15fr]">
+        <div className="grid gap-10 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-14">
           <AssociationEventForm
             modelValue={editingEvent}
-            submitLabel={
-              editingEvent ? 'Mettre à jour l’événement' : 'Créer un événement'
-            }
+            submitLabel={editingEvent ? 'Mettre à jour l’événement' : 'Créer un événement'}
+            submitting={isSavingEvent}
+            showCancel={Boolean(editingEvent)}
+            onCancel={() => setEditingEvent(null)}
             onSubmit={handleSaveEvent}
           />
 
-          <section className="rounded-3xl bg-white p-6 shadow-lg">
-            <h2 className="mb-4 text-xl font-black text-slate-900">Événements</h2>
+          <section>
+            <div className="mb-4 flex items-end justify-between gap-3">
+              <h2 className="k-title-3">Événements</h2>
+              <span className="k-footnote k-ink-tertiary tabular-nums">{events.length}</span>
+            </div>
+
+            {editingEvent ? (
+              <Notice tone="info" className="mb-4">
+                <p className="k-subhead">
+                  Vous modifiez « {editingEvent.title} » dans le formulaire.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  <Button size="sm" variant="ghost" onClick={() => setEditingEvent(null)}>
+                    Annuler l’édition
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="danger-tinted"
+                    loading={isRemovingEvent}
+                    onClick={() => void handleRemoveEvent(editingEvent)}
+                    leading={<Icon name="trash" size={15} />}
+                  >
+                    Retirer l’événement
+                  </Button>
+                </div>
+              </Notice>
+            ) : null}
+
             {events.length === 0 ? (
-              <div className="rounded-2xl bg-slate-50 p-8 text-center text-slate-500">
-                Aucun événement enregistré.
-              </div>
+              <EmptyState
+                icon="calendar"
+                title="Aucun événement enregistré"
+                description="Programmez un événement : il apparaîtra sur la page de l’association et dans l’agenda du quartier."
+              />
             ) : (
-              <div className="space-y-4">
+              <div className="k-grid">
                 {events.map((event) => (
                   <AssociationEventCard
                     key={event.id}
@@ -398,20 +502,17 @@ export default function AssociationDashboardView() {
                     onEdit={(item) => setEditingEvent(item)}
                   />
                 ))}
-                {editingEvent ? (
-                  <button
-                    type="button"
-                    onClick={() => void handleRemoveEvent(editingEvent)}
-                    className="rounded-full bg-rose-100 px-4 py-2 text-sm font-bold text-rose-700 transition hover:bg-rose-200"
-                  >
-                    Retirer l’événement en cours d’édition
-                  </button>
-                ) : null}
               </div>
             )}
           </section>
         </div>
       ) : null}
-    </div>
+
+      {quartierId != null ? (
+        <p className="k-footnote k-ink-tertiary k-hairline-top mt-14 pt-6">
+          Les contenus publiés ici alimentent aussi le fil du quartier.
+        </p>
+      ) : null}
+    </Page>
   );
 }

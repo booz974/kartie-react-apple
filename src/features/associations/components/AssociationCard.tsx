@@ -1,5 +1,9 @@
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
+import Badge from '@/components/ui/Badge';
+import Button from '@/components/ui/Button';
+import Icon from '@/components/ui/Icon';
+import Surface from '@/components/ui/Surface';
 import type { Association } from '@/lib/types/contract';
 import AssociationFollowButton from './AssociationFollowButton';
 
@@ -24,58 +28,65 @@ export default function AssociationCard({
     setIsFollowing(following);
   }, [following]);
 
+  const logoUrl = association.logo_url as string | null | undefined;
+
   return (
-    <div className="desktop-glass-card rounded-3xl p-5 transition-all hover:-translate-y-1 hover:shadow-xl md:p-6">
+    <Surface className="flex h-full flex-col gap-4">
       <div className="flex items-start gap-4">
-        {association.logo_url ? (
+        {logoUrl ? (
           <img
-            src={association.logo_url as string}
-            alt={association.name}
-            className="h-16 w-16 rounded-2xl object-cover shadow-md"
+            src={logoUrl}
+            alt=""
+            loading="lazy"
+            className="h-14 w-14 shrink-0 rounded-lg border border-separator object-cover"
           />
         ) : (
-          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/70 text-2xl shadow-md">
-            🤝
-          </div>
+          <span className="grid h-14 w-14 shrink-0 place-items-center rounded-lg bg-accent-soft text-accent">
+            <Icon name="handshake" size={24} />
+          </span>
         )}
 
         <div className="min-w-0 flex-1">
-          <div className="mb-2 flex flex-wrap items-center gap-2">
-            <h3 className="truncate text-lg font-black text-slate-900">{association.name}</h3>
-            <span className="rounded-full bg-white/70 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-slate-700">
-              {association.category_label}
-            </span>
+          <h3 className="k-title-3 truncate">{association.name}</h3>
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            {association.category_label ? <Badge>{association.category_label}</Badge> : null}
             {association.status && association.status !== 'active' ? (
-              <span className="rounded-full bg-amber-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-700">
-                {association.status_label}
-              </span>
+              <Badge tone="warning">{association.status_label}</Badge>
             ) : null}
             {association.is_verified ? (
-              <span className="rounded-full bg-emerald-100 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-emerald-700">
+              <Badge tone="accent" icon="shield">
                 Vérifiée
-              </span>
+              </Badge>
             ) : null}
-          </div>
-
-          <p className="mb-3 line-clamp-3 text-sm leading-relaxed text-slate-700">
-            {association.short_description as string}
-          </p>
-
-          <div className="mb-4 flex flex-wrap gap-3 text-xs font-semibold text-slate-600">
-            <span>{association.followers_count || 0} abonné(s)</span>
-            {association.contact_email ? <span>{association.contact_email as string}</span> : null}
           </div>
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-        <button
-          type="button"
+      <p className="k-subhead k-ink-secondary line-clamp-3">
+        {association.short_description as string}
+      </p>
+
+      <div className="k-footnote k-ink-tertiary flex flex-wrap items-center gap-x-4 gap-y-1">
+        <span className="inline-flex items-center gap-1.5">
+          <Icon name="users" size={15} />
+          {association.followers_count || 0} abonné(s)
+        </span>
+        {association.contact_email ? (
+          <span className="inline-flex min-w-0 items-center gap-1.5">
+            <Icon name="mail" size={15} />
+            <span className="truncate">{association.contact_email as string}</span>
+          </span>
+        ) : null}
+      </div>
+
+      <div className="k-hairline-top mt-auto flex flex-wrap items-center gap-2 pt-4">
+        <Button
+          variant="tinted"
           onClick={() => onOpen(association)}
-          className="rounded-full bg-slate-900 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-800"
+          trailing={<Icon name="chevronRight" size={16} />}
         >
           Voir la page
-        </button>
+        </Button>
 
         {association.status === 'active' ? (
           <AssociationFollowButton
@@ -89,6 +100,6 @@ export default function AssociationCard({
           />
         ) : null}
       </div>
-    </div>
+    </Surface>
   );
 }

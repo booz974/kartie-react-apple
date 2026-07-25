@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
+import { ToastProvider } from '@/components/ui/Toast';
 import PetitionView from '@/features/democracy/views/PetitionView';
 
 const mockSupportPetition = vi.fn();
@@ -23,18 +24,21 @@ vi.mock('@/stores/authStore', () => ({
 
 function renderPetitionView() {
   return render(
-    <MemoryRouter initialEntries={['/petitions/4']}>
-      <Routes>
-        <Route path="/petitions/:id" element={<PetitionView />} />
-      </Routes>
-    </MemoryRouter>,
+    // L'échec du soutien passe désormais par une notification du produit et
+    // non par `window.alert` : le fournisseur doit donc être monté.
+    <ToastProvider>
+      <MemoryRouter initialEntries={['/petitions/4']}>
+        <Routes>
+          <Route path="/petitions/:id" element={<PetitionView />} />
+        </Routes>
+      </MemoryRouter>
+    </ToastProvider>,
   );
 }
 
 describe('PetitionView support path (D-16)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(window, 'alert').mockImplementation(() => {});
 
     mockUsePetition.mockReturnValue({
       data: {
@@ -69,7 +73,10 @@ describe('PetitionView support path (D-16)', () => {
     await waitFor(() => {
       expect(mockSupportPetition).toHaveBeenCalledWith(4, 'user-uuid');
     });
-    expect(window.alert).toHaveBeenCalledWith('Une erreur est survenue lors du soutien.');
+
+    expect(
+      await screen.findByText('Une erreur est survenue lors du soutien.'),
+    ).toBeTruthy();
   });
 
   it('does not mark petition as supported when RPC fails', async () => {
@@ -83,7 +90,7 @@ describe('PetitionView support path (D-16)', () => {
     fireEvent.click(btn);
 
     await waitFor(() => {
-      expect(window.alert).toHaveBeenCalled();
+      expect(mockSupportPetition).toHaveBeenCalled();
     });
 
     expect(btn.textContent).not.toMatch(/Soutenu/);

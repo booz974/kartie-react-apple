@@ -1,4 +1,7 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
+import Button from '@/components/ui/Button';
+import Field, { Input, Textarea } from '@/components/ui/Field';
+import Modal from '@/components/ui/Modal';
 
 interface CreateArticleFormProps {
   onCancel: () => void;
@@ -50,97 +53,99 @@ export default function CreateArticleForm({
     }
   }
 
+  function handleSubmit(event: FormEvent) {
+    event.preventDefault();
+    validateAndSubmit();
+  }
+
   return (
-    <div className="fixed inset-0 bg-gray-100 z-50 overflow-y-auto">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-2xl font-bold text-gray-800">Nouvel article</h2>
-          <div className="flex items-center gap-4">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-2 px-5 rounded-lg"
-            >
-              Annuler
-            </button>
-            <button
-              type="button"
-              onClick={validateAndSubmit}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-5 rounded-lg"
-            >
-              Publier
-            </button>
-          </div>
-        </div>
+    <Modal
+      onClose={onCancel}
+      size="wide"
+      title="Nouvel article"
+      description="Racontez une réalisation du quartier : ce qui a changé, pour qui, et pourquoi."
+      footer={
+        <>
+          <Button variant="secondary" onClick={onCancel}>
+            Annuler
+          </Button>
+          <Button type="submit" form="create-article-form" variant="primary">
+            Publier
+          </Button>
+        </>
+      }
+    >
+      <form id="create-article-form" onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <Field label="Titre de la réalisation" error={errors.title}>
+          {(props) => (
+            <Input
+              {...props}
+              type="text"
+              required
+              placeholder="Ex : La médiathèque rouvre ses portes"
+              value={form.title}
+              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+              data-autofocus
+            />
+          )}
+        </Field>
 
-        <div className="bg-white p-8 md:p-12 rounded-lg shadow-lg">
-          <input
-            type="text"
-            placeholder="Titre de la réalisation..."
-            value={form.title}
-            onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-            className={`text-4xl font-extrabold w-full border-none focus:ring-0 p-0 mb-2 placeholder-gray-300 create-article-input${errors.title ? ' border-b border-red-500' : ''}`}
-            required
-          />
-          {errors.title ? (
-            <p className="text-red-500 text-sm mb-4">{errors.title}</p>
-          ) : null}
+        <Field label="Catégorie" hint="Un mot qui situe la réalisation dans la vie du quartier.">
+          {(props) => (
+            <Input
+              {...props}
+              type="text"
+              required
+              placeholder="Rénovation, Social, Mobilité…"
+              value={form.category}
+              onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+            />
+          )}
+        </Field>
 
-          <input
-            type="text"
-            placeholder="Catégorie (ex: Rénovation, Social)"
-            value={form.category}
-            onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-            className="text-sm font-bold uppercase w-full border-none focus:ring-0 p-0 mb-6 placeholder-gray-400 text-indigo-600 create-article-input"
-            required
-          />
+        <Field label="Description courte" hint="C'est ce qui s'affiche dans la liste.">
+          {(props) => (
+            <Textarea
+              {...props}
+              required
+              rows={3}
+              placeholder="Une ou deux phrases pour donner envie de lire."
+              value={form.description}
+              onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+            />
+          )}
+        </Field>
 
-          <textarea
-            placeholder="Description courte (visible sur la carte)..."
-            value={form.description}
-            onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-            className="text-lg font-light w-full border-none focus:ring-0 p-0 mb-8 h-24 resize-none placeholder-gray-400 create-article-input"
-            required
-          />
-
-          <div className="mb-8 border-t pt-8">
-            <label className="block text-gray-500 text-sm font-bold mb-2">
-              URL de l&apos;image de couverture
-            </label>
-            <input
+        <Field label="URL de l'image de couverture" error={errors.image_url}>
+          {(props) => (
+            <Input
+              {...props}
               type="url"
-              placeholder="https://..."
+              required
+              placeholder="https://…"
               value={form.image_url}
               onChange={(e) => setForm((f) => ({ ...f, image_url: e.target.value }))}
-              className={`w-full border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 placeholder-gray-400${errors.image_url ? ' border-red-500' : ''}`}
-              required
             />
-            {errors.image_url ? (
-              <p className="text-red-500 text-sm mt-1">{errors.image_url}</p>
-            ) : null}
-          </div>
+          )}
+        </Field>
 
-          <div className="border-t pt-8">
-            <label className="block text-gray-500 text-sm font-bold mb-2">
-              Contenu de l&apos;article{' '}
-              <span className="font-normal">
-                (Vous pouvez utiliser des balises HTML comme &lt;h2&gt;, &lt;p&gt;,
-                &lt;img src=&quot;...&quot;&gt;)
-              </span>
-            </label>
-            <textarea
-              placeholder="Racontez votre histoire ici..."
+        <Field
+          label="Contenu de l'article"
+          hint="Les balises HTML simples sont acceptées : <h2>, <p>, <img src=…>."
+          error={errors.content}
+        >
+          {(props) => (
+            <Textarea
+              {...props}
+              required
+              rows={14}
+              placeholder="Racontez votre histoire ici…"
               value={form.content}
               onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
-              className={`w-full border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 h-96 resize-y placeholder-gray-400 font-serif text-lg${errors.content ? ' border-red-500' : ''}`}
-              required
             />
-            {errors.content ? (
-              <p className="text-red-500 text-sm mt-1">{errors.content}</p>
-            ) : null}
-          </div>
-        </div>
-      </div>
-    </div>
+          )}
+        </Field>
+      </form>
+    </Modal>
   );
 }

@@ -2,6 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router';
+import { ConfirmProvider } from '@/components/ui/Confirm';
+import { ToastProvider } from '@/components/ui/Toast';
 import AdminRagView from './AdminRagView';
 
 const mockListDocs = vi.fn();
@@ -22,11 +24,17 @@ function renderView() {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
+  // La vue s'appuie sur les surfaces du design system pour confirmer et rendre
+  // compte : les fournisseurs correspondants font partie de son contexte normal.
   return render(
     <QueryClientProvider client={client}>
-      <MemoryRouter>
-        <AdminRagView />
-      </MemoryRouter>
+      <ToastProvider>
+        <ConfirmProvider>
+          <MemoryRouter>
+            <AdminRagView />
+          </MemoryRouter>
+        </ConfirmProvider>
+      </ToastProvider>
     </QueryClientProvider>,
   );
 }
@@ -155,17 +163,46 @@ describe('AdminRagView', () => {
         created_at: '2026-07-01T10:00:00Z',
       },
     ]);
-    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
-
     renderView();
     await waitFor(() => expect(screen.getByText('to-delete.txt')).toBeTruthy());
 
     fireEvent.click(screen.getByRole('button', { name: 'Supprimer to-delete.txt' }));
 
+    // La confirmation est une surface du produit, plus une boîte navigateur :
+    // rien n'est supprimé tant qu'elle n'a pas été validée.
+    const dialog = await screen.findByRole('dialog');
+    expect(dialog.textContent).toMatch(/to-delete\.txt/);
+    expect(mockDeleteDoc).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Supprimer' }));
+
     await waitFor(() => {
       expect(mockDeleteDoc).toHaveBeenCalledWith('doc-1');
     });
-    expect(confirmSpy).toHaveBeenCalledWith('Supprimer "to-delete.txt" du RAG ?');
-    confirmSpy.mockRestore();
+  });
+
+  it('cancels delete when the confirmation is dismissed', async () => {
+    mockListDocs.mockResolvedValue([
+      {
+        id: 'doc-1',
+        file_name: 'to-keep.txt',
+        mime_type: 'text/plain',
+        file_size: 10,
+        status: 'active',
+        created_at: '2026-07-01T10:00:00Z',
+      },
+    ]);
+
+    renderView();
+    await waitFor(() => expect(screen.getByText('to-keep.txt')).toBeTruthy());
+
+    fireEvent.click(screen.getByRole('button', { name: 'Supprimer to-keep.txt' }));
+    await screen.findByRole('dialog');
+    fireEvent.click(screen.getByRole('button', { name: 'Annuler' }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
+    expect(mockDeleteDoc).not.toHaveBeenCalled();
   });
 });

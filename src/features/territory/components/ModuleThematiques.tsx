@@ -4,6 +4,7 @@ import {
   BarElement,
   CategoryScale,
   Chart as ChartJS,
+  Filler,
   Legend,
   LinearScale,
   LineElement,
@@ -12,6 +13,10 @@ import {
   Tooltip,
 } from 'chart.js';
 import { getEvolutionThematique, getTopThematiques } from '@/api/charts';
+import Field, { Select } from '@/components/ui/Field';
+import { Section } from '@/components/ui/Page';
+import Spinner from '@/components/ui/Spinner';
+import { CHART_COLORS, baseChartOptions } from '@/design/chartTheme';
 
 ChartJS.register(
   Title,
@@ -22,20 +27,59 @@ ChartJS.register(
   PointElement,
   CategoryScale,
   LinearScale,
+  Filler,
 );
 
-const chartOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  scales: {
-    y: {
-      beginAtZero: true,
-      ticks: {
-        precision: 0,
+const TOP_LABEL = 'Nombre de propositions';
+const EVOLUTION_LABEL = 'Nombre de mentions';
+
+function emptyEvolution() {
+  return {
+    labels: [] as string[],
+    datasets: [
+      {
+        label: EVOLUTION_LABEL,
+        borderColor: CHART_COLORS.accent,
+        backgroundColor: CHART_COLORS.accentSoft,
+        pointBackgroundColor: CHART_COLORS.accent,
+        pointRadius: 3,
+        borderWidth: 2,
+        tension: 0.3,
+        fill: true,
+        data: [] as number[],
       },
-    },
-  },
-};
+    ],
+  };
+}
+
+/** Cadre commun aux deux graphiques : un conteneur, une hauteur, trois états. */
+function ChartFrame({
+  loading,
+  hasData,
+  emptyLabel,
+  children,
+}: {
+  loading: boolean;
+  hasData: boolean;
+  emptyLabel: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="relative h-72">
+      {loading ? (
+        <div className="flex h-full items-center justify-center">
+          <Spinner size={22} className="k-ink-tertiary" label="Chargement du graphique" />
+        </div>
+      ) : hasData ? (
+        children
+      ) : (
+        <div className="flex h-full items-center justify-center">
+          <p className="k-subhead k-ink-tertiary">{emptyLabel}</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function ModuleThematiques() {
   const [topThemes, setTopThemes] = useState<string[]>([]);
@@ -44,24 +88,14 @@ export default function ModuleThematiques() {
     labels: [] as string[],
     datasets: [
       {
-        label: 'Nombre de propositions',
-        backgroundColor: '#f87979',
+        label: TOP_LABEL,
+        backgroundColor: CHART_COLORS.warm,
+        borderRadius: 6,
         data: [] as number[],
       },
     ],
   });
-  const [evolutionChartData, setEvolutionChartData] = useState({
-    labels: [] as string[],
-    datasets: [
-      {
-        label: 'Nombre de mentions',
-        borderColor: '#4A90E2',
-        backgroundColor: 'rgba(74, 144, 226, 0.1)',
-        fill: true,
-        data: [] as number[],
-      },
-    ],
-  });
+  const [evolutionChartData, setEvolutionChartData] = useState(emptyEvolution);
   const [isLoadingTop, setIsLoadingTop] = useState(true);
   const [isLoadingEvol, setIsLoadingEvol] = useState(false);
 
@@ -77,8 +111,9 @@ export default function ModuleThematiques() {
             labels: data.map((d) => `#${d.thematique}`),
             datasets: [
               {
-                label: 'Nombre de propositions',
-                backgroundColor: '#f87979',
+                label: TOP_LABEL,
+                backgroundColor: CHART_COLORS.warm,
+                borderRadius: 6,
                 data: data.map((d) => d.total),
               },
             ],
@@ -98,31 +133,18 @@ export default function ModuleThematiques() {
 
     async function fetchThemeEvolution() {
       setIsLoadingEvol(true);
-      setEvolutionChartData({
-        labels: [],
-        datasets: [
-          {
-            label: 'Nombre de mentions',
-            borderColor: '#4A90E2',
-            backgroundColor: 'rgba(74, 144, 226, 0.1)',
-            fill: true,
-            data: [],
-          },
-        ],
-      });
+      setEvolutionChartData(emptyEvolution());
 
       try {
         const data = await getEvolutionThematique(selectedTheme);
 
         if (data.length > 0) {
           setEvolutionChartData({
+            ...emptyEvolution(),
             labels: data.map((d) => d.mois),
             datasets: [
               {
-                label: 'Nombre de mentions',
-                borderColor: '#4A90E2',
-                backgroundColor: 'rgba(74, 144, 226, 0.1)',
-                fill: true,
+                ...emptyEvolution().datasets[0],
                 data: data.map((d) => d.total),
               },
             ],
@@ -139,73 +161,64 @@ export default function ModuleThematiques() {
   }, [selectedTheme]);
 
   return (
-    <section className="space-y-6">
-      <h2 className="text-2xl font-semibold">Baromètre des Thématiques</h2>
+    <Section
+      title="Baromètre des thématiques"
+      description="Ce dont les habitants parlent le plus, et comment cela évolue."
+    >
+      <div className="flex flex-col gap-8">
+        <div className="rounded-lg border border-separator bg-surface p-5">
+          <h3 className="k-title-3 mb-4">Top 5 des thématiques</h3>
+          <ChartFrame
+            loading={isLoadingTop}
+            hasData={topThemesChartData.labels.length > 0}
+            emptyLabel="Aucune thématique remontée pour l’instant."
+          >
+            <Bar data={topThemesChartData} options={baseChartOptions} />
+          </ChartFrame>
+        </div>
 
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="font-bold mb-4 text-lg">Top 5 des thématiques</h3>
-        <div className="relative h-96">
-          {!isLoadingTop && topThemesChartData.labels.length > 0 ? (
-            <Bar data={topThemesChartData} options={chartOptions} />
-          ) : isLoadingTop ? (
-            <div className="flex items-center justify-center h-full text-gray-500">
-              Chargement des données...
+        <div className="rounded-lg border border-separator bg-surface p-5">
+          <h3 className="k-title-3 mb-4">Analyse détaillée</h3>
+
+          <Field label="Thématique à analyser" className="mb-6 max-w-sm">
+            {(props) => (
+              <Select
+                {...props}
+                value={selectedTheme}
+                onChange={(event) => setSelectedTheme(event.target.value)}
+              >
+                <option disabled value="">
+                  Sélectionnez une thématique
+                </option>
+                {topThemes.map((theme) => (
+                  <option key={theme} value={theme}>
+                    {theme}
+                  </option>
+                ))}
+              </Select>
+            )}
+          </Field>
+
+          {selectedTheme ? (
+            <div>
+              <h4 className="k-subhead mb-3 font-semibold">
+                Évolution de « #{selectedTheme} »
+              </h4>
+              <ChartFrame
+                loading={isLoadingEvol}
+                hasData={evolutionChartData.labels.length > 0}
+                emptyLabel="Aucune donnée pour cette thématique."
+              >
+                <Line data={evolutionChartData} options={baseChartOptions} />
+              </ChartFrame>
             </div>
           ) : (
-            <div className="flex items-center justify-center h-full text-gray-500">
-              Aucune donnée disponible.
-            </div>
+            <p className="k-subhead k-ink-tertiary">
+              Choisissez une thématique pour voir son évolution mois par mois.
+            </p>
           )}
         </div>
       </div>
-
-      <div className="bg-white p-6 rounded-lg shadow">
-        <h3 className="font-bold mb-4 text-lg">Analyse détaillée par thématique</h3>
-
-        <div className="mb-6 max-w-sm">
-          <label htmlFor="theme-select" className="block text-sm font-medium text-gray-700">
-            Choisir une thématique à analyser :
-          </label>
-          <select
-            id="theme-select"
-            value={selectedTheme}
-            onChange={(e) => setSelectedTheme(e.target.value)}
-            className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md"
-          >
-            <option disabled value="">
-              -- Sélectionnez --
-            </option>
-            {topThemes.map((theme) => (
-              <option key={theme} value={theme}>
-                {theme}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {selectedTheme ? (
-          <div className="mt-4">
-            <div>
-              <h4 className="font-semibold mb-2">
-                Évolution de la thématique &quot;#{selectedTheme}&quot;
-              </h4>
-              <div className="relative h-96">
-                {!isLoadingEvol && evolutionChartData.labels.length > 0 ? (
-                  <Line data={evolutionChartData} options={chartOptions} />
-                ) : isLoadingEvol ? (
-                  <div className="flex items-center justify-center h-full text-gray-500">
-                    Chargement...
-                  </div>
-                ) : (
-                  <div className="flex items-center justify-center h-full text-gray-500">
-                    Aucune donnée pour cette thématique.
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        ) : null}
-      </div>
-    </section>
+    </Section>
   );
 }

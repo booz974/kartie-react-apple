@@ -1,5 +1,9 @@
 import { useState } from 'react';
+import Button from '@/components/ui/Button';
+import Field, { Input, Textarea } from '@/components/ui/Field';
+import Icon from '@/components/ui/Icon';
 import ImageUploader from '@/components/ui/ImageUploader';
+import Modal from '@/components/ui/Modal';
 
 interface CreateEventFormProps {
   onCancel: () => void;
@@ -20,79 +24,106 @@ export default function CreateEventForm({ onCancel, onCreateEvent }: CreateEvent
     description: '',
     image: '',
   });
+  const [imageError, setImageError] = useState('');
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (form.image) {
       onCreateEvent({ ...form });
     } else {
-      alert("Veuillez uploader une image pour l'événement.");
+      // L'erreur reste à côté du champ concerné : elle dit quoi corriger, et où.
+      setImageError("Ajoutez une image pour illustrer l'événement.");
     }
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white rounded-2xl p-8 shadow-lg w-full max-w-lg">
-        <h2 className="text-2xl font-bold mb-6">Ajouter un nouvel événement</h2>
-        <form onSubmit={handleSubmit}>
-          <div className="space-y-4">
-            <input
+    <Modal
+      onClose={onCancel}
+      title="Ajouter un événement"
+      description="Il apparaîtra dans l'agenda du quartier."
+      footer={
+        <>
+          <Button variant="secondary" onClick={onCancel}>
+            Annuler
+          </Button>
+          <Button type="submit" form="create-event-form" variant="primary" disabled={!form.image}>
+            {form.image ? 'Créer' : 'Ajoutez une image'}
+          </Button>
+        </>
+      }
+    >
+      <form id="create-event-form" onSubmit={handleSubmit} className="flex flex-col gap-5">
+        <Field label="Titre de l'événement">
+          {(props) => (
+            <Input
+              {...props}
+              type="text"
+              required
+              placeholder="Ex : Fête des voisins"
               value={form.title}
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-              type="text"
-              placeholder="Titre de l'événement"
-              required
-              className="w-full p-2 border rounded-md"
+              data-autofocus
             />
-            <input
+          )}
+        </Field>
+
+        <Field label="Date">
+          {(props) => (
+            <Input
+              {...props}
+              type="text"
+              required
+              placeholder="25 décembre 2025"
               value={form.date}
               onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))}
-              type="text"
-              placeholder="Date (ex: 25 Décembre 2025)"
-              required
-              className="w-full p-2 border rounded-md"
             />
-            <input
+          )}
+        </Field>
+
+        <Field label="Lieu">
+          {(props) => (
+            <Input
+              {...props}
+              type="text"
+              required
+              placeholder="Place du marché, salle polyvalente…"
               value={form.location}
               onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
-              type="text"
-              placeholder="Lieu"
-              required
-              className="w-full p-2 border rounded-md"
             />
-            <textarea
+          )}
+        </Field>
+
+        <Field label="Description">
+          {(props) => (
+            <Textarea
+              {...props}
+              required
+              rows={4}
+              placeholder="Ce qui se passe, pour qui, et à quelle heure."
               value={form.description}
               onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-              placeholder="Description"
-              required
-              className="w-full p-2 border rounded-md"
-              rows={4}
             />
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Image de l&apos;événement
-              </label>
-              <ImageUploader onUploadSuccess={(url) => setForm((f) => ({ ...f, image: url }))} />
-            </div>
-          </div>
-          <div className="flex justify-end gap-4 mt-6">
-            <button
-              type="button"
-              onClick={onCancel}
-              className="bg-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-400"
-            >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              disabled={!form.image}
-              className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              {!form.image ? 'Veuillez uploader une image' : 'Créer'}
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+          )}
+        </Field>
+
+        {/* L'uploader porte déjà son propre libellé lié à son input : on ne
+            l'enveloppe pas dans un Field, dont le `for` ne viserait rien. */}
+        <div className="k-field">
+          <p className="k-field__label">Image de l&apos;événement</p>
+          <ImageUploader
+            onUploadSuccess={(url) => {
+              setForm((f) => ({ ...f, image: url }));
+              setImageError('');
+            }}
+          />
+          {imageError ? (
+            <p className="k-field__error" role="alert">
+              <Icon name="alert" size={15} className="mt-px shrink-0" />
+              <span>{imageError}</span>
+            </p>
+          ) : null}
+        </div>
+      </form>
+    </Modal>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getInteractionsSemaine, getSondageChaudSemaine } from '@/api/charts';
 import type { SondageChaud } from '@/api/charts';
+import { Section } from '@/components/ui/Page';
 
 export default function ModuleSynthese() {
   const [interactions, setInteractions] = useState(0);
@@ -20,19 +21,23 @@ export default function ModuleSynthese() {
   }, []);
 
   return (
-    <section>
-      <h2 className="text-2xl font-semibold mb-4">Synthèse de la semaine</h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-gray-600">Volume d&apos;interactions</p>
-          <p className="text-3xl font-bold">{interactions}</p>
+    <Section title="Synthèse de la semaine">
+      <dl className="k-hairline-top k-hairline-bottom grid gap-x-8 gap-y-6 py-6 sm:grid-cols-2">
+        <div className="flex flex-col-reverse gap-1">
+          <dt className="k-caption k-ink-tertiary">Volume d’interactions</dt>
+          <dd className="k-title-1 tabular-nums">{interactions}</dd>
         </div>
-        <div className="bg-white p-4 rounded-lg shadow">
-          <p className="text-gray-600">Sondage &quot;chaud&quot;</p>
-          <p className="text-xl font-bold">{sondageChaud?.title || 'N/A'}</p>
-          <p>{sondageChaud?.vote_count} votes</p>
+
+        <div className="flex flex-col-reverse gap-1">
+          <dt className="k-caption k-ink-tertiary">
+            Consultation la plus active
+            {sondageChaud ? ` · ${sondageChaud.vote_count} votes` : ''}
+          </dt>
+          <dd className="k-title-3 text-balance">
+            {sondageChaud?.title || 'Aucune cette semaine'}
+          </dd>
         </div>
-      </div>
-    </section>
+      </dl>
+    </Section>
   );
 }

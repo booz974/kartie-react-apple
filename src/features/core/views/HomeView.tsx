@@ -1,8 +1,10 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router';
-import { useAutoAnimate } from '@formkit/auto-animate/react';
+import { Link, useNavigate } from 'react-router';
 import AlaUne from '@/features/admin/components/AlaUne';
 import QuartierCard from '@/features/territory/components/QuartierCard';
+import Button, { buttonClass } from '@/components/ui/Button';
+import Icon from '@/components/ui/Icon';
+import { Page, Section } from '@/components/ui/Page';
+import { useToast } from '@/components/ui/Toast';
 import { incrementAlaUneVote } from '@/api/alaUne';
 import { useAlaUneData, useInvalidateAlaUne } from '@/queries/alaUne';
 import { useQuartierZones } from '@/queries/territory';
@@ -10,29 +12,38 @@ import { useAuthStore } from '@/stores/authStore';
 import { isAdmin as checkIsAdmin } from '@/lib/types/contract';
 import type { AlaUneContent } from '@/lib/types/contract';
 
-const TABS = [
-  { id: 'est-data', label: "Quartiers de l'Est" },
-  { id: 'centre-data', label: 'Centre & Mi-Pentes' },
-  { id: 'hauteurs-data', label: 'Hauteurs & Périphérie' },
-  { id: 'ouest-data', label: 'Ouest & Littoral' },
+/**
+ * Repères de la commune. Présentés en bande alignée plutôt qu'en cartes : cinq
+ * chiffres du même ordre se comparent mieux sur une ligne que dans cinq
+ * conteneurs qui se disputent l'attention.
+ */
+const KEY_FIGURES = [
+  { value: '156 149', label: 'Habitants' },
+  { value: '+0,9 %', label: 'Croissance annuelle' },
+  { value: '73,6 %', label: 'Taux d’emploi' },
+  { value: '9 900', label: 'Entreprises' },
+  { value: '18 270 €', label: 'Revenu médian' },
 ] as const;
 
 export default function HomeView() {
   const navigate = useNavigate();
+  const toast = useToast();
   const session = useAuthStore((state) => state.session);
   const profile = useAuthStore((state) => state.profile);
   const isAdmin = checkIsAdmin(profile);
-
-  const [activeTab, setActiveTab] = useState<string>('est-data');
-  const [parent] = useAutoAnimate<HTMLDivElement>({ duration: 300 });
 
   const { data: quartierZones = {}, isLoading } = useQuartierZones();
   const { data: alaUneData } = useAlaUneData();
   const invalidateAlaUne = useInvalidateAlaUne();
 
-  const showAlaUneSection =
-    alaUneData &&
-    (alaUneData.article || alaUneData.event || alaUneData.sondage);
+  const alaUneHighlight =
+    alaUneData && (alaUneData.article || alaUneData.event || alaUneData.sondage)
+      ? alaUneData
+      : null;
+
+  // Aperçu des quartiers toutes zones confondues : la page d'accueil donne
+  // envie d'explorer, l'index complet vit sur /quartiers.
+  const previewQuartiers = Object.values(quartierZones).flat().slice(0, 6);
 
   async function handleAlaUneVote(voteData: {
     sondageId: number;
@@ -40,7 +51,7 @@ export default function HomeView() {
     userId: string;
   }) {
     if (!session?.user) {
-      alert('Vous devez être connecté pour voter.');
+      toast.warning('Connexion requise', 'Connectez-vous pour prendre part à cette consultation.');
       return;
     }
 
@@ -48,18 +59,16 @@ export default function HomeView() {
       const { sondageId, optionId } = voteData;
 
       if (!sondageId || optionId === undefined) {
-        throw new Error(
-          'Les informations pour le vote (sondageId, optionId, userId) sont incomplètes.',
-        );
+        throw new Error('Les informations pour le vote sont incomplètes.');
       }
 
       await incrementAlaUneVote(sondageId, optionId);
       await invalidateAlaUne();
-      alert('Vote enregistré ! Merci pour votre participation.');
+      toast.success('Vote enregistré', 'Merci pour votre participation.');
     } catch (err) {
       console.error('Erreur lors du vote:', err);
       const message = err instanceof Error ? err.message : 'Erreur inconnue';
-      alert(`Une erreur est survenue lors de l'enregistrement de votre vote :\n\n${message}`);
+      toast.error('Vote non enregistré', message);
     }
   }
 
@@ -72,71 +81,72 @@ export default function HomeView() {
   }
 
   return (
-    <div>
-      <section className="desktop-glass-card text-gray-800 rounded-3xl shadow-lg flex items-center justify-center p-6 md:p-16 my-8">
-        <div className="text-center space-y-4 md:space-y-6">
-          <h1 className="text-4xl md:text-7xl font-black tracking-tight text-gray-900 leading-tight">
-            Au cœur de Saint-Denis
-          </h1>
-          <p className="text-base md:text-xl max-w-3xl mx-auto font-light">
-            Explorez les 20 quartiers qui font battre le cœur de la ville. Découvrez leurs défis,
-            leurs projets et participez à leur avenir !
-          </p>
-          <a
-            href="#quartiers"
-            className="inline-block bg-white/60 text-black font-bold py-2 px-6 md:py-3 md:px-8 rounded-full text-base md:text-lg transition transform hover:scale-110 shadow-lg"
-          >
-            Découvrir les quartiers
-          </a>
+    <Page>
+      <section className="py-14 md:py-24">
+        <p className="k-eyebrow">Saint-Denis de La Réunion</p>
+        <h1 className="k-display k-measure mt-4 text-balance">
+          Votre quartier, à portée de voix.
+        </h1>
+        <p className="k-callout k-ink-secondary k-measure mt-5">
+          Kartie réunit les vingt quartiers de la ville : leurs actualités, leurs projets, leurs
+          associations — et les décisions auxquelles vous pouvez prendre part.
+        </p>
+
+        <div className="mt-8 flex flex-wrap items-center gap-3">
+          <Link to="/quartiers" className={buttonClass({ variant: 'primary', size: 'lg' })}>
+            Explorer les quartiers
+            <Icon name="arrowRight" size={18} />
+          </Link>
+          {profile?.quartier_id ? (
+            <Link
+              to={`/quartiers/${profile.quartier_id}`}
+              className={buttonClass({ variant: 'secondary', size: 'lg' })}
+            >
+              <Icon name="mapPin" size={18} />
+              Mon quartier
+            </Link>
+          ) : (
+            <Link to="/chat" className={buttonClass({ variant: 'secondary', size: 'lg' })}>
+              <Icon name="sparkles" size={18} />
+              Poser une question
+            </Link>
+          )}
         </div>
       </section>
 
-      <section id="stats" className="my-16">
-        <h2
-          className="text-3xl md:text-4xl font-bold text-center mb-10 text-black"
-          style={{ textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
+      <section aria-label="La commune en chiffres" className="k-hairline-top k-hairline-bottom py-8">
+        <dl className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3 lg:grid-cols-5">
+          {KEY_FIGURES.map((figure) => (
+            // La valeur se lit avant son étiquette, mais le balisage garde
+            // l'ordre terme-puis-définition attendu par les lecteurs d'écran.
+            <div key={figure.label} className="flex flex-col-reverse gap-1">
+              <dt className="k-caption k-ink-tertiary">{figure.label}</dt>
+              <dd className="k-title-1 tabular-nums">{figure.value}</dd>
+            </div>
+          ))}
+        </dl>
+        <p className="k-caption k-ink-tertiary mt-6">
+          Sources INSEE, Mairie de Saint-Denis, SIG et DEAL — 2021 à 2025.
+        </p>
+      </section>
+
+      {alaUneHighlight ? (
+        <Section
+          id="a-la-une"
+          title="À la une"
+          description="Ce qui mobilise la ville en ce moment."
+          className="pt-16"
+          action={
+            isAdmin ? (
+              <Button variant="ghost" size="sm" onClick={() => navigate('/admin/alaune')}>
+                <Icon name="pencil" size={16} />
+                Gérer
+              </Button>
+            ) : null
+          }
         >
-          La Capitale en un Coup d&apos;Œil
-        </h2>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-          <div className="desktop-glass-card p-6 text-center">
-            <div className="text-4xl text-blue-500 mb-2">🧑‍🤝‍🧑</div>
-            <span className="text-3xl font-bold block text-slate-900">156 149</span>
-            <p className="text-slate-700">Habitants</p>
-          </div>
-          <div className="desktop-glass-card p-6 text-center">
-            <div className="text-4xl text-green-500 mb-2">📈</div>
-            <span className="text-3xl font-bold block text-slate-900">+0.9%</span>
-            <p className="text-slate-700">Croissance</p>
-          </div>
-          <div className="desktop-glass-card p-6 text-center">
-            <div className="text-4xl text-orange-500 mb-2">💼</div>
-            <span className="text-3xl font-bold block text-slate-900">73.6%</span>
-            <p className="text-slate-700">Taux d&apos;emploi</p>
-          </div>
-          <div className="desktop-glass-card p-6 text-center">
-            <div className="text-4xl text-red-500 mb-2">🏠</div>
-            <span className="text-3xl font-bold block text-slate-900">9 900</span>
-            <p className="text-slate-700">Entreprises</p>
-          </div>
-          <div className="desktop-glass-card p-6 text-center col-span-2 md:col-span-1">
-            <div className="text-4xl text-purple-500 mb-2">💶</div>
-            <span className="text-3xl font-bold block text-slate-900">18 270 €</span>
-            <p className="text-slate-700">Revenu Médian</p>
-          </div>
-        </div>
-      </section>
-
-      {showAlaUneSection ? (
-        <section id="a-la-une" className="my-16">
-          <h2
-            className="text-3xl md:text-4xl font-bold text-center mb-10 text-black"
-            style={{ textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
-          >
-            Infos à la Une
-          </h2>
           <AlaUne
-            data={alaUneData}
+            data={alaUneHighlight}
             isAdmin={isAdmin}
             session={session}
             onVote={handleAlaUneVote}
@@ -144,50 +154,40 @@ export default function HomeView() {
             onViewEvent={handleViewAlaUneEvent}
             onManage={() => navigate('/admin/alaune')}
           />
-        </section>
+        </Section>
       ) : null}
 
-      <section id="quartiers" className="my-24">
-        <h2
-          className="text-3xl md:text-4xl font-bold text-center mb-10 text-black"
-          style={{ textShadow: '0 2px 4px rgba(0,0,0,0.1)' }}
-        >
-          Zoom sur les Territoires
-        </h2>
-
+      <Section
+        id="quartiers"
+        title="Zoom sur les territoires"
+        description="Vingt quartiers, chacun avec son histoire, ses défis et ses projets."
+        className={alaUneHighlight ? undefined : 'pt-16'}
+        action={
+          <Link
+            to="/quartiers"
+            className={buttonClass({ variant: 'plain', size: 'sm', className: 'font-semibold' })}
+          >
+            Tout voir
+            <Icon name="chevronRight" size={16} />
+          </Link>
+        }
+      >
         {isLoading ? (
-          <div className="text-center p-10">
-            <p className="text-xl font-semibold text-gray-700">Chargement des données...</p>
+          <div className="k-grid">
+            {Array.from({ length: 6 }, (_, index) => (
+              // Le gabarit reprend le rapport d'image réel des vignettes : un
+              // squelette d'une autre forme provoque un saut au remplacement.
+              <div key={index} className="k-skeleton aspect-[4/3] rounded-xl" aria-hidden="true" />
+            ))}
           </div>
         ) : (
-          <div className="desktop-glass-card p-4">
-            <div className="flex flex-wrap justify-center gap-2 mb-6 bg-white/20 p-2 rounded-xl">
-              {TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`tab-button${activeTab === tab.id ? ' active' : ''}`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            <div id="tab-content" className="p-2" ref={parent}>
-              {TABS.map((tab) => (
-                <div key={tab.id} className={activeTab === tab.id ? '' : 'hidden'}>
-                  <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {(quartierZones[tab.id] ?? []).map((quartier) => (
-                      <QuartierCard key={quartier.id} quartier={quartier} />
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+          <div className="k-grid">
+            {previewQuartiers.map((quartier) => (
+              <QuartierCard key={quartier.id} quartier={quartier} />
+            ))}
           </div>
         )}
-      </section>
-    </div>
+      </Section>
+    </Page>
   );
 }

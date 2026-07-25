@@ -43,10 +43,11 @@ describe('AlaUneForm', () => {
 
     expect(screen.getAllByPlaceholderText("Texte de l'option")).toHaveLength(1);
 
-    fireEvent.click(screen.getByRole('button', { name: '+ Ajouter une option' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter une option' }));
     expect(screen.getAllByPlaceholderText("Texte de l'option")).toHaveLength(2);
 
-    fireEvent.click(screen.getAllByRole('button', { name: /^X$/ })[0]);
+    // Le bouton de retrait porte désormais un libellé explicite plutôt qu'un « X ».
+    fireEvent.click(screen.getAllByRole('button', { name: /^Retirer l'option/ })[0]);
     expect(screen.getAllByPlaceholderText("Texte de l'option")).toHaveLength(1);
   });
 
@@ -64,7 +65,7 @@ describe('AlaUneForm', () => {
     fireEvent.change(screen.getByPlaceholderText("Texte de l'option"), {
       target: { value: 'Oui' },
     });
-    fireEvent.click(screen.getByRole('button', { name: '+ Ajouter une option' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Ajouter une option' }));
     fireEvent.change(screen.getAllByPlaceholderText("Texte de l'option")[1], {
       target: { value: 'Non' },
     });

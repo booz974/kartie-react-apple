@@ -1,5 +1,7 @@
-import { useNavigate } from 'react-router';
+import { Link } from 'react-router';
 import AdminDeleteButton from '@/components/ui/AdminDeleteButton';
+import Icon from '@/components/ui/Icon';
+import { surfaceClass } from '@/components/ui/Surface';
 import type { Realisation } from '@/lib/types/contract';
 
 interface ArticleCardProps {
@@ -7,42 +9,64 @@ interface ArticleCardProps {
   onDelete: (id: number) => void;
 }
 
+/**
+ * Élément de grille des réalisations.
+ *
+ * Un seul lien porte la carte entière — il s'étend sous toute la surface — au
+ * lieu d'un `div` cliquable : la cible reste annoncée une seule fois et le
+ * clavier la traverse comme n'importe quel lien.
+ */
 export default function ArticleCard({ article, onDelete }: ArticleCardProps) {
-  const navigate = useNavigate();
-
-  function navigateToArticle() {
-    navigate(`/realisations/${article.id}`);
-  }
+  const imageUrl = (article.image_url as string) || '';
+  const category = (article.category as string) || '';
+  const description = (article.description as string) || '';
 
   return (
-    <div
-      onClick={navigateToArticle}
-      className="relative article-card bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col h-full cursor-pointer"
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault();
-          navigateToArticle();
-        }
-      }}
-      role="button"
-      tabIndex={0}
+    <article
+      className={surfaceClass({
+        interactive: true,
+        className: 'relative flex h-full flex-col overflow-hidden',
+      })}
     >
       <AdminDeleteButton tableName="realisations" itemId={article.id} onDeleted={onDelete} />
-      <img
-        src={(article.image_url as string) || ''}
-        alt={article.title}
-        className="w-full h-48 object-cover"
-      />
-      <div className="p-5 flex flex-col flex-grow">
-        <p className="text-xs font-bold uppercase text-indigo-600 mb-2">
-          {article.category as string}
-        </p>
-        <h4 className="font-bold text-lg text-gray-900 mb-2">{article.title}</h4>
-        <p className="text-sm text-gray-600 mb-4 flex-grow">{article.description as string}</p>
-        <div className="mt-auto text-sm font-semibold text-indigo-700 hover:text-indigo-900 transition-colors">
-          Lire la suite →
+
+      {imageUrl ? (
+        <img
+          src={imageUrl}
+          alt=""
+          loading="lazy"
+          className="aspect-[16/10] w-full bg-canvas-sunken object-cover"
+        />
+      ) : (
+        <div
+          className="grid aspect-[16/10] w-full place-items-center bg-canvas-sunken text-ink-quaternary"
+          aria-hidden="true"
+        >
+          <Icon name="image" size={26} />
         </div>
+      )}
+
+      <div className="flex flex-1 flex-col gap-2 p-5">
+        {category ? <p className="k-eyebrow">{category}</p> : null}
+
+        <h3 className="k-title-3 text-balance">
+          <Link
+            to={`/realisations/${article.id}`}
+            className="after:absolute after:inset-0 after:content-['']"
+          >
+            {article.title}
+          </Link>
+        </h3>
+
+        {description ? (
+          <p className="k-subhead k-ink-secondary line-clamp-3">{description}</p>
+        ) : null}
+
+        <p className="k-footnote mt-auto flex items-center gap-1 pt-3 font-medium text-accent">
+          Lire la suite
+          <Icon name="arrowRight" size={15} />
+        </p>
       </div>
-    </div>
+    </article>
   );
 }

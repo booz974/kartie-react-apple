@@ -1,4 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react';
+import Button, { buttonClass } from '@/components/ui/Button';
+import Icon from '@/components/ui/Icon';
 
 interface ErrorBoundaryProps {
   children: ReactNode;
@@ -22,12 +24,35 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center p-6 text-center">
-          <div>
-            <h1 className="text-2xl font-bold mb-2">Une erreur est survenue</h1>
-            <p className="text-gray-600">Veuillez recharger la page.</p>
+        // Une panne n'est pas une impasse : on garde toujours deux issues, celle
+        // qui retente sur place et celle qui ramène à un terrain connu.
+        <main
+          role="alert"
+          className="flex min-h-dvh items-center justify-center px-5 py-16"
+        >
+          <div className="flex max-w-md flex-col items-center text-center">
+            <span className="mb-4 grid h-14 w-14 place-items-center rounded-full bg-danger-soft text-danger">
+              <Icon name="alert" size={26} />
+            </span>
+            <h1 className="k-title-1">Une erreur est survenue</h1>
+            <p className="k-callout k-ink-secondary mt-3">
+              L&apos;affichage de cette page s&apos;est interrompu. Rien de ce que vous avez
+              publié n&apos;est perdu.
+            </p>
+            <div className="mt-7 flex flex-wrap justify-center gap-3">
+              <Button
+                variant="primary"
+                onClick={() => this.setState({ hasError: false })}
+                leading={<Icon name="refresh" size={17} />}
+              >
+                Réessayer
+              </Button>
+              <a href="/" className={buttonClass({ variant: 'secondary' })}>
+                Retour à l&apos;accueil
+              </a>
+            </div>
           </div>
-        </div>
+        </main>
       );
     }
 

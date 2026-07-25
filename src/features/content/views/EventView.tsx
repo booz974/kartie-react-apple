@@ -1,17 +1,24 @@
 import { useNavigate, useParams } from 'react-router';
 import DOMPurify from 'dompurify';
+import Button from '@/components/ui/Button';
+import EmptyState from '@/components/ui/EmptyState';
+import Icon from '@/components/ui/Icon';
+import Notice from '@/components/ui/Notice';
+import { Page } from '@/components/ui/Page';
+import Skeleton, { SkeletonText } from '@/components/ui/Skeleton';
 import { useEvent } from '@/queries/territory';
 import { formatEventDate } from '@/utils/dateFormatter';
 
-function BackIcon() {
+function BackButton({ onClick }: { onClick: () => void }) {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path
-        fillRule="evenodd"
-        d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-        clipRule="evenodd"
-      />
-    </svg>
+    <Button
+      variant="plain"
+      onClick={onClick}
+      leading={<Icon name="chevronLeft" size={16} />}
+      className="k-footnote -ml-1 mb-3 font-medium"
+    >
+      Retour
+    </Button>
   );
 }
 
@@ -32,68 +39,93 @@ export default function EventView() {
 
   if (isLoading || (isFetching && !event && !isError)) {
     return (
-      <div className="text-center p-10">
-        <p className="text-xl font-semibold text-gray-700">Chargement de l&apos;événement...</p>
-      </div>
+      <Page className="k-page--reading pt-6">
+        <div className="flex flex-col gap-4" aria-busy="true">
+          <Skeleton height="14rem" radius="var(--k-radius-lg)" />
+          <Skeleton height="2rem" className="mt-2" />
+          <Skeleton width="60%" height="1rem" />
+          <Skeleton width="40%" height="1rem" />
+          <SkeletonText lines={5} className="mt-3" />
+        </div>
+      </Page>
     );
   }
 
   if (isError) {
     return (
-      <div className="text-center p-10">
-        <p className="text-red-500 font-bold">Erreur : Impossible de charger l&apos;événement.</p>
-        <button
-          type="button"
-          onClick={() => void refetch()}
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          Réessayer
-        </button>
-      </div>
+      <Page className="k-page--reading pt-6">
+        <BackButton onClick={goBack} />
+        <h1 className="k-title-1 mb-4">Événement</h1>
+        <Notice tone="danger">
+          <p className="font-medium">Impossible de charger cet événement.</p>
+          <p className="k-footnote mt-1">Vérifiez votre connexion, puis réessayez.</p>
+          <Button variant="secondary" size="sm" className="mt-3" onClick={() => void refetch()}>
+            Réessayer
+          </Button>
+        </Notice>
+      </Page>
     );
   }
 
   if (!event) {
     return (
-      <div className="text-center p-10">
-        <p>Événement introuvable.</p>
-        <button
-          type="button"
-          onClick={() => navigate('/')}
-          className="mt-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-        >
-          Retour à l&apos;accueil
-        </button>
-      </div>
+      <Page className="k-page--reading pt-6">
+        <h1 className="k-visually-hidden">Événement introuvable</h1>
+        <EmptyState
+          icon="calendar"
+          title="Cet événement est introuvable"
+          description="Il a peut-être été annulé, ou l'adresse est incorrecte."
+          action={
+            <Button variant="primary" onClick={() => navigate('/')}>
+              Retour à l&apos;accueil
+            </Button>
+          }
+        />
+      </Page>
     );
   }
 
   const imageSrc = event.image || event.image_url || '';
   const descriptionHtml = DOMPurify.sanitize(event.description ?? '');
+  const location = (event.location as string) || '';
 
   return (
-    <div className="bg-white rounded-2xl p-4 md:p-8 shadow-lg max-w-3xl mx-auto my-8">
-      <button
-        type="button"
-        onClick={goBack}
-        className="mb-8 inline-flex items-center gap-2 bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-full transition hover:bg-gray-300"
-      >
-        <BackIcon />
-        Retour
-      </button>
+    <Page className="k-page--reading pt-6">
+      <BackButton onClick={goBack} />
 
-      <div>
+      <article>
         {imageSrc ? (
-          <img src={imageSrc} alt={event.title} className="w-full h-64 object-cover rounded-xl mb-6" />
+          <img
+            src={imageSrc}
+            alt=""
+            className="mb-6 h-64 w-full rounded-lg bg-canvas-sunken object-cover"
+          />
         ) : null}
-        <h2 className="text-4xl font-bold text-gray-900 mb-3">{event.title}</h2>
-        <p className="text-lg font-semibold text-blue-600 mb-2">{formatEventDate(event.date)}</p>
-        <p className="text-md text-gray-600 mb-4">{(event.location as string) || ''}</p>
+
+        <h1 className="k-title-large text-balance">{event.title}</h1>
+
+        {/* Date et lieu sont les deux informations qui décident d'y aller ou
+            non : elles viennent juste après le titre, groupées. */}
+        <dl className="mt-4 flex flex-col gap-2">
+          <div className="flex items-center gap-2">
+            <dt className="k-visually-hidden">Date</dt>
+            <Icon name="calendar" size={17} className="text-accent" />
+            <dd className="k-callout font-medium text-accent">{formatEventDate(event.date)}</dd>
+          </div>
+          {location ? (
+            <div className="flex items-center gap-2">
+              <dt className="k-visually-hidden">Lieu</dt>
+              <Icon name="mapPin" size={17} className="k-ink-tertiary" />
+              <dd className="k-subhead k-ink-secondary">{location}</dd>
+            </div>
+          ) : null}
+        </dl>
+
         <div
-          className="text-gray-800 leading-relaxed"
+          className="k-prose k-measure k-hairline-top mt-6 pt-6"
           dangerouslySetInnerHTML={{ __html: descriptionHtml }}
         />
-      </div>
-    </div>
+      </article>
+    </Page>
   );
 }

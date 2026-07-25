@@ -19,12 +19,17 @@ vi.mock('@/stores/authStore', () => ({
     selector({ profile: null }),
 }));
 
+import { ToastProvider } from '@/components/ui/Toast';
 import ChatView from './ChatView';
 
+// La vue signale la synchronisation admin par une notification : elle a donc
+// besoin du fournisseur, comme dans l'application.
 function renderChat() {
   return render(
     <MemoryRouter>
-      <ChatView />
+      <ToastProvider>
+        <ChatView />
+      </ToastProvider>
     </MemoryRouter>,
   );
 }

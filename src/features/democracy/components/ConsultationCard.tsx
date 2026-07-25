@@ -1,4 +1,7 @@
 import AdminDeleteButton from '@/components/ui/AdminDeleteButton';
+import Button from '@/components/ui/Button';
+import Icon from '@/components/ui/Icon';
+import { surfaceClass } from '@/components/ui/Surface';
 import type { Consultation } from '@/lib/types/contract';
 
 interface ConsultationCardProps {
@@ -16,24 +19,44 @@ export default function ConsultationCard({
   const summary = (consultation as { summary?: string }).summary || '';
 
   return (
-    <div className="relative bg-white rounded-2xl shadow-lg overflow-hidden flex flex-col h-full">
+    <article className={surfaceClass({ className: 'relative flex h-full flex-col overflow-hidden' })}>
       <AdminDeleteButton
         tableName="consultations"
         itemId={consultation.id}
         onDeleted={onDelete}
       />
-      <img src={coverImage} alt={consultation.title ?? ''} className="w-full h-40 object-cover" />
-      <div className="p-6 flex flex-col flex-grow">
-        <h4 className="font-bold text-lg text-gray-800 mb-2">{consultation.title}</h4>
-        <p className="text-sm text-gray-700 flex-grow mb-4">{summary}</p>
-        <button
-          type="button"
-          onClick={() => onSelected(consultation.id)}
-          className="mt-auto w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-indigo-700 transition"
+
+      {coverImage ? (
+        <img
+          src={coverImage}
+          alt=""
+          loading="lazy"
+          className="aspect-[16/9] w-full bg-canvas-sunken object-cover"
+        />
+      ) : (
+        <div
+          className="grid aspect-[16/9] w-full place-items-center bg-canvas-sunken text-ink-quaternary"
+          aria-hidden="true"
         >
-          Répondre au sondage
-        </button>
+          <Icon name="ballot" size={26} />
+        </div>
+      )}
+
+      <div className="flex flex-1 flex-col p-5">
+        <h3 className="k-title-3 text-balance">{consultation.title}</h3>
+
+        {summary ? <p className="k-subhead k-ink-secondary mt-2 line-clamp-3">{summary}</p> : null}
+
+        {consultation.question ? (
+          <p className="k-footnote k-ink-tertiary mt-3 line-clamp-2">{consultation.question}</p>
+        ) : null}
+
+        <div className="mt-auto pt-4">
+          <Button variant="primary" block onClick={() => onSelected(consultation.id)}>
+            Répondre au sondage
+          </Button>
+        </div>
       </div>
-    </div>
+    </article>
   );
 }

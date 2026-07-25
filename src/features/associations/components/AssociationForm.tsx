@@ -1,9 +1,12 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react';
 import {
   ASSOCIATION_CATEGORIES,
   ASSOCIATION_STATUS_OPTIONS,
   slugifyAssociationName,
 } from '@/api/associations';
+import Button from '@/components/ui/Button';
+import Field, { Checkbox, Input, Select, Textarea } from '@/components/ui/Field';
+import Icon from '@/components/ui/Icon';
 import ImageUploader from '@/components/ui/ImageUploader';
 import type { Association } from '@/lib/types/contract';
 
@@ -32,6 +35,8 @@ interface AssociationFormProps {
   showCancel?: boolean;
   submitLabel?: string;
   className?: string;
+  /** Affiche l'état d'envoi sur le bouton de validation. */
+  submitting?: boolean;
   onSubmit: (payload: AssociationFormPayload) => void;
   onCancel?: () => void;
 }
@@ -83,19 +88,45 @@ function parseMultiline(value: string): string[] {
     .filter(Boolean);
 }
 
+/**
+ * Bloc de champs. Un filet sépare les groupes plutôt qu'une carte par groupe :
+ * la lecture reste continue et la page ne se fragmente pas.
+ */
+function Group({
+  title,
+  divider = true,
+  children,
+}: {
+  title: string;
+  divider?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <section
+      className={['flex flex-col gap-5', divider ? 'k-hairline-top pt-7' : ''].join(' ').trim()}
+    >
+      <h3 className="k-eyebrow">{title}</h3>
+      {children}
+    </section>
+  );
+}
+
 export default function AssociationForm({
   modelValue = null,
   allowModerationFields = false,
   showCancel = false,
   submitLabel = 'Enregistrer',
   className = '',
+  submitting = false,
   onSubmit,
   onCancel,
 }: AssociationFormProps) {
   const [form, setForm] = useState<FormState>(() => hydrate(modelValue));
+  const [shortDescriptionError, setShortDescriptionError] = useState('');
 
   useEffect(() => {
     setForm(hydrate(modelValue));
+    setShortDescriptionError('');
   }, [modelValue]);
 
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -118,9 +149,12 @@ export default function AssociationForm({
 
     const shortDescription = form.short_description.trim();
     if (shortDescription.length < 10) {
-      alert('La description courte doit contenir au moins 10 caractères.');
+      // L'erreur reste au niveau du champ concerné, jamais dans une alerte.
+      setShortDescriptionError('La description courte doit contenir au moins 10 caractères.');
       return;
     }
+
+    setShortDescriptionError('');
 
     onSubmit({
       name: form.name.trim(),
@@ -143,215 +177,245 @@ export default function AssociationForm({
   }
 
   return (
-    <div className={`rounded-3xl bg-white p-6 shadow-lg md:p-8 ${className}`.trim()}>
-      <div className="mb-6 flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-2xl font-black text-slate-900">{submitLabel}</h2>
-          <p className="mt-1 text-sm text-slate-600">
+    <section className={['flex flex-col gap-6', className].filter(Boolean).join(' ')}>
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <h2 className="k-title-2 text-balance">{submitLabel}</h2>
+          <p className="k-subhead k-ink-secondary k-measure mt-1.5">
             Créez ou mettez à jour la fiche publique de l’association.
           </p>
         </div>
         {showCancel ? (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="rounded-full bg-slate-100 px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-slate-200"
-          >
+          <Button variant="ghost" onClick={onCancel} leading={<Icon name="close" size={17} />}>
             Fermer
-          </button>
+          </Button>
         ) : null}
       </div>
 
-      <form className="space-y-5" onSubmit={handleSubmit}>
-        <div className="grid gap-5 md:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-sm font-bold text-slate-700">Nom</label>
-            <input
-              value={form.name}
-              onChange={(event) => updateField('name', event.target.value)}
-              required
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-bold text-slate-700">Slug public</label>
-            <input
-              value={form.slug}
-              onChange={(event) => updateField('slug', event.target.value)}
-              required
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3"
-            />
-          </div>
-        </div>
-
-        <div className="grid gap-5 md:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-sm font-bold text-slate-700">Catégorie</label>
-            <select
-              value={form.category}
-              onChange={(event) => updateField('category', event.target.value)}
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3"
-            >
-              {ASSOCIATION_CATEGORIES.map((category) => (
-                <option key={category.value} value={category.value}>
-                  {category.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-bold text-slate-700">Email de contact</label>
-            <input
-              value={form.contact_email}
-              onChange={(event) => updateField('contact_email', event.target.value)}
-              type="email"
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-bold text-slate-700">Description courte</label>
-          <textarea
-            value={form.short_description}
-            onChange={(event) => updateField('short_description', event.target.value)}
-            rows={3}
-            minLength={10}
-            maxLength={300}
-            required
-            className="w-full rounded-2xl border border-slate-200 px-4 py-3"
-          />
-          <p className="mt-1 text-xs text-slate-500">Minimum 10 caractères.</p>
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-bold text-slate-700">Description détaillée</label>
-          <textarea
-            value={form.full_description}
-            onChange={(event) => updateField('full_description', event.target.value)}
-            rows={5}
-            className="w-full rounded-2xl border border-slate-200 px-4 py-3"
-          />
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-bold text-slate-700">Mission</label>
-          <textarea
-            value={form.mission}
-            onChange={(event) => updateField('mission', event.target.value)}
-            rows={4}
-            className="w-full rounded-2xl border border-slate-200 px-4 py-3"
-          />
-        </div>
-
-        <div className="grid gap-5 md:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-sm font-bold text-slate-700">Activités</label>
-            <textarea
-              value={form.activitiesText}
-              onChange={(event) => updateField('activitiesText', event.target.value)}
-              rows={4}
-              placeholder="Une activité par ligne"
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-bold text-slate-700">Publics concernés</label>
-            <textarea
-              value={form.audiencesText}
-              onChange={(event) => updateField('audiencesText', event.target.value)}
-              rows={4}
-              placeholder="Un public par ligne"
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3"
-            />
-          </div>
-        </div>
-
-        <div className="grid gap-5 md:grid-cols-2">
-          <div>
-            <label className="mb-1 block text-sm font-bold text-slate-700">Téléphone</label>
-            <input
-              value={form.contact_phone}
-              onChange={(event) => updateField('contact_phone', event.target.value)}
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3"
-            />
-          </div>
-          <div>
-            <label className="mb-1 block text-sm font-bold text-slate-700">Site web</label>
-            <input
-              value={form.website_url}
-              onChange={(event) => updateField('website_url', event.target.value)}
-              type="url"
-              className="w-full rounded-2xl border border-slate-200 px-4 py-3"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="mb-1 block text-sm font-bold text-slate-700">Adresse</label>
-          <input
-            value={form.address_text}
-            onChange={(event) => updateField('address_text', event.target.value)}
-            className="w-full rounded-2xl border border-slate-200 px-4 py-3"
-          />
-        </div>
-
-        <div className="grid gap-5 md:grid-cols-2">
-          <div>
-            <label className="mb-2 block text-sm font-bold text-slate-700">Logo</label>
-            <ImageUploader
-              bucketName="post_images"
-              initialImageUrl={form.logo_url || null}
-              onUploadSuccess={(url) => updateField('logo_url', url)}
-            />
-          </div>
-          <div>
-            <label className="mb-2 block text-sm font-bold text-slate-700">Cover</label>
-            <ImageUploader
-              bucketName="post_images"
-              initialImageUrl={form.cover_url || null}
-              onUploadSuccess={(url) => updateField('cover_url', url)}
-            />
-          </div>
-        </div>
-
-        {allowModerationFields ? (
+      <form className="flex flex-col gap-7" onSubmit={handleSubmit}>
+        <Group title="Identité" divider={false}>
           <div className="grid gap-5 md:grid-cols-2">
-            <div>
-              <label className="mb-1 block text-sm font-bold text-slate-700">Statut</label>
-              <select
-                value={form.status}
-                onChange={(event) => updateField('status', event.target.value)}
-                className="w-full rounded-2xl border border-slate-200 px-4 py-3"
+            <Field label="Nom">
+              {(props) => (
+                <Input
+                  {...props}
+                  value={form.name}
+                  onChange={(event) => updateField('name', event.target.value)}
+                  required
+                />
+              )}
+            </Field>
+
+            <Field label="Slug public" hint="Il compose l’adresse de la page.">
+              {(props) => (
+                <Input
+                  {...props}
+                  value={form.slug}
+                  onChange={(event) => updateField('slug', event.target.value)}
+                  required
+                />
+              )}
+            </Field>
+          </div>
+
+          <Field label="Catégorie">
+            {(props) => (
+              <Select
+                {...props}
+                value={form.category}
+                onChange={(event) => updateField('category', event.target.value)}
               >
-                {ASSOCIATION_STATUS_OPTIONS.map((status) => (
-                  <option key={status.value} value={status.value}>
-                    {status.label}
+                {ASSOCIATION_CATEGORIES.map((category) => (
+                  <option key={category.value} value={category.value}>
+                    {category.label}
                   </option>
                 ))}
-              </select>
+              </Select>
+            )}
+          </Field>
+        </Group>
+
+        <Group title="Présentation">
+          <Field
+            label="Description courte"
+            hint="Minimum 10 caractères. C’est le texte affiché dans les listes."
+            error={shortDescriptionError || undefined}
+          >
+            {(props) => (
+              <Textarea
+                {...props}
+                value={form.short_description}
+                onChange={(event) => {
+                  updateField('short_description', event.target.value);
+                  if (shortDescriptionError) setShortDescriptionError('');
+                }}
+                rows={3}
+                minLength={10}
+                maxLength={300}
+                required
+              />
+            )}
+          </Field>
+
+          <Field label="Description détaillée" optional>
+            {(props) => (
+              <Textarea
+                {...props}
+                value={form.full_description}
+                onChange={(event) => updateField('full_description', event.target.value)}
+                rows={5}
+              />
+            )}
+          </Field>
+
+          <Field label="Mission" optional>
+            {(props) => (
+              <Textarea
+                {...props}
+                value={form.mission}
+                onChange={(event) => updateField('mission', event.target.value)}
+                rows={4}
+              />
+            )}
+          </Field>
+
+          <div className="grid gap-5 md:grid-cols-2">
+            <Field label="Activités" hint="Une activité par ligne." optional>
+              {(props) => (
+                <Textarea
+                  {...props}
+                  value={form.activitiesText}
+                  onChange={(event) => updateField('activitiesText', event.target.value)}
+                  rows={4}
+                  placeholder="Une activité par ligne"
+                />
+              )}
+            </Field>
+
+            <Field label="Publics concernés" hint="Un public par ligne." optional>
+              {(props) => (
+                <Textarea
+                  {...props}
+                  value={form.audiencesText}
+                  onChange={(event) => updateField('audiencesText', event.target.value)}
+                  rows={4}
+                  placeholder="Un public par ligne"
+                />
+              )}
+            </Field>
+          </div>
+        </Group>
+
+        <Group title="Contact">
+          <div className="grid gap-5 md:grid-cols-2">
+            <Field label="Email de contact" optional>
+              {(props) => (
+                <Input
+                  {...props}
+                  type="email"
+                  autoComplete="email"
+                  value={form.contact_email}
+                  onChange={(event) => updateField('contact_email', event.target.value)}
+                />
+              )}
+            </Field>
+
+            <Field label="Téléphone" optional>
+              {(props) => (
+                <Input
+                  {...props}
+                  type="tel"
+                  autoComplete="tel"
+                  value={form.contact_phone}
+                  onChange={(event) => updateField('contact_phone', event.target.value)}
+                />
+              )}
+            </Field>
+
+            <Field label="Site web" optional>
+              {(props) => (
+                <Input
+                  {...props}
+                  type="url"
+                  placeholder="https://"
+                  value={form.website_url}
+                  onChange={(event) => updateField('website_url', event.target.value)}
+                />
+              )}
+            </Field>
+
+            <Field label="Adresse" optional>
+              {(props) => (
+                <Input
+                  {...props}
+                  value={form.address_text}
+                  onChange={(event) => updateField('address_text', event.target.value)}
+                />
+              )}
+            </Field>
+          </div>
+        </Group>
+
+        <Group title="Images">
+          <div className="grid gap-5 md:grid-cols-2">
+            <div className="k-field">
+              <p className="k-field__label">Logo</p>
+              <ImageUploader
+                bucketName="post_images"
+                initialImageUrl={form.logo_url || null}
+                onUploadSuccess={(url) => updateField('logo_url', url)}
+              />
             </div>
-            <label className="mt-7 flex items-center gap-3 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700">
-              <input
+            <div className="k-field">
+              <p className="k-field__label">Image de couverture</p>
+              <ImageUploader
+                bucketName="post_images"
+                initialImageUrl={form.cover_url || null}
+                onUploadSuccess={(url) => updateField('cover_url', url)}
+              />
+            </div>
+          </div>
+        </Group>
+
+        {allowModerationFields ? (
+          <Group title="Modération">
+            <div className="grid items-end gap-5 md:grid-cols-2">
+              <Field label="Statut">
+                {(props) => (
+                  <Select
+                    {...props}
+                    value={form.status}
+                    onChange={(event) => updateField('status', event.target.value)}
+                  >
+                    {ASSOCIATION_STATUS_OPTIONS.map((status) => (
+                      <option key={status.value} value={status.value}>
+                        {status.label}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </Field>
+
+              <Checkbox
+                label="Association vérifiée"
                 checked={form.is_verified}
                 onChange={(event) => updateField('is_verified', event.target.checked)}
-                type="checkbox"
-                className="h-4 w-4 rounded"
               />
-              Association vérifiée
-            </label>
-          </div>
+            </div>
+          </Group>
         ) : null}
 
-        <div className="flex justify-end">
-          <button
-            type="submit"
-            className="rounded-full bg-slate-900 px-6 py-3 text-sm font-bold text-white transition hover:bg-slate-800"
-          >
+        <div className="k-hairline-top flex flex-wrap justify-end gap-2 pt-6">
+          {showCancel ? (
+            <Button variant="ghost" onClick={onCancel}>
+              Annuler
+            </Button>
+          ) : null}
+          <Button type="submit" variant="primary" loading={submitting}>
             {submitLabel}
-          </button>
+          </Button>
         </div>
       </form>
-    </div>
+    </section>
   );
 }

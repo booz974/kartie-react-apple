@@ -1,17 +1,11 @@
 import { useNavigate, useParams } from 'react-router';
+import Button from '@/components/ui/Button';
+import EmptyState from '@/components/ui/EmptyState';
+import Icon from '@/components/ui/Icon';
+import Notice from '@/components/ui/Notice';
+import { Page } from '@/components/ui/Page';
+import Skeleton, { SkeletonText } from '@/components/ui/Skeleton';
 import { useNews } from '@/queries/territory';
-
-function BackIcon() {
-  return (
-    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-      <path
-        fillRule="evenodd"
-        d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-        clipRule="evenodd"
-      />
-    </svg>
-  );
-}
 
 function formatDate(dateString: string | null | undefined): string {
   if (!dateString) return '';
@@ -20,6 +14,19 @@ function formatDate(dateString: string | null | undefined): string {
     month: 'long',
     year: 'numeric',
   });
+}
+
+function BackButton({ onClick }: { onClick: () => void }) {
+  return (
+    <Button
+      variant="plain"
+      onClick={onClick}
+      leading={<Icon name="chevronLeft" size={16} />}
+      className="k-footnote -ml-1 mb-3 font-medium"
+    >
+      Retour
+    </Button>
+  );
 }
 
 export default function NewsView() {
@@ -39,58 +46,65 @@ export default function NewsView() {
 
   if (isLoading || (isFetching && !news && !isError)) {
     return (
-      <div className="text-center p-10">
-        <p className="text-xl font-semibold text-gray-700">Chargement de l&apos;actualité...</p>
-      </div>
+      <Page className="k-page--reading pt-6">
+        <div className="flex flex-col gap-4" aria-busy="true">
+          <Skeleton height="2rem" />
+          <Skeleton width="55%" height="2rem" />
+          <Skeleton width="8rem" height="0.75rem" className="mt-1" />
+          <SkeletonText lines={7} className="mt-4" />
+        </div>
+      </Page>
     );
   }
 
   if (isError) {
     return (
-      <div className="text-center p-10">
-        <p className="text-red-500 font-bold">Erreur : Impossible de charger l&apos;actualité.</p>
-        <button
-          type="button"
-          onClick={() => void refetch()}
-          className="mt-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          Réessayer
-        </button>
-      </div>
+      <Page className="k-page--reading pt-6">
+        <BackButton onClick={goBack} />
+        <h1 className="k-title-1 mb-4">Actualité</h1>
+        <Notice tone="danger">
+          <p className="font-medium">Impossible de charger cette actualité.</p>
+          <p className="k-footnote mt-1">Vérifiez votre connexion, puis réessayez.</p>
+          <Button variant="secondary" size="sm" className="mt-3" onClick={() => void refetch()}>
+            Réessayer
+          </Button>
+        </Notice>
+      </Page>
     );
   }
 
   if (!news) {
     return (
-      <div className="text-center p-10">
-        <p>Actualité introuvable.</p>
-        <button
-          type="button"
-          onClick={() => navigate('/')}
-          className="mt-4 px-4 py-2 bg-gray-200 rounded hover:bg-gray-300"
-        >
-          Retour à l&apos;accueil
-        </button>
-      </div>
+      <Page className="k-page--reading pt-6">
+        <h1 className="k-visually-hidden">Actualité introuvable</h1>
+        <EmptyState
+          icon="newspaper"
+          title="Cette actualité est introuvable"
+          description="Elle a peut-être été retirée, ou l'adresse est incorrecte."
+          action={
+            <Button variant="primary" onClick={() => navigate('/')}>
+              Retour à l&apos;accueil
+            </Button>
+          }
+        />
+      </Page>
     );
   }
 
-  return (
-    <div className="bg-white rounded-2xl p-4 md:p-8 shadow-lg max-w-3xl mx-auto my-8">
-      <button
-        type="button"
-        onClick={goBack}
-        className="mb-8 inline-flex items-center gap-2 bg-gray-200 text-gray-800 font-bold py-2 px-4 rounded-full transition hover:bg-gray-300"
-      >
-        <BackIcon />
-        Retour
-      </button>
+  const publishedOn = formatDate(news.date);
 
-      <div>
-        <h2 className="text-4xl font-bold text-gray-900 mb-3">{news.title}</h2>
-        <p className="text-sm font-semibold text-gray-500 mb-6">{formatDate(news.date)}</p>
-        <div className="text-gray-800 leading-relaxed whitespace-pre-line">{news.content}</div>
-      </div>
-    </div>
+  return (
+    <Page className="k-page--reading pt-6">
+      <BackButton onClick={goBack} />
+
+      <article>
+        <h1 className="k-title-large text-balance">{news.title}</h1>
+        {publishedOn ? <p className="k-footnote k-ink-tertiary mt-3">{publishedOn}</p> : null}
+
+        <div className="k-prose k-measure k-hairline-top mt-6 whitespace-pre-line pt-6">
+          {news.content}
+        </div>
+      </article>
+    </Page>
   );
 }

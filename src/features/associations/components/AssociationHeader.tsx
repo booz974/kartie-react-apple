@@ -1,78 +1,101 @@
 import type { ReactNode } from 'react';
+import Badge from '@/components/ui/Badge';
+import Icon from '@/components/ui/Icon';
 import type { Association } from '@/lib/types/contract';
 
 interface AssociationHeaderProps {
   association: Association;
   actions?: ReactNode;
+  /** Quartier de rattachement, quand la vue le connaît déjà. */
+  quartierName?: string | null;
+  /** Compteur d'abonnés, si la vue en suit une version optimiste. */
+  followersCount?: number;
 }
 
-export default function AssociationHeader({ association, actions }: AssociationHeaderProps) {
-  const coverStyle = association.cover_url
-    ? {
-        backgroundImage: `url('${association.cover_url as string}')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-      }
-    : undefined;
+/**
+ * En-tête d'identité d'une association.
+ *
+ * L'ordre de lecture est fixe : ce que c'est (logo, nom), où c'est (quartier),
+ * combien de monde suit, puis l'action. La couverture reste une image, pas un
+ * décor : sans elle, l'en-tête ne perd rien de sa hiérarchie.
+ */
+export default function AssociationHeader({
+  association,
+  actions,
+  quartierName,
+  followersCount,
+}: AssociationHeaderProps) {
+  const coverUrl = association.cover_url as string | null | undefined;
+  const logoUrl = association.logo_url as string | null | undefined;
+  const quartier = quartierName ?? (association.quartier?.name as string | undefined);
+  const followers = followersCount ?? association.followers_count ?? 0;
 
   return (
-    <section className="overflow-hidden rounded-[2rem] bg-white shadow-xl">
-      <div
-        className="relative h-48 bg-gradient-to-br from-blue-700 via-sky-500 to-emerald-500 md:h-64"
-        style={coverStyle}
-      >
-        <div className="absolute inset-0 bg-slate-900/30" />
-      </div>
+    <header className="flex flex-col gap-5">
+      {coverUrl ? (
+        <img
+          src={coverUrl}
+          alt=""
+          className="h-36 w-full rounded-xl border border-separator object-cover md:h-52"
+        />
+      ) : null}
 
-      <div className="relative px-6 pb-6 pt-0 md:px-8">
-        <div className="-mt-14 flex flex-col gap-5 md:-mt-16 md:flex-row md:items-end md:justify-between">
-          <div className="flex items-end gap-4">
-            {association.logo_url ? (
-              <img
-                src={association.logo_url as string}
-                alt={association.name}
-                className="h-24 w-24 rounded-[1.75rem] border-4 border-white bg-white object-cover shadow-xl md:h-28 md:w-28"
-              />
-            ) : (
-              <div className="flex h-24 w-24 items-center justify-center rounded-[1.75rem] border-4 border-white bg-white text-4xl shadow-xl md:h-28 md:w-28">
-                🤝
-              </div>
-            )}
+      <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+        <div className="flex min-w-0 items-start gap-4">
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt=""
+              className="h-16 w-16 shrink-0 rounded-xl border border-separator object-cover md:h-20 md:w-20"
+            />
+          ) : (
+            <span className="grid h-16 w-16 shrink-0 place-items-center rounded-xl bg-accent-soft text-accent md:h-20 md:w-20">
+              <Icon name="handshake" size={30} />
+            </span>
+          )}
 
-            <div className="pb-1">
-              <div className="mb-2 flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-slate-900 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white">
-                  {association.category_label}
-                </span>
-                <span
-                  className={[
-                    'rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-wide',
-                    association.is_publicly_visible
-                      ? 'bg-emerald-100 text-emerald-700'
-                      : 'bg-amber-100 text-amber-700',
-                  ].join(' ')}
-                >
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-1.5">
+              {association.category_label ? <Badge>{association.category_label}</Badge> : null}
+              {association.status_label ? (
+                <Badge tone={association.is_publicly_visible ? 'success' : 'warning'} dot>
                   {association.status_label}
-                </span>
-                {association.is_verified ? (
-                  <span className="rounded-full bg-blue-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-blue-700">
-                    Vérifiée
-                  </span>
-                ) : null}
-              </div>
+                </Badge>
+              ) : null}
+              {association.is_verified ? (
+                <Badge tone="accent" icon="shield">
+                  Vérifiée
+                </Badge>
+              ) : null}
+            </div>
 
-              <h1 className="text-3xl font-black tracking-tight text-slate-900 md:text-4xl">
-                {association.name}
-              </h1>
-              <p className="mt-2 text-sm font-medium text-slate-600 md:text-base">
+            <h1 className="k-title-large mt-2 text-balance">{association.name}</h1>
+
+            {association.short_description ? (
+              <p className="k-callout k-ink-secondary k-measure mt-2">
                 {association.short_description as string}
               </p>
+            ) : null}
+
+            <div className="k-footnote k-ink-tertiary mt-3 flex flex-wrap items-center gap-x-4 gap-y-1">
+              {quartier ? (
+                <span className="inline-flex items-center gap-1.5">
+                  <Icon name="mapPin" size={15} />
+                  {quartier}
+                </span>
+              ) : null}
+              <span className="inline-flex items-center gap-1.5">
+                <Icon name="users" size={15} />
+                {followers} abonné(s)
+              </span>
             </div>
           </div>
-
-          {actions ? <div className="flex flex-wrap items-center gap-3">{actions}</div> : null}
         </div>
+
+        {actions ? (
+          <div className="flex shrink-0 flex-wrap items-center gap-2">{actions}</div>
+        ) : null}
       </div>
-    </section>
+    </header>
   );
 }

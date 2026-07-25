@@ -1,6 +1,19 @@
-import { lazy, memo, Suspense, useMemo, useRef, useState } from 'react';
+import {
+  lazy,
+  memo,
+  Suspense,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type TextareaHTMLAttributes,
+} from 'react';
 import { useNavigate } from 'react-router';
 import type { Session } from '@supabase/supabase-js';
+import Avatar from '@/components/ui/Avatar';
+import Badge from '@/components/ui/Badge';
+import Button from '@/components/ui/Button';
+import Icon, { type IconName } from '@/components/ui/Icon';
 import SafeImage from '@/components/ui/SafeImage';
 import type { FeedComment, FeedPost as FeedPostType } from '@/lib/types/contract';
 
@@ -53,6 +66,30 @@ function isStatusActive(metadata: FeedPostType['metadata'], step: string): boole
   return false;
 }
 
+/**
+ * Chaque type de publication porte une icône et un mot, pas une couleur de
+ * fond : la couleur ne se lit pas de la même façon selon les yeux, et un fil
+ * bariolé cesse d'être un fil.
+ */
+const TYPE_META: Record<string, { icon: IconName; label: string }> = {
+  alerte: { icon: 'warning', label: 'Alerte' },
+  signalement: { icon: 'camera', label: 'Signalement' },
+  entraide: { icon: 'handshake', label: 'Entraide' },
+  perdu_trouve: { icon: 'search', label: 'Perdu / trouvé' },
+  village_square: { icon: 'stadium', label: 'Place du Village' },
+  association_post: { icon: 'users', label: 'Association' },
+  association_event: { icon: 'calendar', label: 'Événement associatif' },
+  regular: { icon: 'chat', label: 'Message' },
+};
+
+/** Les réactions restent des gestes de l'interface : icônes, pas emojis. */
+const REACTIONS: { type: string; icon: IconName; label: string }[] = [
+  { type: 'like', icon: 'thumbsUp', label: "J'aime" },
+  { type: 'pray', icon: 'heart', label: 'Merci' },
+  { type: 'eyes', icon: 'eye', label: 'Je regarde' },
+  { type: 'hands', icon: 'handRaised', label: 'Bravo' },
+];
+
 type ThreadedComment = FeedComment & { replies: FeedComment[] };
 
 function buildThreadedComments(comments: FeedComment[]): ThreadedComment[] {
@@ -75,6 +112,35 @@ function buildThreadedComments(comments: FeedComment[]): ThreadedComment[] {
   return roots;
 }
 
+/** Champ de commentaire qui grandit avec la réponse qu'on rédige. */
+function AutoGrowTextarea({
+  className,
+  value,
+  textareaRef,
+  ...rest
+}: TextareaHTMLAttributes<HTMLTextAreaElement> & {
+  textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
+}) {
+  const localRef = useRef<HTMLTextAreaElement | null>(null);
+  const ref = textareaRef ?? localRef;
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    element.style.height = 'auto';
+    element.style.height = `${element.scrollHeight}px`;
+  }, [value, ref]);
+
+  return (
+    <textarea
+      ref={ref}
+      value={value}
+      className={['k-input resize-none overflow-hidden', className].filter(Boolean).join(' ')}
+      {...rest}
+    />
+  );
+}
+
 function FeedPostComponent({
   post,
   session,
@@ -84,6 +150,7 @@ function FeedPostComponent({
 }: FeedPostProps) {
   const navigate = useNavigate();
   const [showComments, setShowComments] = useState(false);
+  const [showCommentUploader, setShowCommentUploader] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [newCommentImage, setNewCommentImage] = useState<string | null>(null);
   const [replyingTo, setReplyingTo] = useState<FeedComment | null>(null);
@@ -91,6 +158,7 @@ function FeedPostComponent({
 
   const postType = getPostType(post);
   const metadata = useMemo(() => post.metadata ?? {}, [post.metadata]);
+  const typeMeta = TYPE_META[postType] ?? TYPE_META.regular;
 
   const actorName = useMemo(() => {
     if (['association_post', 'association_event'].includes(postType)) {
@@ -119,79 +187,9 @@ function FeedPostComponent({
   const associationSlug = (metadata.association_slug as string | undefined) || null;
   const associationEventId = metadata.association_event_id as number | string | undefined;
 
-  const getCardClasses = () => {
-    switch (postType) {
-      case 'alerte':
-        return 'bg-red-50/30 border border-red-100';
-      case 'signalement':
-        return 'bg-white border border-gray-200';
-      case 'entraide':
-        return 'bg-amber-50/30 border border-amber-100';
-      case 'perdu_trouve':
-        return 'bg-blue-50/30 border border-blue-100';
-      case 'association_post':
-        return 'bg-emerald-50/40 border border-emerald-100';
-      case 'association_event':
-        return 'bg-blue-50/40 border border-blue-100';
-      default:
-        return 'bg-white border border-gray-100';
-    }
-  };
-
-  const getBorderClass = () => {
-    switch (postType) {
-      case 'alerte':
-        return 'bg-red-500';
-      case 'signalement':
-        return 'bg-gray-600';
-      case 'entraide':
-        return 'bg-amber-500';
-      case 'perdu_trouve':
-        return 'bg-blue-500';
-      case 'village_square':
-        return 'bg-emerald-500';
-      case 'association_post':
-        return 'bg-emerald-600';
-      case 'association_event':
-        return 'bg-blue-600';
-      default:
-        return 'bg-transparent';
-    }
-  };
-
-  const getTypeIcon = () => {
-    switch (postType) {
-      case 'alerte':
-        return '⚠️';
-      case 'signalement':
-        return '📸';
-      case 'entraide':
-        return '🤝';
-      case 'perdu_trouve':
-        return '🔍';
-      case 'village_square':
-        return '🏟️';
-      case 'association_post':
-        return '🤝';
-      case 'association_event':
-        return '📅';
-      default:
-        return '💬';
-    }
-  };
-
   const urgency = metadata.urgency as string | undefined;
-  const getUrgencyClass = () => {
-    if (urgency === 'red') return 'bg-red-600 text-white shadow-red-200 shadow-lg';
-    if (urgency === 'orange') return 'bg-orange-500 text-white';
-    return 'bg-yellow-400 text-yellow-900';
-  };
-
-  const getUrgencyLabel = () => {
-    if (urgency === 'red') return 'DANGER';
-    if (urgency === 'orange') return 'VIGILANCE';
-    return 'INFO';
-  };
+  const urgencyLabel = urgency === 'red' ? 'Danger' : urgency === 'orange' ? 'Vigilance' : 'Info';
+  const urgencyTone = urgency === 'red' ? 'danger' : urgency === 'orange' ? 'warning' : 'neutral';
 
   const threadedComments = useMemo(
     () => buildThreadedComments(post.comments ?? []),
@@ -244,409 +242,395 @@ function FeedPostComponent({
     setNewComment('');
     setNewCommentImage(null);
     setReplyingTo(null);
+    setShowCommentUploader(false);
   };
 
   const location = metadata.location as { lat: number; lng: number } | undefined;
+  const commentCount = (post.comments ?? []).length;
 
   return (
-    <div
-      className={`card-container relative rounded-2xl overflow-hidden transition-all duration-300 hover:shadow-lg ${getCardClasses()}`}
-    >
-      <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${getBorderClass()}`} />
+    <article className="py-6">
+      <header className="flex items-start gap-3">
+        <Avatar src={actorAvatar || 'https://i.pravatar.cc/150'} name={actorName} size={40} />
 
-      <div className="p-4 pl-6 flex items-start gap-3">
-        <SafeImage
-          src={actorAvatar || 'https://i.pravatar.cc/150'}
-          className="w-10 h-10 rounded-full object-cover border-2 border-white shadow-sm"
-          alt="Avatar"
-        />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-bold text-slate-900 truncate">{actorName}</span>
-            {postType === 'entraide' && (
-              <span
-                className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide ${
-                  metadata.entraideType === 'offer'
-                    ? 'bg-green-100 text-green-700'
-                    : 'bg-amber-100 text-amber-700'
-                }`}
-              >
-                {metadata.entraideType === 'offer' ? '🎁 Offre' : '🙏 Demande'}
-              </span>
-            )}
-            {postType === 'alerte' && (
-              <span
-                className={`px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide animate-pulse ${getUrgencyClass()}`}
-              >
-                ⚠️ ALERTE {getUrgencyLabel()}
-              </span>
-            )}
-            {postType === 'association_post' && (
-              <span className="px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide bg-emerald-100 text-emerald-700">
-                Association
-              </span>
-            )}
-            {postType === 'association_event' && (
-              <span className="px-2 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide bg-blue-100 text-blue-700">
-                Événement associatif
-              </span>
-            )}
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="k-callout k-ink truncate font-semibold">{actorName}</span>
+
+            {postType === 'entraide' ? (
+              <Badge tone={metadata.entraideType === 'offer' ? 'success' : 'warm'}>
+                {metadata.entraideType === 'offer' ? 'Offre' : 'Demande'}
+              </Badge>
+            ) : null}
+
+            {postType === 'alerte' ? (
+              <Badge tone={urgencyTone} icon="warning">
+                Alerte {urgencyLabel}
+              </Badge>
+            ) : null}
+
+            {postType === 'association_post' ? <Badge tone="accent">Association</Badge> : null}
+            {postType === 'association_event' ? (
+              <Badge tone="accent">Événement associatif</Badge>
+            ) : null}
           </div>
-          <p className="text-xs text-slate-500">{formatDate(post.created_at as string | undefined)}</p>
-        </div>
-        <div className="text-2xl opacity-80" title={postType}>
-          {getTypeIcon()}
-        </div>
-      </div>
 
-      <div className="px-6 pb-2">
+          <p className="k-footnote k-ink-tertiary mt-0.5 flex items-center gap-1.5">
+            <Icon name={typeMeta.icon} size={14} />
+            <span>{typeMeta.label}</span>
+            <span aria-hidden="true">·</span>
+            <span>{formatDate(post.created_at as string | undefined)}</span>
+          </p>
+        </div>
+      </header>
+
+      <div className="mt-3 flex flex-col gap-3 sm:pl-[3.25rem]">
         {associationTitle ? (
-          <div className="mb-3">
-            <p className="text-lg font-bold text-slate-900">{associationTitle}</p>
+          <div>
+            <h3 className="k-title-3">{associationTitle}</h3>
             <div className="mt-2 flex flex-wrap gap-2">
               {associationSlug ? (
-                <button
-                  type="button"
-                  onClick={openAssociation}
-                  className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700 transition hover:bg-slate-200"
-                >
+                <Button size="sm" variant="secondary" onClick={openAssociation}>
                   Voir l&apos;association
-                </button>
+                </Button>
               ) : null}
               {postType === 'association_event' && associationEventId ? (
-                <button
-                  type="button"
-                  onClick={openAssociationEvent}
-                  className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold text-blue-700 transition hover:bg-blue-100"
-                >
+                <Button size="sm" variant="tinted" onClick={openAssociationEvent}>
                   Voir l&apos;événement
-                </button>
+                </Button>
               ) : null}
             </div>
           </div>
         ) : null}
 
-        <p className="text-slate-800 mb-3 whitespace-pre-line leading-relaxed">{post.content}</p>
+        <p className="k-body k-ink k-measure whitespace-pre-line">{post.content}</p>
 
         {location ? (
-          <div className="mb-3">
-            <div className="flex items-start gap-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
-              <div className="min-w-[40px] h-10 bg-slate-200 rounded flex items-center justify-center text-slate-400">
-                🗺️
-              </div>
-              <div>
-                {metadata.automatic_address ? (
-                  <p className="text-xs font-bold text-slate-700">📍 {String(metadata.automatic_address)}</p>
-                ) : null}
-                {metadata.manual_precision ? (
-                  <p className="text-xs text-slate-600 italic">👉 {String(metadata.manual_precision)}</p>
-                ) : null}
-                {!metadata.automatic_address && !metadata.manual_precision ? (
-                  <p className="text-xs text-slate-500">Localisation partagée</p>
-                ) : null}
-              </div>
-              <a
-                href={`https://www.openstreetmap.org/?mlat=${location.lat}&mlon=${location.lng}#map=16/${location.lat}/${location.lng}`}
-                target="_blank"
-                rel="noreferrer"
-                className="ml-auto text-xs font-bold text-blue-600 hover:underline flex items-center gap-1"
-              >
-                Voir
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                  <path d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
-                </svg>
-              </a>
+          <div className="flex items-start gap-3 rounded-md bg-surface-secondary p-3">
+            <Icon name="mapPin" size={17} className="mt-0.5 text-accent" />
+            <div className="min-w-0 flex-1">
+              {metadata.automatic_address ? (
+                <p className="k-footnote k-ink font-medium">
+                  {String(metadata.automatic_address)}
+                </p>
+              ) : null}
+              {metadata.manual_precision ? (
+                <p className="k-footnote k-ink-secondary">{String(metadata.manual_precision)}</p>
+              ) : null}
+              {!metadata.automatic_address && !metadata.manual_precision ? (
+                <p className="k-footnote k-ink-secondary">Localisation partagée</p>
+              ) : null}
             </div>
+            <a
+              href={`https://www.openstreetmap.org/?mlat=${location.lat}&mlon=${location.lng}#map=16/${location.lat}/${location.lng}`}
+              target="_blank"
+              rel="noreferrer"
+              className="k-footnote text-accent inline-flex shrink-0 items-center gap-1 font-medium"
+            >
+              Voir
+              <Icon name="externalLink" size={13} />
+            </a>
           </div>
         ) : null}
 
         {postType === 'entraide' ? (
-          <div className="bg-amber-50/50 p-3 rounded-xl border border-amber-100 mb-3 text-sm">
-            <div className="flex flex-wrap gap-3 text-amber-900">
-              <span className="flex items-center gap-1 font-semibold">
-                🏷️ {(metadata.category as string | undefined) || 'Service'}
+          <div className="k-footnote k-ink-secondary flex flex-wrap items-center gap-x-4 gap-y-2">
+            <span className="flex items-center gap-1.5">
+              <Icon name="tag" size={14} />
+              {(metadata.category as string | undefined) || 'Service'}
+            </span>
+            {metadata.availability ? (
+              <span className="flex items-center gap-1.5">
+                <Icon name="clock" size={14} />
+                {String(metadata.availability)}
               </span>
-              {metadata.availability ? (
-                <span className="flex items-center gap-1">📅 {String(metadata.availability)}</span>
-              ) : null}
-              {metadata.isVolunteer ? (
-                <span className="flex items-center gap-1 font-bold text-green-600">💚 Bénévole</span>
-              ) : null}
-            </div>
+            ) : null}
+            {metadata.isVolunteer ? <Badge tone="success">Bénévole</Badge> : null}
           </div>
         ) : null}
 
         {postType === 'perdu_trouve' ? (
-          <div className="mb-3">
-            <div className="flex items-center gap-2 mb-2">
-              <span
-                className={`px-3 py-1 rounded-full font-bold text-xs uppercase ${
-                  metadata.status === 'found' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'
-                }`}
-              >
+          <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge tone={metadata.status === 'found' ? 'accent' : 'danger'}>
                 {metadata.status === 'found' ? 'Trouvé' : 'Perdu'}
-              </span>
-              <span className="font-bold text-slate-700">{String(metadata.itemType ?? '')}</span>
-              <span className="text-slate-500 text-sm ml-auto">
-                🗓️ {formatDateShort(metadata.date as string | undefined)}
+              </Badge>
+              {metadata.itemType ? (
+                <span className="k-subhead k-ink font-medium">{String(metadata.itemType)}</span>
+              ) : null}
+              <span className="k-footnote k-ink-tertiary ml-auto">
+                {formatDateShort(metadata.date as string | undefined)}
               </span>
             </div>
+
             {metadata.image_url ? (
-              <div className="rounded-xl overflow-hidden shadow-sm border border-slate-100 mb-2 relative group">
+              <button
+                type="button"
+                onClick={() => viewImage(String(metadata.image_url))}
+                aria-label="Agrandir la photo de l'objet"
+                className="k-press-subtle block overflow-hidden rounded-lg"
+              >
                 <SafeImage
                   src={String(metadata.image_url)}
-                  className="w-full h-64 object-cover transition-transform duration-500 group-hover:scale-105 cursor-pointer"
-                  onClick={() => viewImage(String(metadata.image_url))}
-                  alt="Objet perdu/trouvé"
+                  className="h-64 w-full object-cover"
+                  alt="Objet perdu ou trouvé"
                 />
-                <div className="absolute bottom-0 inset-x-0 bg-gradient-to-t from-black/60 to-transparent p-4 text-white font-bold tracking-wider pointer-events-none">
-                  {metadata.status === 'found' ? 'TROUVÉ' : 'PERDU'}
-                </div>
-              </div>
+              </button>
             ) : null}
           </div>
         ) : null}
 
         {postType === 'signalement' ? (
-          <div className="mb-3">
-            <div className="bg-gray-100 rounded-full h-2 mb-2 overflow-hidden flex">
-              <div className="bg-blue-500 h-full w-1/3" />
-              <div
-                className={`h-full w-1/3 transition-colors ${isStatusActive(metadata, 'in_progress') ? 'bg-blue-500' : 'bg-gray-200'}`}
-              />
-              <div
-                className={`h-full w-1/3 transition-colors ${isStatusActive(metadata, 'fixed') ? 'bg-green-500' : 'bg-gray-200'}`}
-              />
-            </div>
-            <div className="flex justify-between text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-3">
-              <span className="text-blue-600">Signalé</span>
-              <span className={isStatusActive(metadata, 'in_progress') ? 'text-blue-600' : ''}>En cours</span>
-              <span className={isStatusActive(metadata, 'fixed') ? 'text-green-600' : ''}>Résolu</span>
-            </div>
+          <div className="flex flex-col gap-2">
+            <ol className="flex gap-1" aria-label="Avancement du signalement">
+              {(
+                [
+                  { step: 'submitted', label: 'Signalé' },
+                  { step: 'in_progress', label: 'En cours' },
+                  { step: 'fixed', label: 'Résolu' },
+                ] as const
+              ).map(({ step, label }) => {
+                const active = isStatusActive(metadata, step);
+                return (
+                  <li key={step} className="flex-1">
+                    <span
+                      className={`block h-1 rounded-full ${
+                        active
+                          ? step === 'fixed'
+                            ? 'bg-success'
+                            : 'bg-accent'
+                          : 'bg-canvas-sunken'
+                      }`}
+                    />
+                    <span
+                      className={`k-caption mt-1.5 block ${active ? 'k-ink font-medium' : 'k-ink-tertiary'}`}
+                    >
+                      {label}
+                    </span>
+                  </li>
+                );
+              })}
+            </ol>
+
             {metadata.image_url ? (
-              <div className="rounded-lg overflow-hidden h-40 w-full mb-2">
+              <div className="overflow-hidden rounded-lg">
                 <SafeImage
                   src={String(metadata.image_url)}
-                  className="w-full h-full object-cover"
-                  alt="Signalement"
+                  className="h-40 w-full object-cover"
+                  alt="Photo du signalement"
                 />
               </div>
             ) : null}
           </div>
         ) : null}
 
-        {['regular', 'alerte', 'entraide', 'village_square'].includes(postType) && metadata.image_url ? (
-          <div className="mb-3 rounded-xl overflow-hidden border border-slate-100">
+        {['regular', 'alerte', 'entraide', 'village_square'].includes(postType) &&
+        metadata.image_url ? (
+          <button
+            type="button"
+            onClick={() => viewImage(String(metadata.image_url))}
+            aria-label="Agrandir la photo de la publication"
+            className="k-press-subtle block overflow-hidden rounded-lg"
+          >
             <SafeImage
               src={String(metadata.image_url)}
-              className="w-full max-h-80 object-cover cursor-pointer"
-              onClick={() => viewImage(String(metadata.image_url))}
-              alt="Post image"
+              className="max-h-80 w-full object-cover"
+              alt="Photo de la publication"
             />
+          </button>
+        ) : null}
+
+        {postType === 'entraide' ? (
+          <Button variant="tinted" block leading={<Icon name="handshake" size={17} />} onClick={openReplyFocus}>
+            Proposer mon aide
+          </Button>
+        ) : null}
+
+        {postType === 'perdu_trouve' ? (
+          <Button variant="tinted" block leading={<Icon name="chat" size={17} />} onClick={openReplyFocus}>
+            J&apos;ai une info
+          </Button>
+        ) : null}
+
+        <div className="mt-1 flex flex-wrap items-center gap-1">
+          {REACTIONS.map((reaction) => (
+            <button
+              key={reaction.type}
+              type="button"
+              onClick={() => react(reaction.type)}
+              aria-label={`${reaction.label} — ${getReactionCount(post, reaction.type)}`}
+              className="k-press k-footnote k-ink-secondary inline-flex min-h-[2.25rem] items-center gap-1.5 rounded-full px-3 font-medium hover:bg-surface-secondary hover:text-accent"
+            >
+              <Icon name={reaction.icon} size={16} />
+              <span className="tabular-nums">{getReactionCount(post, reaction.type)}</span>
+            </button>
+          ))}
+
+          <button
+            type="button"
+            onClick={() => setShowComments((v) => !v)}
+            aria-expanded={showComments}
+            className="k-press k-footnote k-ink-secondary ml-auto inline-flex min-h-[2.25rem] items-center gap-1.5 rounded-full px-3 font-medium hover:bg-surface-secondary hover:text-accent"
+          >
+            <Icon name="chatLines" size={16} />
+            <span className="tabular-nums">{commentCount}</span>
+            <span className="k-visually-hidden">
+              {commentCount > 1 ? 'commentaires' : 'commentaire'}
+            </span>
+          </button>
+        </div>
+
+        {showComments ? (
+          <div className="k-animate-fade-in k-hairline-top flex flex-col gap-4 pt-4">
+            {threadedComments.length > 0 ? (
+              <ul className="flex flex-col gap-4">
+                {threadedComments.map((comment) => (
+                  <li key={comment.id} className="flex gap-3">
+                    <Avatar
+                      src={`https://i.pravatar.cc/150?u=${comment.user_id ?? comment.id}`}
+                      name={comment.author}
+                      size={32}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="k-subhead k-ink font-semibold">{comment.author}</p>
+                      <p className="k-subhead k-ink-secondary whitespace-pre-line">
+                        {comment.content}
+                      </p>
+
+                      {comment.image_url ? (
+                        <SafeImage
+                          src={comment.image_url}
+                          className="mt-2 max-h-40 rounded-md object-cover"
+                          alt="Image du commentaire"
+                        />
+                      ) : null}
+
+                      <div className="mt-1 flex items-center gap-3">
+                        <button
+                          type="button"
+                          onClick={() => replyTo(comment)}
+                          className="k-caption text-accent font-semibold"
+                        >
+                          Répondre
+                        </button>
+                        <span className="k-caption k-ink-tertiary">
+                          {formatDateShort(comment.created_at)}
+                        </span>
+                      </div>
+
+                      {comment.replies.length > 0 ? (
+                        <ul className="mt-3 flex flex-col gap-3">
+                          {comment.replies.map((reply) => (
+                            <li key={reply.id} className="flex gap-2">
+                              <Avatar
+                                src={`https://i.pravatar.cc/150?u=${reply.user_id ?? reply.id}`}
+                                name={reply.author}
+                                size={24}
+                              />
+                              <div className="min-w-0 flex-1">
+                                <p className="k-caption k-ink font-semibold">{reply.author}</p>
+                                <p className="k-caption k-ink-secondary whitespace-pre-line">
+                                  {reply.content}
+                                </p>
+                                {reply.image_url ? (
+                                  <SafeImage
+                                    src={reply.image_url}
+                                    className="mt-2 max-h-32 rounded-md object-cover"
+                                    alt="Image de la réponse"
+                                  />
+                                ) : null}
+                              </div>
+                            </li>
+                          ))}
+                        </ul>
+                      ) : null}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="k-footnote k-ink-tertiary">
+                Aucun commentaire — soyez la première personne à réagir.
+              </p>
+            )}
+
+            {session ? (
+              <div className="flex flex-col gap-2">
+                {replyingTo ? (
+                  <div className="k-footnote flex items-center justify-between gap-2 rounded-sm bg-accent-soft px-3 py-1.5 text-accent">
+                    <span className="truncate">Réponse à {replyingTo.author}</span>
+                    <button
+                      type="button"
+                      onClick={() => setReplyingTo(null)}
+                      aria-label="Annuler la réponse"
+                      className="k-press shrink-0"
+                    >
+                      <Icon name="close" size={15} />
+                    </button>
+                  </div>
+                ) : null}
+
+                <AutoGrowTextarea
+                  textareaRef={commentInputRef}
+                  value={newComment}
+                  onChange={(event) => setNewComment(event.target.value)}
+                  rows={1}
+                  placeholder="Votre commentaire..."
+                  aria-label="Votre commentaire"
+                />
+
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    aria-expanded={showCommentUploader}
+                    onClick={() => setShowCommentUploader((v) => !v)}
+                    leading={<Icon name="image" size={16} />}
+                  >
+                    Joindre une image
+                  </Button>
+
+                  {newCommentImage ? (
+                    <span className="k-caption text-success inline-flex items-center gap-1.5">
+                      <Icon name="checkCircle" size={14} />
+                      Image jointe
+                      <button
+                        type="button"
+                        onClick={() => setNewCommentImage(null)}
+                        aria-label="Retirer l'image jointe"
+                        className="k-press text-danger"
+                      >
+                        <Icon name="close" size={14} />
+                      </button>
+                    </span>
+                  ) : null}
+
+                  <Button
+                    className="ml-auto"
+                    size="sm"
+                    variant="primary"
+                    onClick={submitComment}
+                    disabled={!newComment.trim()}
+                    loading={isCommentSubmitting}
+                  >
+                    Envoyer
+                  </Button>
+                </div>
+
+                {showCommentUploader ? (
+                  <Suspense fallback={null}>
+                    <ImageUploader
+                      bucketName="post_images"
+                      onUploadSuccess={(url) => setNewCommentImage(url)}
+                    />
+                  </Suspense>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>
-
-      <div className="bg-gray-50/50 px-6 py-3 border-t border-gray-100 flex items-center justify-between">
-        <div className="flex items-center gap-2 relative group-reactions">
-          <button
-            type="button"
-            onClick={() => react('like')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full hover:bg-white transition-colors text-slate-600 hover:text-blue-600 font-medium text-sm"
-          >
-            <span>👍</span>
-            <span>{getReactionCount(post, 'like')}</span>
-          </button>
-          <div className="flex gap-1 opacity-100 sm:opacity-0 sm:group-hover:group-reactions:opacity-100 transition-opacity duration-300">
-            <button type="button" onClick={() => react('pray')} className="hover:scale-125 transition-transform p-1">
-              🙏 <span className="text-xs text-gray-400 ml-0.5">{getReactionCount(post, 'pray')}</span>
-            </button>
-            <button type="button" onClick={() => react('eyes')} className="hover:scale-125 transition-transform p-1">
-              👀 <span className="text-xs text-gray-400 ml-0.5">{getReactionCount(post, 'eyes')}</span>
-            </button>
-            <button type="button" onClick={() => react('hands')} className="hover:scale-125 transition-transform p-1">
-              🙌 <span className="text-xs text-gray-400 ml-0.5">{getReactionCount(post, 'hands')}</span>
-            </button>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setShowComments((v) => !v)}
-          className="flex items-center gap-1.5 text-slate-600 hover:text-blue-600 transition-colors text-sm font-medium"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-4 w-4"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth="2"
-              d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-            />
-          </svg>
-          <span>{(post.comments ?? []).length}</span>
-        </button>
-      </div>
-
-      {postType === 'entraide' ? (
-        <div className="px-6 pb-4">
-          <button
-            type="button"
-            onClick={openReplyFocus}
-            className="w-full py-2 bg-amber-100 text-amber-900 font-bold rounded-xl hover:bg-amber-200 transition-colors flex items-center justify-center gap-2"
-          >
-            🤝 Proposer mon aide
-          </button>
-        </div>
-      ) : null}
-
-      {postType === 'perdu_trouve' ? (
-        <div className="px-6 pb-4">
-          <button
-            type="button"
-            onClick={openReplyFocus}
-            className="w-full py-2 bg-blue-100 text-blue-900 font-bold rounded-xl hover:bg-blue-200 transition-colors flex items-center justify-center gap-2"
-          >
-            💬 J&apos;ai une info !
-          </button>
-        </div>
-      ) : null}
-
-      {showComments ? (
-        <div className="bg-gray-50 border-t border-gray-100 p-4 animate-fade-in">
-          <div className="space-y-4 mb-4">
-            {threadedComments.map((comment) => (
-              <div key={comment.id} className="flex gap-3">
-                <SafeImage
-                  src={`https://i.pravatar.cc/150?u=${comment.user_id ?? comment.id}`}
-                  className="w-8 h-8 rounded-full bg-gray-200"
-                  alt="Author"
-                />
-                <div className="flex-1">
-                  <div className="bg-white p-3 rounded-2xl rounded-tl-none shadow-sm text-sm border border-gray-100">
-                    <span className="font-bold text-slate-900 block mb-1">{comment.author}</span>
-                    <p className="text-slate-700">{comment.content}</p>
-                    {comment.image_url ? (
-                      <SafeImage
-                        src={comment.image_url}
-                        className="mt-2 rounded-lg max-h-40 object-cover"
-                        alt="Comment image"
-                      />
-                    ) : null}
-                  </div>
-                  <div className="flex items-center gap-3 mt-1 ml-2">
-                    <button
-                      type="button"
-                      onClick={() => replyTo(comment)}
-                      className="text-xs font-semibold text-slate-500 hover:text-blue-600"
-                    >
-                      Répondre
-                    </button>
-                    <span className="text-xs text-gray-400">{formatDateShort(comment.created_at)}</span>
-                  </div>
-                  {comment.replies.length > 0 ? (
-                    <div className="mt-3 space-y-3">
-                      {comment.replies.map((reply) => (
-                        <div key={reply.id} className="flex gap-2">
-                          <SafeImage
-                            src={`https://i.pravatar.cc/150?u=${reply.user_id ?? reply.id}`}
-                            className="w-6 h-6 rounded-full bg-gray-200"
-                            alt="Author"
-                          />
-                          <div className="bg-white p-2 rounded-xl rounded-tl-none shadow-sm text-xs border border-gray-100 flex-1">
-                            <span className="font-bold text-slate-900 block">{reply.author}</span>
-                            <p className="text-slate-700">{reply.content}</p>
-                            {reply.image_url ? (
-                              <SafeImage
-                                src={reply.image_url}
-                                className="mt-2 rounded-lg max-h-32 object-cover"
-                                alt="Reply image"
-                              />
-                            ) : null}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {session ? (
-            <div className="flex flex-col gap-2 bg-white p-2 rounded-xl border border-blue-100 shadow-sm">
-              {replyingTo ? (
-                <div className="flex justify-between items-center text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded">
-                  <span>Réponse à {replyingTo.author}</span>
-                  <button type="button" onClick={() => setReplyingTo(null)}>
-                    ✕
-                  </button>
-                </div>
-              ) : null}
-
-              <textarea
-                ref={commentInputRef}
-                value={newComment}
-                onChange={(event) => setNewComment(event.target.value)}
-                rows={1}
-                placeholder="Votre commentaire..."
-                className="w-full resize-none bg-transparent border-none focus:ring-0 text-sm py-1 outline-none"
-              />
-
-              <div className="flex justify-between items-center border-t border-gray-100 pt-2">
-                <div className="relative">
-                  <button
-                    type="button"
-                    className="text-gray-400 hover:text-blue-600 transition-colors"
-                    aria-label="Joindre une image"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                      />
-                    </svg>
-                  </button>
-                  <div className="absolute top-0 left-0 w-8 h-8 opacity-0 overflow-hidden">
-                    <Suspense fallback={null}>
-                      <ImageUploader
-                        bucketName="post_images"
-                        onUploadSuccess={(url) => setNewCommentImage(url)}
-                      />
-                    </Suspense>
-                  </div>
-                </div>
-
-                {newCommentImage ? (
-                  <span className="text-xs text-green-600 flex items-center gap-1">
-                    🖼️ Image jointe{' '}
-                    <button type="button" onClick={() => setNewCommentImage(null)} className="text-red-500 font-bold">
-                      x
-                    </button>
-                  </span>
-                ) : null}
-
-                <button
-                  type="button"
-                  onClick={submitComment}
-                  disabled={!newComment.trim() || isCommentSubmitting}
-                  className="bg-blue-600 text-white rounded-lg px-4 py-1.5 text-xs font-bold hover:bg-blue-700 transition-colors disabled:opacity-50"
-                >
-                  {isCommentSubmitting ? 'Envoi...' : 'Envoyer'}
-                </button>
-              </div>
-            </div>
-          ) : null}
-        </div>
-      ) : null}
-    </div>
+    </article>
   );
 }
 

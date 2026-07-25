@@ -1,17 +1,48 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { Link, useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   getAssociationsForAdminReview,
   logModerationAction,
   updateAssociation,
 } from '@/api/associations';
+import Badge from '@/components/ui/Badge';
+import Button from '@/components/ui/Button';
+import { useConfirm } from '@/components/ui/Confirm';
+import EmptyState from '@/components/ui/EmptyState';
+import Icon, { type IconName } from '@/components/ui/Icon';
+import { Page, PageHeader, Section } from '@/components/ui/Page';
+import SafeImage from '@/components/ui/SafeImage';
+import Skeleton from '@/components/ui/Skeleton';
+import { surfaceClass } from '@/components/ui/Surface';
+import { useToast } from '@/components/ui/Toast';
 import ModuleQuartiers from '@/features/territory/components/ModuleQuartiers';
 import ModuleSynthese from '@/features/territory/components/ModuleSynthese';
 import ModuleThematiques from '@/features/territory/components/ModuleThematiques';
 import { associationKeys } from '@/queries/associations';
 import { useAuthStore } from '@/stores/authStore';
 import type { Association } from '@/lib/types/contract';
+
+const QUICK_ACTIONS: { to: string; icon: IconName; title: string; description: string }[] = [
+  {
+    to: '/admin/alaune',
+    icon: 'newspaper',
+    title: 'Gérer « À la une »',
+    description: 'Les contenus mis en avant sur la page d’accueil.',
+  },
+  {
+    to: '/admin/sondages',
+    icon: 'chartBar',
+    title: 'Consulter les sondages',
+    description: 'Les résultats des consultations citoyennes, par quartier.',
+  },
+  {
+    to: '/admin/rag',
+    icon: 'robot',
+    title: 'Documents IA (RAG)',
+    description: 'La base de connaissances de l’assistant conversationnel.',
+  },
+];
 
 function errorMessage(error: unknown): string {
   if (error instanceof Error) return error.message;
@@ -22,6 +53,8 @@ export default function AdminView() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const session = useAuthStore((state) => state.session);
+  const confirm = useConfirm();
+  const toast = useToast();
 
   const [associations, setAssociations] = useState<Association[]>([]);
   const [isLoadingAssociations, setIsLoadingAssociations] = useState(true);
@@ -43,9 +76,21 @@ export default function AdminView() {
   }, [loadAssociations]);
 
   async function handleAssociationStatusChange(association: Association, status: string) {
+    // Seul le refus est irréversible du point de vue de l'association : c'est le
+    // seul geste qui mérite une confirmation.
+    if (status === 'rejected') {
+      const confirmed = await confirm({
+        title: 'Refuser cette association ?',
+        message: `« ${association.name} » ne sera pas publiée sur la plateforme.`,
+        confirmLabel: 'Refuser',
+        tone: 'danger',
+      });
+      if (!confirmed) return;
+    }
+
     const result = await updateAssociation(association.id, { status });
     if (!result.success) {
-      alert(`Impossible de mettre à jour le statut : ${errorMessage(result.error)}`);
+      toast.error('Mise à jour impossible', errorMessage(result.error));
       return;
     }
 
@@ -59,157 +104,153 @@ export default function AdminView() {
     await queryClient.invalidateQueries({ queryKey: ['association'] });
     await queryClient.invalidateQueries({ queryKey: associationKeys.adminReview() });
     await loadAssociations();
+    toast.success('Statut mis à jour');
   }
 
   return (
-    <div className="p-4 md:p-8 space-y-12">
-      <h1 className="text-4xl font-black text-center text-slate-800">
-        Tableau de Bord Administrateur
-      </h1>
+    <Page className="pt-8">
+      <PageHeader
+        eyebrow="Administration"
+        title="Tableau de bord"
+        description="Les contenus mis en avant, les consultations, la base de l’assistant et les associations en attente."
+      />
 
-      <div>
-        <h2 className="text-2xl font-bold mb-6 text-slate-700">Actions Rapides</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <button
-            type="button"
-            onClick={() => navigate('/admin/alaune')}
-            className="desktop-glass-card p-6 text-left hover:scale-105 transition-transform duration-300"
-          >
-            <div className="text-4xl mb-3">📰</div>
-            <h3 className="font-bold text-xl text-slate-900">Gérer &quot;À la Une&quot;</h3>
-            <p className="text-slate-600 text-sm">
-              Modifier les contenus mis en avant sur la page d&apos;accueil.
-            </p>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate('/admin/sondages')}
-            className="desktop-glass-card p-6 text-left hover:scale-105 transition-transform duration-300"
-          >
-            <div className="text-4xl mb-3">📊</div>
-            <h3 className="font-bold text-xl text-slate-900">Consulter les Sondages</h3>
-            <p className="text-slate-600 text-sm">
-              Analyser les résultats des consultations citoyennes par quartier.
-            </p>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => navigate('/admin/rag')}
-            className="desktop-glass-card p-6 text-left hover:scale-105 transition-transform duration-300"
-          >
-            <div className="text-4xl mb-3">🤖</div>
-            <h3 className="font-bold text-xl text-slate-900">Documents IA (RAG)</h3>
-            <p className="text-slate-600 text-sm">
-              Ajouter des fichiers pour enrichir la base de connaissances de l&apos;assistant IA.
-            </p>
-          </button>
+      <Section title="Actions rapides">
+        <div className="k-grid">
+          {QUICK_ACTIONS.map((action) => (
+            <Link
+              key={action.to}
+              to={action.to}
+              className={surfaceClass({ interactive: true, className: 'p-5' })}
+            >
+              <span className="mb-3 grid h-10 w-10 place-items-center rounded-md bg-accent-soft text-accent">
+                <Icon name={action.icon} size={20} />
+              </span>
+              <h3 className="k-title-3">{action.title}</h3>
+              <p className="k-subhead k-ink-secondary mt-1">{action.description}</p>
+            </Link>
+          ))}
         </div>
-      </div>
+      </Section>
 
-      <div className="space-y-6">
-        <div className="flex items-center justify-between gap-3">
-          <div>
-            <h2 className="text-2xl font-bold text-slate-700">Associations à valider</h2>
-            <p className="text-sm text-slate-500">
-              Validez les nouvelles associations avant publication.
-            </p>
-          </div>
-          <button
-            type="button"
+      <Section
+        title="Associations à valider"
+        description="Vérifiez les nouvelles associations avant leur publication."
+        action={
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={() => void loadAssociations()}
-            className="rounded-full bg-white/70 px-4 py-2 text-sm font-bold text-slate-700 shadow transition hover:bg-white"
+            loading={isLoadingAssociations}
+            leading={<Icon name="refresh" size={16} />}
           >
             Actualiser
-          </button>
-        </div>
-
+          </Button>
+        }
+      >
         {isLoadingAssociations ? (
-          <div className="desktop-glass-card rounded-3xl p-8 text-center text-slate-600">
-            Chargement des associations...
-          </div>
-        ) : pendingAssociations.length === 0 ? (
-          <div className="desktop-glass-card rounded-3xl p-8 text-center text-slate-600">
-            Aucune association en attente de validation.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 xl:grid-cols-2 gap-5">
-            {pendingAssociations.map((association) => (
-              <article key={association.id} className="desktop-glass-card rounded-3xl p-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <h3 className="text-xl font-black text-slate-900">{association.name}</h3>
-                      <span className="rounded-full bg-amber-100 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-amber-700">
-                        {association.status_label}
-                      </span>
-                      <span className="rounded-full bg-white/70 px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-slate-700">
-                        {association.category_label}
-                      </span>
-                    </div>
-                    <p className="text-sm font-semibold text-slate-500">
-                      Quartier{' '}
-                      {association.quartier?.name ||
-                        String(association.quartier_id ?? '')}
-                    </p>
-                  </div>
-                  {typeof association.logo_url === 'string' && association.logo_url ? (
-                    <img
-                      src={association.logo_url}
-                      alt={association.name}
-                      className="h-14 w-14 rounded-2xl object-cover shadow"
-                    />
-                  ) : null}
+          <div className="k-list border-t border-separator" aria-busy="true">
+            {[0, 1].map((row) => (
+              <div key={row} className="flex items-start gap-4 py-5">
+                <Skeleton width="3rem" height="3rem" radius="var(--k-radius-md)" />
+                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                  <Skeleton width="40%" height="1.125rem" />
+                  <Skeleton width="70%" height="0.875rem" />
                 </div>
-
-                <p className="mt-4 text-sm leading-relaxed text-slate-700">
-                  {typeof association.short_description === 'string'
-                    ? association.short_description
-                    : ''}
-                </p>
-
-                <div className="mt-5 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => navigate(`/associations/${association.id}/dashboard`)}
-                    className="rounded-full bg-white/80 px-4 py-2 text-sm font-bold text-slate-700 transition hover:bg-white"
-                  >
-                    Ouvrir
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void handleAssociationStatusChange(association, 'active')}
-                    className="rounded-full bg-emerald-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-emerald-700"
-                  >
-                    Valider
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void handleAssociationStatusChange(association, 'suspended')}
-                    className="rounded-full bg-rose-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-rose-700"
-                  >
-                    Suspendre
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void handleAssociationStatusChange(association, 'rejected')}
-                    className="rounded-full bg-slate-800 px-4 py-2 text-sm font-bold text-white transition hover:bg-slate-900"
-                  >
-                    Refuser
-                  </button>
-                </div>
-              </article>
+              </div>
             ))}
           </div>
-        )}
-      </div>
+        ) : pendingAssociations.length === 0 ? (
+          <EmptyState
+            icon="handshake"
+            title="Aucune association en attente"
+            description="Les nouvelles demandes apparaîtront ici dès leur dépôt."
+          />
+        ) : (
+          <ul className="k-list border-t border-separator">
+            {pendingAssociations.map((association) => (
+              <li key={association.id} className="py-5">
+                <div className="flex items-start gap-4">
+                  <SafeImage
+                    src={
+                      typeof association.logo_url === 'string' ? association.logo_url : null
+                    }
+                    alt={association.name}
+                    className="h-12 w-12 shrink-0 rounded-md object-cover"
+                  />
 
-      <div className="space-y-8">
-        <ModuleSynthese />
-        <ModuleQuartiers />
-        <ModuleThematiques />
-      </div>
-    </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="k-callout min-w-0 font-semibold">{association.name}</h3>
+                      <Badge tone="warning" dot>
+                        {association.status_label}
+                      </Badge>
+                      <Badge tone="outline">{association.category_label}</Badge>
+                    </div>
+                    <p className="k-footnote k-ink-tertiary mt-1">
+                      Quartier{' '}
+                      {association.quartier?.name || String(association.quartier_id ?? '')}
+                    </p>
+                    {typeof association.short_description === 'string' &&
+                    association.short_description ? (
+                      <p className="k-subhead k-ink-secondary k-measure mt-2">
+                        {association.short_description}
+                      </p>
+                    ) : null}
+
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        onClick={() =>
+                          void handleAssociationStatusChange(association, 'active')
+                        }
+                      >
+                        Valider
+                      </Button>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() =>
+                          navigate(`/associations/${association.id}/dashboard`)
+                        }
+                      >
+                        Ouvrir
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          void handleAssociationStatusChange(association, 'suspended')
+                        }
+                      >
+                        Suspendre
+                      </Button>
+                      <Button
+                        variant="danger-tinted"
+                        size="sm"
+                        onClick={() =>
+                          void handleAssociationStatusChange(association, 'rejected')
+                        }
+                      >
+                        Refuser
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </Section>
+
+      <Section title="Activité du territoire">
+        <div className="flex flex-col gap-8">
+          <ModuleSynthese />
+          <ModuleQuartiers />
+          <ModuleThematiques />
+        </div>
+      </Section>
+    </Page>
   );
 }
