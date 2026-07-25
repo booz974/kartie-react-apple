@@ -13,6 +13,7 @@ import { castVotes } from '@/api/democracy';
 import { useConsultationDetails } from '@/queries/territory';
 import { useUserConsultationVotes } from '@/queries/democracy';
 import { useAuthStore } from '@/stores/authStore';
+import { useUiStore } from '@/stores/uiStore';
 import type { ConsultationDetails } from '@/lib/types/contract';
 
 interface ConsultationOptionWithVotes {
@@ -45,6 +46,7 @@ export default function ConsultationView() {
   const consultationId = idParam ? parseInt(idParam, 10) : undefined;
 
   const session = useAuthStore((state) => state.session);
+  const openAuthModal = useUiStore((state) => state.openAuthModal);
   const toast = useToast();
 
   const {
@@ -266,9 +268,18 @@ export default function ConsultationView() {
             <>
               <p className="k-subhead k-ink-secondary mt-2">
                 {!session
-                  ? 'Connectez-vous pour participer. Voici les résultats actuels.'
+                  ? 'Voici les résultats actuels. Connectez-vous pour donner votre avis.'
                   : 'Merci d’avoir voté. Voici les résultats.'}
               </p>
+
+              {!session ? (
+                // Inviter à se connecter sans offrir le moyen de le faire
+                // laisserait le visiteur dans une impasse.
+                <Button variant="primary" className="mt-4" onClick={openAuthModal}>
+                  <Icon name="logIn" size={17} />
+                  Se connecter pour participer
+                </Button>
+              ) : null}
 
               <ul className="mt-6 flex flex-col gap-5">
                 {options.map((option) => {
