@@ -27,6 +27,40 @@ export const DESTINATIONS: NavDestination[] = [
   { to: '/chat', label: 'Assistant', icon: 'sparkles' },
 ];
 
+/**
+ * Destinations adaptées à la personne connectée.
+ *
+ * Quand un quartier de rattachement est connu, l'onglet mène directement à ce
+ * quartier plutôt qu'à la liste des vingt : c'est la page qu'on rouvre tous les
+ * jours, et l'atteindre demandait jusqu'ici de traverser une liste dont on
+ * connaît déjà la réponse.
+ *
+ * La liste reste accessible : la fiche quartier porte un retour « Tous les
+ * quartiers », et le pied de page comme l'accueil y renvoient. Sans ce
+ * rattachement, rien ne change.
+ */
+export function destinationsFor(quartierId?: number | null): NavDestination[] {
+  if (quartierId == null) return DESTINATIONS;
+
+  return DESTINATIONS.map((item) =>
+    item.to === '/quartiers'
+      ? { to: `/quartiers/${quartierId}`, label: 'Mon quartier', icon: 'mapPin' }
+      : item,
+  );
+}
+
+/**
+ * Onglet actif.
+ *
+ * La comparaison se fait segment par segment : un simple préfixe ferait passer
+ * `/quartiers/50` pour `/quartiers/5`, ce qui allumerait le mauvais onglet dès
+ * que deux identifiants se ressemblent.
+ */
+function isActivePath(pathname: string, to: string, end?: boolean): boolean {
+  if (end) return pathname === to;
+  return pathname === to || pathname.startsWith(`${to}/`);
+}
+
 export function displayName(profile: Profile | null): string {
   if (!profile) return 'Mon compte';
   const full = [profile.first_name, profile.last_name].filter(Boolean).join(' ').trim();
@@ -95,7 +129,7 @@ export function TopBar({ session, profile, onSignIn, accountItems }: TopBarProps
         </Link>
 
         <nav aria-label="Navigation principale" className="hidden items-center gap-1 md:flex">
-          {DESTINATIONS.map((item) => (
+          {destinationsFor(profile?.quartier_id).map((item) => (
             <NavLink
               key={item.to}
               to={item.to}
@@ -168,6 +202,8 @@ export function TopBar({ session, profile, onSignIn, accountItems }: TopBarProps
 type TabBarProps = {
   onAccount: () => void;
   isAuthenticated: boolean;
+  /** Quartier de rattachement, quand il est connu. */
+  quartierId?: number | null;
 };
 
 /**
@@ -175,8 +211,9 @@ type TabBarProps = {
  * permanence, là où l'ancien menu plein écran masquait le contenu et obligeait
  * à un aller-retour pour changer de section.
  */
-export function TabBar({ onAccount, isAuthenticated }: TabBarProps) {
+export function TabBar({ onAccount, isAuthenticated, quartierId }: TabBarProps) {
   const location = useLocation();
+  const destinations = destinationsFor(quartierId);
 
   return (
     // Le conteneur ne fait que réserver la zone sûre ; il laisse passer les
@@ -199,10 +236,8 @@ export function TabBar({ onAccount, isAuthenticated }: TabBarProps) {
         <LiquidGlassLayer bezel={22} blur={16} />
 
         <div className="flex h-[var(--k-tabbar-height)] items-stretch">
-          {DESTINATIONS.map((item) => {
-            const active = item.end
-              ? location.pathname === item.to
-              : location.pathname.startsWith(item.to);
+          {destinations.map((item) => {
+            const active = isActivePath(location.pathname, item.to, item.end);
   
             return (
               <NavLink

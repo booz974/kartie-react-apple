@@ -184,6 +184,7 @@ export default function AppShell() {
       {!isImmersive ? (
         <TabBar
           isAuthenticated={Boolean(session)}
+          quartierId={profile?.quartier_id}
           onAccount={() => {
             if (session) setShowAccountSheet(true);
             else openAuthModal();
