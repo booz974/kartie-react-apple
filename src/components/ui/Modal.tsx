@@ -7,6 +7,7 @@ import { useIsCompact } from '@/design/useMediaQuery';
 import { useSheetGesture } from '@/design/useSheetGesture';
 import Button from './Button';
 import Icon from './Icon';
+import LiquidGlassLayer from './LiquidGlassLayer';
 
 type ModalProps = {
   onClose: () => void;
@@ -104,6 +105,7 @@ export default function Modal({
         tabIndex={-1}
         className={[
           'k-modal',
+          'k-liquid-host',
           asSheet ? 'k-modal--sheet' : '',
           size === 'wide' ? 'k-modal--wide' : '',
           size === 'narrow' ? 'k-modal--narrow' : '',
@@ -112,6 +114,10 @@ export default function Modal({
           .join(' ')}
         {...labelled}
       >
+        {/* Objet lourd, posé sur un fond immobile : on peut s'offrir la
+            dispersion, qui donne à la tranche sa frange colorée. */}
+        <LiquidGlassLayer bezel={26} blur={22} chromatic />
+
         {asSheet && dismissible ? (
           <div className="k-sheet-handle" {...handleProps} aria-hidden="true" />
         ) : null}

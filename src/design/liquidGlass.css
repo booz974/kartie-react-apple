@@ -1,17 +1,23 @@
 /*
  * Kartie — verre liquide.
  *
- * Trois choses distinguent le verre liquide du verre dépoli :
- *   1. le bord réfracte ce qui passe derrière, au lieu de le flouter à plat ;
- *   2. la tranche capte la lumière, plus vive en haut à gauche qu'en bas à
- *      droite, ce qui donne son épaisseur au matériau ;
- *   3. la masse est légèrement teintée, donc le verre a une couleur propre au
- *      lieu d'être un blanc translucide neutre.
+ * Deux matériaux cohabitent ici, et il faut les distinguer.
  *
- * La réfraction dépend de `backdrop-filter: url()`, que seuls les navigateurs
- * Chromium honorent aujourd'hui. Tout le reste (teinte, tranche, reflet) est
- * du CSS ordinaire : ailleurs, la surface reste du verre dépoli soigné, et
- * rien ne manque à la compréhension.
+ * Le **verre dépoli** habille le contenu : cartes, encarts, pastilles. Il
+ * floute, il teinte, il capte la lumière sur sa tranche. C'est du CSS
+ * ordinaire, il coûte peu, on peut en poser partout.
+ *
+ * Le **verre liquide** habille la chrome flottante : barre supérieure, barre
+ * d'onglets, modales, menus. Il fait tout ce que fait le verre dépoli, et en
+ * plus il **réfracte** : son pourtour dévie ce qui passe derrière, comme la
+ * tranche épaisse d'une lentille. C'est cette déviation qui distingue le
+ * matériau d'Apple d'un simple flou, et c'est elle qui coûte une passe GPU par
+ * surface. On la réserve donc à la couche de commande, ce qui est aussi le
+ * choix d'Apple : le verre survole le contenu, il ne le remplace pas.
+ *
+ * La réfraction est portée par `LiquidGlassLayer`, qui mesure son hôte et
+ * fabrique la carte de déplacement à ses dimensions. Ici on ne décrit que
+ * l'empilement des couches et la matière.
  */
 
 :root {
@@ -31,11 +37,91 @@
   --k-glass-rim-soft:
     inset 1px 1px 1px -1px rgb(255 255 255 / 78%),
     inset -1px -1px 1px -1px rgb(255 255 255 / 30%);
+
+  /* Matière du verre liquide. Plus transparente que le verre dépoli : la
+   * réfraction n'a d'intérêt que s'il reste quelque chose à voir derrière. */
+  --k-liquid-tint: rgb(255 255 255 / 46%);
+
+  /* Tranche du verre liquide. Le filet supérieur est net et vif, c'est
+   * l'arête qui accroche la lumière ; les autres ne font que la prolonger. */
+  --k-liquid-rim:
+    inset 0 1px 0 rgb(255 255 255 / 78%),
+    inset 1px 0 0 rgb(255 255 255 / 34%),
+    inset -1px 0 0 rgb(255 255 255 / 34%),
+    inset 0 -1px 0 rgb(255 255 255 / 20%),
+    inset 0 0 18px -10px rgb(255 255 255 / 70%);
 }
 
-/* -------------------------------------------------------- Teinte et tranche
- * Appliqué à toutes les surfaces de verre, sans condition de support.
+/* ============================================================ Verre liquide */
+
+/*
+ * L'hôte ouvre un contexte d'empilement afin que les couches posées en
+ * arrière-plan y restent confinées. Ni `isolation` ni `filter` ici : l'un et
+ * l'autre créeraient une racine d'arrière-plan, et la couche de réfraction
+ * n'aurait plus rien à échantillonner.
  */
+.k-liquid-host {
+  position: relative;
+  z-index: 0;
+}
+
+/*
+ * Les trois couches passent sous le contenu sans qu'il ait à se positionner :
+ * un `z-index` négatif les place au-dessus du fond de l'hôte et en dessous de
+ * tout le reste. C'est ce qui permet d'ajouter le matériau à un composant
+ * existant sans toucher à son balisage.
+ */
+.k-liquid-refract,
+.k-liquid-tint,
+.k-liquid-specular {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* Couche 0 : réfraction et flou. Le rayon hérité suffit à découper le fond
+ * filtré, l'hôte n'a donc pas besoin de masquer son débordement. */
+.k-liquid-refract {
+  isolation: isolate;
+}
+
+/* Couche 1 : la matière elle-même. */
+.k-liquid-tint {
+  background: var(--k-liquid-tint);
+}
+
+/* Couche 2 : la tranche. */
+.k-liquid-specular {
+  box-shadow: var(--k-liquid-rim);
+}
+
+/*
+ * L'hôte délègue entièrement flou et fond à ses couches. Les conserver ferait
+ * deux `backdrop-filter` empilés, donc deux fois le coût, et un fond opaque
+ * sous la réfraction, donc plus rien à réfracter.
+ */
+.k-liquid-host.k-material-chrome,
+.k-liquid-host.k-material-popover,
+.k-liquid-host.k-modal,
+.k-liquid-host.k-glass,
+.k-liquid-host.k-glass-thin,
+.k-liquid-host.k-glass-thick {
+  background-color: transparent;
+  background-image: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Nuances de matière selon l'épaisseur de la surface. Une modale est un objet
+ * lourd, elle laisse moins passer qu'une barre d'onglets. */
+.k-liquid-host.k-material-chrome { --k-liquid-tint: rgb(255 255 255 / 44%); }
+.k-liquid-host.k-material-popover { --k-liquid-tint: rgb(255 255 255 / 62%); }
+.k-liquid-host.k-modal { --k-liquid-tint: rgb(255 255 255 / 66%); }
+
+/* ============================================================ Verre dépoli */
+
 .k-glass,
 .k-glass-thin,
 .k-glass-thick,
@@ -95,38 +181,6 @@
 .k-glass--quartier { --k-glass-tint: rgb(59 130 246 / 7%); }
 .k-glass--warm { --k-glass-tint: rgb(227 90 53 / 8%); }
 
-/* ------------------------------------------------------------- Réfraction
- * Le bord courbe ce qui passe derrière. Sans le support de `backdrop-filter:
- * url()`, cette règle n'est simplement jamais appliquée.
- */
-@supports (backdrop-filter: url('#k-liquid')) {
-  .k-card,
-  .k-glass {
-    backdrop-filter: url('#k-liquid') blur(14px) saturate(190%);
-    -webkit-backdrop-filter: url('#k-liquid') blur(14px) saturate(190%);
-  }
-
-  .k-glass-thin,
-  .k-material-chrome {
-    backdrop-filter: url('#k-liquid-thin') blur(10px) saturate(200%);
-    -webkit-backdrop-filter: url('#k-liquid-thin') blur(10px) saturate(200%);
-  }
-
-  .k-glass-thick,
-  .k-modal,
-  .k-material-popover {
-    backdrop-filter: url('#k-liquid-thick') blur(20px) saturate(200%);
-    -webkit-backdrop-filter: url('#k-liquid-thick') blur(20px) saturate(200%);
-  }
-
-  /* Une surface qui ne laisse rien passer derrière n'a rien à réfracter. */
-  .k-card--flat,
-  .k-card--sunken {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-  }
-}
-
 /* --------------------------------------------------------------- Reflet
  * Un halo doux en haut à gauche, comme une source ponctuelle qui glisse sur
  * la surface. Il ne réagit pas au pointeur : une lumière qui suit la souris
@@ -171,7 +225,8 @@
 /*
  * Transparence réduite : plus de teinte, plus de reflet, plus de réfraction.
  * Le contraste renforcé fait de même, la matière cédant la place à la couleur
- * franche.
+ * franche. La couche de réfraction se retire d'elle-même, le composant
+ * observant la même requête média.
  */
 @media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
   .k-glass,
@@ -194,5 +249,17 @@
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     box-shadow: var(--k-shadow-sm);
+  }
+
+  /* La surface redevient franche : le verre n'a plus lieu d'être. */
+  :root {
+    --k-liquid-tint: #ffffff;
+    --k-liquid-rim: none;
+  }
+
+  .k-liquid-host.k-material-chrome,
+  .k-liquid-host.k-material-popover,
+  .k-liquid-host.k-modal {
+    --k-liquid-tint: #ffffff;
   }
 }

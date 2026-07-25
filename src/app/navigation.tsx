@@ -3,6 +3,7 @@ import { Link, NavLink, useLocation } from 'react-router';
 import Avatar from '@/components/ui/Avatar';
 import Button, { buttonClass } from '@/components/ui/Button';
 import Icon, { type IconName } from '@/components/ui/Icon';
+import LiquidGlassLayer from '@/components/ui/LiquidGlassLayer';
 import Menu, { type MenuItem } from '@/components/ui/Menu';
 import type { Profile } from '@/lib/types/contract';
 
@@ -65,7 +66,7 @@ export function TopBar({ session, profile, onSignIn, accountItems }: TopBarProps
 
   return (
     <header
-      className="k-material-chrome sticky top-0 z-40 transition-[border-color,box-shadow] duration-200"
+      className="k-material-chrome k-liquid-host sticky top-0 z-40 transition-[border-color,box-shadow] duration-200"
       style={{
         // Le filet et l'ombre n'existent que là où du contenu passe réellement
         // sous la chrome.
@@ -73,6 +74,10 @@ export function TopBar({ session, profile, onSignIn, accountItems }: TopBarProps
         boxShadow: scrolled ? 'var(--k-shadow-sm)' : 'none',
       }}
     >
+      {/* Barre plaquée en haut, sans angle : le biseau ne travaille que sur les
+          arêtes horizontales, d'où un liseré fin plutôt qu'un bourrelet. */}
+      <LiquidGlassLayer bezel={12} blur={18} />
+
       <div className="mx-auto flex h-[var(--k-nav-height)] max-w-page items-center gap-2 px-5 md:px-8">
         <Link
           to="/"
@@ -174,56 +179,71 @@ export function TabBar({ onAccount, isAuthenticated }: TabBarProps) {
   const location = useLocation();
 
   return (
-    <nav
-      aria-label="Navigation principale"
-      className="k-material-chrome k-material-edge-top fixed inset-x-0 bottom-0 z-40 md:hidden"
+    // Le conteneur ne fait que réserver la zone sûre ; il laisse passer les
+    // clics pour ne pas confisquer une bande d'écran de part et d'autre de la
+    // pastille.
+    <div
+      className="pointer-events-none fixed inset-x-0 bottom-0 z-40 md:hidden"
       style={{ paddingBottom: 'var(--k-safe-bottom)' }}
     >
-      <div className="flex h-[var(--k-tabbar-height)] items-stretch">
-        {DESTINATIONS.map((item) => {
-          const active = item.end
-            ? location.pathname === item.to
-            : location.pathname.startsWith(item.to);
+      <nav
+        aria-label="Navigation principale"
+        // Pastille détachée des bords, à la manière d'iOS 26. Ce n'est pas
+        // qu'une question de style : le verre ne se lit vraiment que s'il
+        // flotte au-dessus de quelque chose, et c'est dans les angles arrondis
+        // que le biseau donne sa mesure.
+        className="k-material-chrome k-liquid-host pointer-events-auto mx-3 mb-3 overflow-hidden rounded-[1.75rem]"
+      >
+        {/* Le fond défile en permanence sous cette barre : une seule passe, sans
+            dispersion, pour ne pas tripler le coût à chaque image. */}
+        <LiquidGlassLayer bezel={22} blur={16} />
 
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.end}
-              className="k-press flex flex-1 flex-col items-center justify-center gap-1 pt-1.5"
-              aria-current={active ? 'page' : undefined}
-            >
-              {/* La pastille colorée derrière l'icône rend l'onglet actif
-                  lisible d'un coup d'œil, sans agrandir la cible. */}
-              <span
-                className={`flex h-8 w-14 items-center justify-center rounded-full transition-colors duration-200 ${
-                  active ? 'bg-accent-gradient text-ink-on-accent' : 'k-ink-tertiary'
-                }`}
+        <div className="flex h-[var(--k-tabbar-height)] items-stretch">
+          {DESTINATIONS.map((item) => {
+            const active = item.end
+              ? location.pathname === item.to
+              : location.pathname.startsWith(item.to);
+  
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                end={item.end}
+                className="k-press flex flex-1 flex-col items-center justify-center gap-1 pt-1.5"
+                aria-current={active ? 'page' : undefined}
               >
-                <Icon name={item.icon} size={21} strokeWidth={active ? 2 : 1.7} />
-              </span>
-              <span
-                className={`k-caption-2 k-vibrant ${active ? 'text-accent-ink' : 'k-ink-tertiary'}`}
-              >
-                {item.label}
-              </span>
-            </NavLink>
-          );
-        })}
-
-        <button
-          type="button"
-          onClick={onAccount}
-          className="k-press flex flex-1 flex-col items-center justify-center gap-1 pt-1.5"
-        >
-          <span className="k-ink-tertiary flex h-8 w-14 items-center justify-center">
-            <Icon name={isAuthenticated ? 'user' : 'logIn'} size={21} strokeWidth={1.7} />
-          </span>
-          <span className="k-caption-2 k-vibrant k-ink-tertiary">
-            {isAuthenticated ? 'Compte' : 'Connexion'}
-          </span>
-        </button>
-      </div>
-    </nav>
+                {/* La pastille colorée derrière l'icône rend l'onglet actif
+                    lisible d'un coup d'œil, sans agrandir la cible. */}
+                <span
+                  className={`flex h-8 w-14 items-center justify-center rounded-full transition-colors duration-200 ${
+                    active ? 'bg-accent-gradient text-ink-on-accent' : 'k-ink-tertiary'
+                  }`}
+                >
+                  <Icon name={item.icon} size={21} strokeWidth={active ? 2 : 1.7} />
+                </span>
+                <span
+                  className={`k-caption-2 k-vibrant ${active ? 'text-accent-ink' : 'k-ink-tertiary'}`}
+                >
+                  {item.label}
+                </span>
+              </NavLink>
+            );
+          })}
+  
+          <button
+            type="button"
+            onClick={onAccount}
+            className="k-press flex flex-1 flex-col items-center justify-center gap-1 pt-1.5"
+          >
+            <span className="k-ink-tertiary flex h-8 w-14 items-center justify-center">
+              <Icon name={isAuthenticated ? 'user' : 'logIn'} size={21} strokeWidth={1.7} />
+            </span>
+            <span className="k-caption-2 k-vibrant k-ink-tertiary">
+              {isAuthenticated ? 'Compte' : 'Connexion'}
+            </span>
+          </button>
+        </div>
+      </nav>
+    </div>
   );
 }

@@ -1,7 +1,6 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 import Icon from '@/components/ui/Icon';
-import LiquidGlassDefs from '@/components/ui/LiquidGlassDefs';
 import Modal from '@/components/ui/Modal';
 import Spinner from '@/components/ui/Spinner';
 import type { MenuItem } from '@/components/ui/Menu';
@@ -115,8 +114,6 @@ export default function AppShell() {
 
   return (
     <div className="flex min-h-dvh flex-col">
-      <LiquidGlassDefs />
-
       <a href="#contenu" className="k-skip-link k-subhead font-medium">
         Aller au contenu
       </a>
@@ -134,10 +131,11 @@ export default function AppShell() {
         className="flex-1"
         style={{
           // La barre d'onglets flotte au-dessus du contenu : on lui réserve sa
-          // hauteur pour que rien ne finisse coincé dessous.
+          // hauteur, plus la marge qui la détache du bas de l'écran, pour que
+          // rien ne finisse coincé dessous.
           paddingBottom: isImmersive
             ? undefined
-            : 'calc(var(--k-tabbar-height) + var(--k-safe-bottom))',
+            : 'calc(var(--k-tabbar-height) + var(--k-safe-bottom) + 0.75rem)',
         }}
       >
         <Suspense

@@ -2,6 +2,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useEscapeKey } from '@/design/a11y';
 import Icon, { type IconName } from './Icon';
+import LiquidGlassLayer from './LiquidGlassLayer';
 
 export type MenuItem = {
   id: string;
@@ -103,13 +104,15 @@ export default function Menu({ trigger, items, label, align = 'end', header }: M
           role="menu"
           aria-label={label}
           onKeyDown={onKeyDown}
-          className="k-material-popover k-animate-materialize absolute top-full z-50 mt-2 min-w-56 overflow-hidden rounded-lg border border-separator p-1"
+          className="k-material-popover k-liquid-host k-animate-materialize absolute top-full z-50 mt-2 min-w-56 overflow-hidden rounded-lg border border-separator p-1"
           style={{
             [align === 'end' ? 'right' : 'left']: 0,
             // L'agrandissement part du déclencheur, pas du centre du panneau.
             transformOrigin: align === 'end' ? 'top right' : 'top left',
           }}
         >
+          <LiquidGlassLayer bezel={16} blur={20} chromatic />
+
           {header ? (
             <div className="border-b border-separator px-3 pb-3 pt-2">{header}</div>
           ) : null}

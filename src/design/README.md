@@ -12,6 +12,8 @@ d'information a sa couleur et son émoji.
 | `categories.ts` | Couleur et émoji par nature de contenu, plus les fonctions de rattachement |
 | `base.css` | Reset (le preflight Tailwind est désactivé), classes typographiques, matériaux |
 | `components.css` | Classes des primitives (`k-card`, `k-media`, `k-chip`, `k-badge`, `k-btn`…) |
+| `liquidGlass.css` | Les deux matériaux : verre dépoli du contenu, verre liquide de la chrome |
+| `displacementMap.ts` | Carte de déplacement SDF qui donne au verre liquide sa réfraction |
 | `motion.ts` | Ressorts interruptibles, reprise de vélocité, projection du momentum |
 | `useSheetGesture.ts` | Glisser pour fermer les feuilles mobiles |
 | `a11y.ts` | Piège à focus, verrou de défilement, échappement |
@@ -25,11 +27,26 @@ couche fixe derrière toute la page (`body::before`). C'est lui que le verre
 capte et diffuse : sans lui, les surfaces translucides n'auraient rien à
 montrer. Il ne défile pas et ne s'anime pas.
 
-**2. Le verre est une matière.** `k-glass`, `k-glass-thin`, `k-glass-thick` :
-flou marqué, sursaturation élevée pour faire remonter la couleur du fond,
-liseré clair sur la tranche haute, ombre à trois couches. Jamais deux surfaces
-translucides l'une sur l'autre. Ne jamais écrire `bg-white` : `--k-surface` est
-translucide par construction.
+**2. Le verre est une matière, et il en existe deux.**
+
+Le *verre dépoli* habille le contenu : `k-glass`, `k-glass-thin`,
+`k-glass-thick`, `k-card`. Flou marqué, sursaturation élevée pour faire
+remonter la couleur du fond, liseré clair sur la tranche haute, ombre à trois
+couches. Jamais deux surfaces translucides l'une sur l'autre. Ne jamais écrire
+`bg-white` : `--k-surface` est translucide par construction.
+
+Le *verre liquide* habille la chrome flottante : barre supérieure, barre
+d'onglets, modales, menus. Il fait tout ce que fait le verre dépoli et, en
+plus, il **réfracte** : son pourtour dévie ce qui passe derrière, comme la
+tranche épaisse d'une lentille. C'est cette déviation qui distingue le matériau
+d'Apple d'un simple flou. On l'obtient en posant `<LiquidGlassLayer>` dans un
+hôte marqué `k-liquid-host`, qui empile alors quatre couches : réfraction,
+teinte, tranche, contenu.
+
+Le prix est d'une passe GPU par surface, aussi le budget est-il de trois à six
+surfaces réfractantes par écran. C'est également le choix d'Apple : le verre
+est la couche de commande qui survole le contenu, il ne remplace pas le
+contenu. Une grille de cartes reste en verre dépoli.
 
 **3. Les photos portent le contenu.** Tout ce qui a une image l'affiche en
 grand, via `<Media>`. Quand elle manque, `<Media>` produit un dégradé de la
@@ -113,3 +130,21 @@ trouvées dans les sources : les classes composées à l'exécution
 (`k-btn--${variant}`) y disparaîtraient. C'est pourquoi `tailwind.css` importe
 les fichiers du design system **avant** les directives `@tailwind`, et que le
 preflight est désactivé au profit du reset maison.
+
+Le signe de l'échelle de `feDisplacementMap` dépend de l'encodage de la carte,
+et c'est l'erreur classique. Notre carte SDF encode un vecteur **rentrant**,
+donc l'échelle est **positive** : le bord échantillonne vers le centre, le
+verre grossit. Les cartes bâties sur de simples dégradés linéaires, celles des
+tutoriels, encodent un vecteur sortant et réclament une échelle **négative**.
+Mélanger les deux conventions retourne la lentille et donne un oeil de poisson,
+où le bord repousse le décor au lieu de l'attirer.
+
+`color-interpolation-filters="sRGB"` est obligatoire sur le filtre. Sans lui le
+navigateur applique une correction gamma aux canaux avant de les lire comme des
+décalages, et le neutre cesse d'être neutre : toute la surface ondule.
+
+L'hôte du verre liquide ne doit porter ni `isolation: isolate` ni `filter` :
+l'un et l'autre créent une racine d'arrière-plan, et la couche de réfraction
+n'aurait alors plus rien à échantillonner. Il ouvre son contexte d'empilement
+par `position: relative` et `z-index: 0`, ce qui suffit à confiner les trois
+couches posées en `z-index: -1`.
