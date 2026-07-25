@@ -1,8 +1,13 @@
-import { Suspense, useEffect, useState } from 'react';
-import { Link, Outlet, useNavigate, useLocation } from 'react-router';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { Link, Outlet, useLocation, useNavigate } from 'react-router';
+import Icon from '@/components/ui/Icon';
+import Modal from '@/components/ui/Modal';
+import Spinner from '@/components/ui/Spinner';
+import type { MenuItem } from '@/components/ui/Menu';
 import AuthModal from '@/features/identity/AuthModal';
 import CompleteProfileModal from '@/features/identity/CompleteProfileModal';
 import SelectQuartier from '@/features/territory/SelectQuartier';
+import { TabBar, TopBar, displayName } from '@/app/navigation';
 import { useAuthStore } from '@/stores/authStore';
 import type { ProfileUpsert } from '@/api/profiles';
 
@@ -18,38 +23,24 @@ export default function AppShell() {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showQuartierSelector, setShowQuartierSelector] = useState(false);
   const [showCompleteProfileModal, setShowCompleteProfileModal] = useState(false);
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showAccountSheet, setShowAccountSheet] = useState(false);
 
-  const isChatView = location.pathname === '/chat';
+  // L'assistant occupe tout l'écran : sa zone de saisie et la barre d'onglets
+  // se disputeraient le bas de l'écran.
+  const isImmersive = location.pathname === '/chat';
 
   useEffect(() => {
     if (session) {
       setShowAuthModal(false);
-
-      if (profile && !profile.quartier_id) {
-        setShowQuartierSelector(true);
-      } else {
-        setShowQuartierSelector(false);
-      }
+      setShowQuartierSelector(Boolean(profile && !profile.quartier_id));
     } else {
       setShowQuartierSelector(false);
     }
   }, [session, profile]);
 
-  function handleMobileAction(action: () => void) {
-    action();
-    setIsMobileMenuOpen(false);
-  }
-
   async function handleSignOut() {
     await signOut();
     navigate('/');
-  }
-
-  function goToMyQuartier() {
-    if (profile?.quartier_id) {
-      navigate(`/quartiers/${profile.quartier_id}`);
-    }
   }
 
   async function handleQuartierSaved(quartierId: number) {
@@ -69,202 +60,159 @@ export default function AppShell() {
     setShowCompleteProfileModal(false);
   }
 
+  const accountItems = useMemo<MenuItem[]>(() => {
+    const items: MenuItem[] = [];
+
+    if (profile?.quartier_id) {
+      items.push({
+        id: 'quartier',
+        label: 'Mon quartier',
+        icon: 'mapPin',
+        onSelect: () => navigate(`/quartiers/${profile.quartier_id}`),
+      });
+    }
+
+    items.push({
+      id: 'profile',
+      label: 'Modifier mon profil',
+      icon: 'user',
+      onSelect: () => setShowCompleteProfileModal(true),
+    });
+
+    items.push({
+      id: 'change-quartier',
+      label: profile?.quartier_id ? 'Changer de quartier' : 'Choisir mon quartier',
+      icon: 'map',
+      onSelect: () => setShowQuartierSelector(true),
+    });
+
+    if (profile?.role === 'admin') {
+      items.push({
+        id: 'admin',
+        label: 'Administration',
+        icon: 'shield',
+        onSelect: () => navigate('/admin'),
+      });
+    }
+
+    items.push({
+      id: 'signout',
+      label: 'Se déconnecter',
+      icon: 'logOut',
+      tone: 'danger',
+      onSelect: () => void handleSignOut(),
+    });
+
+    return items;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile, navigate]);
+
   return (
-    <div
-      className={`container mx-auto transition-all duration-300 ${
-        isChatView ? 'p-0 md:p-8' : 'p-4 md:p-8'
-      }`}
-    >
-      <header
-        className={`flex justify-between items-center relative z-50 px-4 md:px-0 ${
-          isChatView ? 'mb-2 md:mb-8' : 'mb-8'
-        }`}
+    <div className="flex min-h-dvh flex-col">
+      <a href="#contenu" className="k-skip-link k-subhead font-medium">
+        Aller au contenu
+      </a>
+
+      <TopBar
+        session={session}
+        profile={profile}
+        onSignIn={() => setShowAuthModal(true)}
+        accountItems={accountItems}
+      />
+
+      <main
+        id="contenu"
+        tabIndex={-1}
+        className="flex-1"
+        style={{
+          // La barre d'onglets flotte au-dessus du contenu : on lui réserve sa
+          // hauteur pour que rien ne finisse coincé dessous.
+          paddingBottom: isImmersive
+            ? undefined
+            : 'calc(var(--k-tabbar-height) + var(--k-safe-bottom))',
+        }}
       >
-        <Link to="/" aria-label="Retour à l'accueil" className="z-50">
-          <img
-            src="/saint-denis.png"
-            alt="Logo Portrait de Saint-Denis"
-            width={40}
-            height={56}
-            className="h-14 w-auto"
-          />
-        </Link>
-
-        <div className="hidden md:flex items-center">
-          <Link
-            to="/chat"
-            className="glass-card text-white font-bold py-2 px-5 text-sm bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 mr-4 shadow-lg border-white/20 inline-block text-center"
-          >
-            ✨ Assistant IA
-          </Link>
-
-          {profile?.role === 'admin' ? (
-            <Link
-              to="/admin"
-              className="glass-card text-slate-800 font-bold py-2 px-5 text-sm bg-yellow-300/80 hover:bg-yellow-300/50 mr-4 inline-block text-center"
-            >
-              📊 Dashboard Admin
-            </Link>
-          ) : null}
-
-          {session && profile?.quartier_id ? (
-            <button
-              type="button"
-              onClick={goToMyQuartier}
-              className="glass-card text-slate-800 font-bold py-2 px-5 text-sm bg-cyan-300/80 hover:bg-cyan-300/50 mr-4"
-            >
-              🏠 Accéder à mon quartier
-            </button>
-          ) : null}
-
-          {session ? (
-            <button
-              type="button"
-              onClick={() => void handleSignOut()}
-              className="glass-card text-white font-bold py-2 px-5 text-sm bg-red-500/90 hover:bg-red-500/50"
-            >
-              Déconnexion
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setShowAuthModal(true)}
-              className="glass-card text-slate-800 font-bold py-2 px-5 text-sm bg-white/30 hover:bg-white/50"
-            >
-              Connexion
-            </button>
-          )}
-        </div>
-
-        <div className="md:hidden flex gap-2 z-50">
-          {isChatView ? (
-            <button
-              type="button"
-              onClick={() => navigate('/')}
-              className="glass-card p-2 text-slate-800"
-              aria-label="Retour"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth="2"
-                stroke="currentColor"
-                className="h-8 w-8"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"
-                />
-              </svg>
-            </button>
-          ) : null}
-
-          <button
-            type="button"
-            onClick={() => setIsMobileMenuOpen((open) => !open)}
-            className="glass-card p-2 text-slate-800"
-            aria-label="Menu"
-          >
-            {!isMobileMenuOpen ? (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-8 w-8"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M4 6h16M4 12h16M4 18h16"
-                />
-              </svg>
-            ) : (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-8 w-8"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            )}
-          </button>
-        </div>
-
-        {isMobileMenuOpen ? (
-          <div className="fixed inset-0 bg-slate-900/95 backdrop-blur-md z-40 flex flex-col items-center justify-center space-y-6 p-6 animate-fade-in md:hidden">
-            <button
-              type="button"
-              onClick={() => handleMobileAction(() => navigate('/chat'))}
-              className="w-full max-w-xs glass-card text-white font-bold py-4 px-6 text-lg bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg border-white/20"
-            >
-              ✨ Assistant IA
-            </button>
-
-            {profile?.role === 'admin' ? (
-              <button
-                type="button"
-                onClick={() => handleMobileAction(() => navigate('/admin'))}
-                className="w-full max-w-xs glass-card text-slate-900 font-bold py-4 px-6 text-lg bg-yellow-400"
-              >
-                📊 Dashboard Admin
-              </button>
-            ) : null}
-
-            {session && profile?.quartier_id ? (
-              <button
-                type="button"
-                onClick={() => handleMobileAction(goToMyQuartier)}
-                className="w-full max-w-xs glass-card text-slate-900 font-bold py-4 px-6 text-lg bg-cyan-400"
-              >
-                🏠 Mon Quartier
-              </button>
-            ) : null}
-
-            <div className="w-full max-w-xs border-t border-white/10 my-4" />
-
-            {session ? (
-              <button
-                type="button"
-                onClick={() => handleMobileAction(() => void handleSignOut())}
-                className="w-full max-w-xs glass-card text-white font-bold py-4 px-6 text-lg bg-red-500"
-              >
-                Déconnexion
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => handleMobileAction(() => setShowAuthModal(true))}
-                className="w-full max-w-xs glass-card text-slate-900 font-bold py-4 px-6 text-lg bg-white"
-              >
-                Connexion
-              </button>
-            )}
-          </div>
-        ) : null}
-      </header>
-
-      <main>
         <Suspense
           fallback={
-            <div className="min-h-[40vh] flex items-center justify-center">
-              <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
+            <div className="flex min-h-[50vh] items-center justify-center">
+              <Spinner size={24} className="k-ink-tertiary" label="Chargement de la page" />
             </div>
           }
         >
           <Outlet />
         </Suspense>
       </main>
+
+      {!isImmersive ? (
+        <footer className="k-hairline-top mt-auto">
+          <div className="k-page flex flex-col gap-6 py-10 md:flex-row md:items-start md:justify-between">
+            <div className="max-w-sm">
+              <p className="k-title-3">Kartie</p>
+              <p className="k-footnote k-ink-secondary mt-2">
+                La vie de quartier à Saint-Denis de La Réunion : s'informer, échanger et prendre
+                part aux décisions qui façonnent la ville.
+              </p>
+            </div>
+
+            <div className="flex flex-col gap-2">
+              <p className="k-eyebrow">Explorer</p>
+              <Link to="/quartiers" className="k-footnote k-ink-secondary hover:text-accent">
+                Les 20 quartiers
+              </Link>
+              <Link to="/chat" className="k-footnote k-ink-secondary hover:text-accent">
+                Assistant Kartie
+              </Link>
+            </div>
+
+            <div className="max-w-xs">
+              <p className="k-eyebrow">Sources</p>
+              <p className="k-caption k-ink-tertiary mt-2">
+                INSEE, Mairie de Saint-Denis, SIG, DEAL — 2021 à 2025.
+              </p>
+              <p className="k-caption k-ink-tertiary mt-3">Portrait de Saint-Denis 2025</p>
+            </div>
+          </div>
+        </footer>
+      ) : null}
+
+      {!isImmersive ? (
+        <TabBar
+          isAuthenticated={Boolean(session)}
+          onAccount={() => {
+            if (session) setShowAccountSheet(true);
+            else setShowAuthModal(true);
+          }}
+        />
+      ) : null}
+
+      {showAccountSheet && session ? (
+        <Modal
+          title={displayName(profile)}
+          description={profile?.username ? `@${profile.username}` : undefined}
+          onClose={() => setShowAccountSheet(false)}
+          bodyClassName="pb-2"
+        >
+          <div className="k-list -mx-1">
+            {accountItems.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={`k-press flex w-full items-center gap-3 px-1 py-3.5 text-left k-body ${
+                  item.tone === 'danger' ? 'text-danger' : 'k-ink'
+                }`}
+                onClick={() => {
+                  setShowAccountSheet(false);
+                  item.onSelect();
+                }}
+              >
+                {item.icon ? <Icon name={item.icon} size={20} className="k-ink-tertiary" /> : null}
+                <span className="flex-1 font-medium">{item.label}</span>
+                <Icon name="chevronRight" size={17} className="k-ink-quaternary" />
+              </button>
+            ))}
+          </div>
+        </Modal>
+      ) : null}
 
       {showAuthModal ? <AuthModal onClose={() => setShowAuthModal(false)} /> : null}
 
@@ -278,15 +226,11 @@ export default function AppShell() {
       ) : null}
 
       {showQuartierSelector ? (
-        <SelectQuartier onQuartierSaved={(id) => void handleQuartierSaved(id)} />
+        <SelectQuartier
+          onQuartierSaved={(id) => void handleQuartierSaved(id)}
+          onClose={profile?.quartier_id ? () => setShowQuartierSelector(false) : undefined}
+        />
       ) : null}
-
-      <footer className="bg-gray-800 text-white text-center p-8 -mx-4 -mb-8 md:-mx-8 md:-mb-8 rounded-t-2xl mt-16">
-        <p>Portrait de Saint-Denis 2025</p>
-        <p className="text-sm text-gray-400 mt-2">
-          Données INSEE, Mairie de Saint-Denis, SIG, DEAL (2021-2025).
-        </p>
-      </footer>
     </div>
   );
 }

@@ -1,6 +1,12 @@
 import { useState, type FormEvent } from 'react';
 import { signInWithPassword, signUpWithPassword } from '@/api/auth';
-import './auth-ui-mirror.css';
+import Button from '@/components/ui/Button';
+import Field, { Input } from '@/components/ui/Field';
+import Icon from '@/components/ui/Icon';
+import Modal from '@/components/ui/Modal';
+import Notice from '@/components/ui/Notice';
+import Segmented from '@/components/ui/Segmented';
+import { useToast } from '@/components/ui/Toast';
 
 interface AuthModalProps {
   onClose: () => void;
@@ -8,36 +14,23 @@ interface AuthModalProps {
 
 type AuthMode = 'signin' | 'signup';
 
-const SIGN_IN = {
-  emailLabel: 'Email address',
-  passwordLabel: 'Your Password',
-  emailPlaceholder: 'Your email address',
-  passwordPlaceholder: 'Your password',
-  buttonLabel: 'Sign in',
-  loadingLabel: 'Signing in ...',
-  linkText: "Don't have an account?",
-  linkAction: 'Sign up',
-};
-
-const SIGN_UP = {
-  emailLabel: 'Email address',
-  passwordLabel: 'Create a Password',
-  emailPlaceholder: 'Your email address',
-  passwordPlaceholder: 'Your password',
-  buttonLabel: 'Sign up',
-  loadingLabel: 'Signing up ...',
-  linkText: 'Already have an account?',
-  linkAction: 'Sign in',
+const COPY: Record<AuthMode, { submit: string; passwordLabel: string; hint?: string }> = {
+  signin: { submit: 'Se connecter', passwordLabel: 'Mot de passe' },
+  signup: {
+    submit: 'Créer mon compte',
+    passwordLabel: 'Choisir un mot de passe',
+    hint: 'Au moins 6 caractères.',
+  },
 };
 
 function translateAuthError(message: string): string {
   const translations: Record<string, string> = {
-    'Email not confirmed': 'Veuillez confirmer votre adresse e-mail.',
+    'Email not confirmed': 'Confirmez votre adresse e-mail avant de vous connecter.',
+    'Invalid login credentials': 'E-mail ou mot de passe incorrect.',
     'User already registered': 'Un compte existe déjà avec cet e-mail.',
     'Password should be at least 6 characters':
       'Le mot de passe doit contenir au moins 6 caractères.',
-    'Unable to validate email address: invalid format':
-      'Adresse e-mail invalide.',
+    'Unable to validate email address: invalid format': 'Cette adresse e-mail n’est pas valide.',
   };
 
   return translations[message] ?? message;
@@ -49,8 +42,9 @@ export default function AuthModal({ onClose }: AuthModalProps) {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const toast = useToast();
 
-  const copy = mode === 'signin' ? SIGN_IN : SIGN_UP;
+  const copy = COPY[mode];
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -62,10 +56,13 @@ export default function AuthModal({ onClose }: AuthModalProps) {
         await signInWithPassword(email, password);
       } else {
         await signUpWithPassword(email, password);
+        toast.success(
+          'Compte créé',
+          'Vérifiez votre boîte mail pour confirmer votre adresse.',
+        );
       }
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : 'Une erreur est survenue.';
+      const message = error instanceof Error ? error.message : 'Une erreur est survenue.';
       setErrorMessage(translateAuthError(message));
     } finally {
       setLoading(false);
@@ -73,80 +70,70 @@ export default function AuthModal({ onClose }: AuthModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-      <div className="bg-white rounded-2xl p-8 shadow-lg w-full max-w-md relative">
-        <button
-          type="button"
-          onClick={onClose}
-          className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-2xl font-bold"
-          aria-label="Fermer"
-        >
-          &times;
-        </button>
+    <Modal
+      onClose={onClose}
+      size="narrow"
+      title="Rejoindre Kartie"
+      description="Participez aux consultations, soutenez les pétitions et échangez avec votre quartier."
+    >
+      <Segmented
+        label="Connexion ou inscription"
+        className="mb-6 w-full"
+        block
+        value={mode}
+        onChange={(next) => {
+          setMode(next);
+          setErrorMessage('');
+        }}
+        options={[
+          { value: 'signin', label: 'Connexion' },
+          { value: 'signup', label: 'Inscription' },
+        ]}
+      />
 
-        <div className="supabase-auth-ui_ui-container">
-          <form onSubmit={handleSubmit} className="supabase-auth-ui_ui-divider">
-            <div className="mb-4">
-              <label htmlFor="auth-email" className="supabase-auth-ui_ui-label">
-                {copy.emailLabel}
-              </label>
-              <input
-                id="auth-email"
-                type="email"
-                required
-                autoComplete="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                className="supabase-auth-ui_ui-input"
-                placeholder={copy.emailPlaceholder}
-              />
-            </div>
+      <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <Field label="Adresse e-mail">
+          {(props) => (
+            <Input
+              {...props}
+              type="email"
+              required
+              autoComplete="email"
+              placeholder="vous@exemple.re"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              data-autofocus
+            />
+          )}
+        </Field>
 
-            <div className="mb-4">
-              <label htmlFor="auth-password" className="supabase-auth-ui_ui-label">
-                {copy.passwordLabel}
-              </label>
-              <input
-                id="auth-password"
-                type="password"
-                required
-                minLength={6}
-                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="supabase-auth-ui_ui-input"
-                placeholder={copy.passwordPlaceholder}
-              />
-            </div>
+        <Field label={copy.passwordLabel} hint={copy.hint}>
+          {(props) => (
+            <Input
+              {...props}
+              type="password"
+              required
+              minLength={6}
+              autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+              placeholder="••••••••"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+            />
+          )}
+        </Field>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="supabase-auth-ui_ui-button"
-            >
-              {loading ? copy.loadingLabel : copy.buttonLabel}
-            </button>
+        {errorMessage ? <Notice tone="danger">{errorMessage}</Notice> : null}
 
-            <div className="supabase-auth-ui_ui-anchor">
-              {copy.linkText}{' '}
-              <a
-                href="#"
-                onClick={(event) => {
-                  event.preventDefault();
-                  setMode(mode === 'signin' ? 'signup' : 'signin');
-                  setErrorMessage('');
-                }}
-              >
-                {copy.linkAction}
-              </a>
-            </div>
+        <Button type="submit" variant="primary" size="lg" block loading={loading} className="mt-2">
+          {copy.submit}
+        </Button>
 
-            {errorMessage ? (
-              <div className="supabase-auth-ui_ui-message">{errorMessage}</div>
-            ) : null}
-          </form>
-        </div>
-      </div>
-    </div>
+        <p className="k-caption k-ink-tertiary flex items-start gap-2">
+          <Icon name="lock" size={14} className="mt-0.5 shrink-0" />
+          Votre adresse sert uniquement à sécuriser votre compte et n’est jamais affichée
+          publiquement.
+        </p>
+      </form>
+    </Modal>
   );
 }

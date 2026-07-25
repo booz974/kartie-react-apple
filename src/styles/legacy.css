@@ -1,0 +1,79 @@
+/*
+ * Couche de compatibilité — TEMPORAIRE.
+ *
+ * Les anciennes classes (`glass-card`, `tab-button`, `bento-*`…) sont
+ * redirigées vers le nouveau système le temps que toutes les vues soient
+ * migrées, afin que le produit reste utilisable à chaque étape. Ce fichier a
+ * vocation à disparaître : plus aucune vue ne doit s'appuyer dessus.
+ */
+
+  .glass-card,
+  .desktop-glass-card {
+    background-color: var(--k-surface);
+    border: var(--k-hairline) solid var(--k-separator);
+    border-radius: var(--k-radius-lg);
+    backdrop-filter: none;
+    box-shadow: none;
+  }
+
+  .tab-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.25rem;
+    padding: 0 var(--k-space-4);
+    border-radius: var(--k-radius-sm);
+    font-size: var(--k-text-subhead-size);
+    font-weight: 540;
+    color: var(--k-ink-secondary);
+    transition: color var(--k-duration-fast) var(--k-ease-out);
+  }
+
+  .tab-button.active {
+    background-color: var(--k-surface);
+    color: var(--k-ink);
+    box-shadow: var(--k-shadow-sm);
+  }
+
+  .quartier-prose ul {
+    list-style-type: disc;
+    padding-left: var(--k-space-5);
+  }
+
+  .quartier-prose li {
+    margin-bottom: var(--k-space-2);
+  }
+
+  .quartier-prose strong {
+    font-weight: 620;
+    color: var(--k-ink);
+  }
+
+  .animate-fade-in {
+    animation: k-fade-in var(--k-duration-base) var(--k-ease-out) both;
+  }
+
+  .animate-fade-in-up {
+    animation: k-rise var(--k-spring-smooth-duration) var(--k-spring-smooth) both;
+  }
+
+  .bento-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--k-space-5);
+  }
+
+  @media (min-width: 768px) {
+    .bento-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+
+  .scrollbar-hide {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }

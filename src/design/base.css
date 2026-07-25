@@ -1,0 +1,587 @@
+/*
+ * Kartie — fondations appliquées aux éléments et classes transverses.
+ * Dépend uniquement de tokens.css : aucune valeur en dur ici.
+ */
+
+/*
+ * Le preflight de Tailwind est désactivé (voir tailwind.config.cjs) : il
+ * s'insérait après ces fondations et les écrasait. Le reset ci-dessous le
+ * remplace, en gardant ce dont les utilitaires ont besoin — notamment le style
+ * de bordure par défaut, sans lequel `border-t` ne dessinerait rien.
+ */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  border: 0 solid var(--k-separator);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--k-font-sans);
+  font-size: var(--k-text-body-size);
+  line-height: var(--k-text-body-leading);
+  letter-spacing: var(--k-text-body-tracking);
+  color: var(--k-ink);
+  background-color: var(--k-canvas);
+  background-image: none;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-synthesis-weight: none;
+  text-rendering: optimizeLegibility;
+}
+
+/* Le pouce doit pouvoir faire défiler sans déclencher le rebond de la page,
+ * mais un geste horizontal dans un carrousel ne doit pas être volé. */
+body {
+  overscroll-behavior-y: none;
+}
+
+::selection {
+  background-color: var(--k-accent-soft-hover);
+  color: var(--k-ink);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+p,
+figure,
+blockquote,
+dl,
+dd,
+pre {
+  margin: 0;
+}
+
+/* La taille et la graisse des titres viennent des paliers typographiques, pas
+ * du navigateur : un `<h3>` peut ainsi ouvrir une section sans imposer sa
+ * taille par défaut. */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+ol,
+ul,
+menu {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+img,
+svg,
+video,
+canvas,
+audio,
+iframe,
+embed,
+object {
+  display: block;
+  vertical-align: middle;
+}
+
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+table {
+  border-collapse: collapse;
+  border-color: inherit;
+  text-indent: 0;
+}
+
+b,
+strong {
+  font-weight: bolder;
+}
+
+code,
+kbd,
+samp,
+pre {
+  font-family: var(--k-font-mono);
+  font-size: 1em;
+}
+
+small { font-size: 80%; }
+
+sub,
+sup {
+  font-size: 75%;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+
+sub { bottom: -0.25em; }
+sup { top: -0.5em; }
+
+fieldset,
+legend {
+  margin: 0;
+  padding: 0;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+button,
+input,
+optgroup,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+  margin: 0;
+  padding: 0;
+}
+
+button,
+[type='button'],
+[type='reset'],
+[type='submit'] {
+  -webkit-appearance: button;
+  background-image: none;
+}
+
+::placeholder {
+  color: var(--k-ink-quaternary);
+  opacity: 1;
+}
+
+textarea {
+  resize: vertical;
+}
+
+[role='button'] {
+  cursor: pointer;
+}
+
+:disabled {
+  cursor: default;
+}
+
+button {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  /* Le délai de tap de ~300 ms est une latence perçue immédiatement. */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+hr {
+  border: 0;
+  border-top: var(--k-hairline) solid var(--k-separator);
+  margin: 0;
+}
+
+/* ------------------------------------------------------------------- Focus
+ * Un seul anneau, toujours visible au clavier, jamais au pointeur. Il se pose
+ * au-dessus de la surface (pas de décalage de mise en page).
+ */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--k-focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--k-radius-xs);
+}
+
+/* -------------------------------------------------------------- Typographie
+ * Chaque palier associe taille, interlignage et approche : la hiérarchie naît
+ * de l'ensemble, pas de la taille seule.
+ */
+.k-display,
+.k-title-hero {
+  font-size: var(--k-text-display-size);
+  line-height: var(--k-text-display-leading);
+  letter-spacing: var(--k-text-display-tracking);
+  font-weight: 700;
+  font-optical-sizing: auto;
+}
+
+.k-title-large {
+  font-size: var(--k-text-large-size);
+  line-height: var(--k-text-large-leading);
+  letter-spacing: var(--k-text-large-tracking);
+  font-weight: 700;
+}
+
+.k-title-1 {
+  font-size: var(--k-text-title1-size);
+  line-height: var(--k-text-title1-leading);
+  letter-spacing: var(--k-text-title1-tracking);
+  font-weight: 660;
+}
+
+.k-title-2 {
+  font-size: var(--k-text-title2-size);
+  line-height: var(--k-text-title2-leading);
+  letter-spacing: var(--k-text-title2-tracking);
+  font-weight: 640;
+}
+
+.k-title-3 {
+  font-size: var(--k-text-title3-size);
+  line-height: var(--k-text-title3-leading);
+  letter-spacing: var(--k-text-title3-tracking);
+  font-weight: 620;
+}
+
+.k-callout {
+  font-size: var(--k-text-callout-size);
+  line-height: var(--k-text-callout-leading);
+  letter-spacing: var(--k-text-callout-tracking);
+}
+
+.k-body {
+  font-size: var(--k-text-body-size);
+  line-height: var(--k-text-body-leading);
+  letter-spacing: var(--k-text-body-tracking);
+}
+
+.k-subhead {
+  font-size: var(--k-text-subhead-size);
+  line-height: var(--k-text-subhead-leading);
+  letter-spacing: var(--k-text-subhead-tracking);
+}
+
+.k-footnote {
+  font-size: var(--k-text-footnote-size);
+  line-height: var(--k-text-footnote-leading);
+  letter-spacing: var(--k-text-footnote-tracking);
+}
+
+.k-caption {
+  font-size: var(--k-text-caption-size);
+  line-height: var(--k-text-caption-leading);
+  letter-spacing: var(--k-text-caption-tracking);
+}
+
+.k-caption-2 {
+  font-size: var(--k-text-caption2-size);
+  line-height: var(--k-text-caption2-leading);
+  letter-spacing: var(--k-text-caption2-tracking);
+}
+
+/* Étiquette de section : la manière dont on titre sans alourdir. */
+.k-eyebrow {
+  font-size: var(--k-text-caption-size);
+  line-height: var(--k-text-caption-leading);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: var(--k-ink-tertiary);
+}
+
+.k-ink { color: var(--k-ink); }
+.k-ink-secondary { color: var(--k-ink-secondary); }
+.k-ink-tertiary { color: var(--k-ink-tertiary); }
+.k-ink-accent { color: var(--k-accent); }
+
+/* Largeur de lecture confortable pour le texte long. */
+.k-measure {
+  max-width: var(--k-measure);
+}
+
+/* -------------------------------------------------------------- Matériaux
+ * Trois poids seulement. Une surface translucide ne se pose jamais sur une
+ * autre surface translucide : la lisibilité s'effondrerait.
+ */
+.k-material-chrome {
+  background-color: var(--k-material-chrome-bg);
+  backdrop-filter: var(--k-material-chrome-filter);
+  -webkit-backdrop-filter: var(--k-material-chrome-filter);
+}
+
+.k-material-sheet {
+  background-color: var(--k-material-sheet-bg);
+  backdrop-filter: var(--k-material-sheet-filter);
+  -webkit-backdrop-filter: var(--k-material-sheet-filter);
+}
+
+.k-material-popover {
+  background-color: var(--k-material-popover-bg);
+  backdrop-filter: var(--k-material-popover-filter);
+  -webkit-backdrop-filter: var(--k-material-popover-filter);
+  box-shadow: var(--k-shadow-lg);
+}
+
+/* La vibrance : au-dessus d'un matériau, le texte gagne un peu de graisse et
+ * d'approche pour rester lisible quel que soit ce qui défile dessous. */
+.k-vibrant {
+  font-weight: 560;
+  letter-spacing: 0.006em;
+}
+
+/* Bord supérieur clair : la lumière qui accroche la tranche du matériau. */
+.k-material-edge-top {
+  border-top: var(--k-hairline) solid var(--k-material-chrome-border);
+}
+
+/* --------------------------------------------------------- Bord de défilement
+ * Plutôt qu'un filet net sous une barre flottante, un dégradé court là où le
+ * contenu passe réellement sous la chrome.
+ */
+.k-scroll-edge {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: var(--k-space-6);
+  pointer-events: none;
+}
+
+.k-scroll-edge-top {
+  top: 100%;
+  background: linear-gradient(to bottom, var(--k-canvas), transparent);
+}
+
+/* ----------------------------------------------------------------- Surfaces */
+.k-surface {
+  background-color: var(--k-surface);
+  border-radius: var(--k-radius-lg);
+}
+
+.k-hairline-top { border-top: var(--k-hairline) solid var(--k-separator); }
+.k-hairline-bottom { border-bottom: var(--k-hairline) solid var(--k-separator); }
+.k-hairline-all { border: var(--k-hairline) solid var(--k-separator); }
+
+/* Liste séparée par des filets : structure l'information sans multiplier les
+ * cartes. C'est le motif à préférer par défaut. */
+.k-list > * + * {
+  border-top: var(--k-hairline) solid var(--k-separator);
+}
+
+/* --------------------------------------------------------------- Pression
+ * Le retour vit sur l'appui, pas sur le relâchement, et il est immédiat.
+ */
+.k-press {
+  transition:
+    transform var(--k-duration-instant) var(--k-ease-out),
+    background-color var(--k-duration-fast) var(--k-ease-out),
+    opacity var(--k-duration-fast) var(--k-ease-out);
+}
+
+.k-press:active {
+  transform: scale(0.972);
+}
+
+.k-press-subtle:active {
+  transform: scale(0.99);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .k-press:active,
+  .k-press-subtle:active {
+    transform: none;
+    opacity: 0.7;
+  }
+}
+
+/* --------------------------------------------------------------- Apparition
+ * Les surfaces se matérialisent : l'échelle et le flou bougent ensemble, pour
+ * qu'un matériau arrive comme un objet et non comme une opacité.
+ */
+@keyframes k-materialize {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes k-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes k-rise {
+  from {
+    opacity: 0;
+    transform: translate3d(0, var(--k-space-3), 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes k-sheet-in {
+  from { transform: translate3d(0, 100%, 0); }
+  to { transform: none; }
+}
+
+.k-animate-materialize {
+  animation: k-materialize var(--k-spring-smooth-duration) var(--k-spring-smooth) both;
+}
+
+.k-animate-fade-in {
+  animation: k-fade-in var(--k-duration-base) var(--k-ease-out) both;
+}
+
+.k-animate-rise {
+  animation: k-rise var(--k-spring-smooth-duration) var(--k-spring-smooth) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .k-animate-materialize,
+  .k-animate-rise {
+    animation: k-fade-in var(--k-duration-fast) var(--k-ease-out) both;
+  }
+}
+
+/* ------------------------------------------------------------------ Divers */
+.k-scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.k-scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Défilement horizontal avec accroche : le geste porte, les éléments se
+ * calent, rien ne s'arrête net. */
+.k-snap-x {
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+}
+
+.k-snap-x > * {
+  scroll-snap-align: start;
+}
+
+/* Accessible uniquement aux lecteurs d'écran, mais révélé au focus clavier. */
+.k-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.k-skip-link {
+  position: absolute;
+  top: var(--k-space-2);
+  left: var(--k-space-2);
+  z-index: 200;
+  transform: translateY(calc(-100% - var(--k-space-4)));
+  transition: transform var(--k-duration-fast) var(--k-ease-out);
+  background-color: var(--k-surface);
+  color: var(--k-ink);
+  padding: var(--k-space-2) var(--k-space-4);
+  border-radius: var(--k-radius-sm);
+  box-shadow: var(--k-shadow-md);
+}
+
+.k-skip-link:focus-visible {
+  transform: none;
+}
+
+/* Verrouille le défilement du document quand une surface modale est ouverte,
+ * sans faire sauter la page à cause de la disparition de la barre. */
+.k-scroll-locked {
+  overflow: hidden;
+  padding-right: var(--k-scrollbar-width, 0px);
+}
+
+/* Contenu riche issu de l'éditeur : on garde une seule mise en forme. */
+.k-prose {
+  font-size: var(--k-text-callout-size);
+  line-height: 1.65;
+  color: var(--k-ink-secondary);
+}
+
+.k-prose > * + * {
+  margin-top: var(--k-space-4);
+}
+
+.k-prose h2 {
+  font-size: var(--k-text-title2-size);
+  line-height: var(--k-text-title2-leading);
+  letter-spacing: var(--k-text-title2-tracking);
+  font-weight: 640;
+  color: var(--k-ink);
+  margin-top: var(--k-space-8);
+}
+
+.k-prose h3 {
+  font-size: var(--k-text-title3-size);
+  line-height: var(--k-text-title3-leading);
+  letter-spacing: var(--k-text-title3-tracking);
+  font-weight: 620;
+  color: var(--k-ink);
+  margin-top: var(--k-space-6);
+}
+
+.k-prose strong {
+  color: var(--k-ink);
+  font-weight: 620;
+}
+
+.k-prose a {
+  color: var(--k-accent);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  text-decoration-thickness: 0.06em;
+}
+
+.k-prose ul,
+.k-prose ol {
+  padding-left: var(--k-space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-space-2);
+}
+
+.k-prose ul { list-style: disc; }
+.k-prose ol { list-style: decimal; }
+
+.k-prose img {
+  border-radius: var(--k-radius-lg);
+}
+
+.k-prose blockquote {
+  border-left: 2px solid var(--k-accent-200);
+  padding-left: var(--k-space-4);
+  color: var(--k-ink-secondary);
+}
+

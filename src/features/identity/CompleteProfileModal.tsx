@@ -1,6 +1,11 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { upsertProfile, type ProfileUpsert } from '@/api/profiles';
+import Avatar from '@/components/ui/Avatar';
+import Button from '@/components/ui/Button';
+import Field, { Input } from '@/components/ui/Field';
+import Modal from '@/components/ui/Modal';
+import { useToast } from '@/components/ui/Toast';
 import type { Profile } from '@/lib/types/contract';
 import { useAuthStore } from '@/stores/authStore';
 
@@ -18,6 +23,7 @@ export default function CompleteProfileModal({
   onSaved,
 }: CompleteProfileModalProps) {
   const setProfile = useAuthStore((state) => state.setProfile);
+  const toast = useToast();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     first_name: initialData.first_name ?? '',
@@ -25,10 +31,11 @@ export default function CompleteProfileModal({
     avatar_url: initialData.avatar_url ?? '',
   });
 
-  const isValid =
-    form.first_name.trim().length > 0 && form.last_name.trim().length > 0;
+  const isValid = form.first_name.trim().length > 0 && form.last_name.trim().length > 0;
+  const fullName = [form.first_name, form.last_name].filter(Boolean).join(' ').trim();
 
-  async function saveProfile() {
+  async function saveProfile(event: FormEvent) {
+    event.preventDefault();
     if (!isValid) return;
     setLoading(true);
 
@@ -37,8 +44,7 @@ export default function CompleteProfileModal({
         id: session.user.id,
         first_name: form.first_name,
         last_name: form.last_name,
-        avatar_url:
-          form.avatar_url || `https://i.pravatar.cc/150?u=${session.user.id}`,
+        avatar_url: form.avatar_url || `https://i.pravatar.cc/150?u=${session.user.id}`,
         updated_at: new Date(),
       };
 
@@ -51,99 +57,103 @@ export default function CompleteProfileModal({
         last_name: updates.last_name,
         avatar_url: updates.avatar_url,
       });
+      toast.success('Profil enregistré');
       onSaved(updates);
     } catch (err) {
       console.error('Error updating profile:', err);
-      alert('Erreur lors de la mise à jour du profil.');
+      toast.error(
+        'Enregistrement impossible',
+        'Votre profil n’a pas pu être mis à jour. Réessayez dans un instant.',
+      );
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-2xl">
-        <h2 className="text-2xl font-bold mb-4 text-center">Complétez votre profil</h2>
-        <p className="text-gray-600 mb-6 text-center text-sm">
-          Pour participer à la vie du quartier, nous avons besoin de mieux vous connaître !
-        </p>
-
-        <div className="space-y-4">
-          <div>
-            <label htmlFor="first-name" className="block text-sm font-medium text-gray-700 mb-1">
-              Prénom
-            </label>
-            <input
-              id="first-name"
-              type="text"
-              value={form.first_name}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, first_name: event.target.value }))
-              }
-              className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="Ex: Jean"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="last-name" className="block text-sm font-medium text-gray-700 mb-1">
-              Nom
-            </label>
-            <input
-              id="last-name"
-              type="text"
-              value={form.last_name}
-              onChange={(event) =>
-                setForm((current) => ({ ...current, last_name: event.target.value }))
-              }
-              className="w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 outline-none"
-              placeholder="Ex: Dupont"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="avatar-url" className="block text-sm font-medium text-gray-700 mb-1">
-              Photo de profil (URL)
-            </label>
-            <div className="flex gap-2">
-              <input
-                id="avatar-url"
-                type="text"
-                value={form.avatar_url}
-                onChange={(event) =>
-                  setForm((current) => ({ ...current, avatar_url: event.target.value }))
-                }
-                className="flex-1 border rounded-lg p-2 text-sm"
-                placeholder="https://..."
-              />
-              <img
-                src={form.avatar_url || 'https://i.pravatar.cc/150'}
-                alt="Aperçu avatar"
-                className="w-10 h-10 rounded-full border bg-gray-100"
-              />
-            </div>
-            <p className="text-xs text-gray-500 mt-1">Laissez vide pour une image par défaut.</p>
-          </div>
-        </div>
-
-        <div className="mt-8 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onCancel}
-            className="px-4 py-2 text-gray-600 font-medium hover:bg-gray-100 rounded-lg"
-          >
+    <Modal
+      onClose={onCancel}
+      size="narrow"
+      title="Votre profil"
+      description="Votre nom apparaît à côté de vos publications et de vos soutiens."
+      footer={
+        <>
+          <Button variant="secondary" onClick={onCancel}>
             Annuler
-          </button>
-          <button
-            type="button"
-            onClick={() => void saveProfile()}
-            disabled={loading || !isValid}
-            className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          </Button>
+          <Button
+            variant="primary"
+            type="submit"
+            form="profile-form"
+            loading={loading}
+            disabled={!isValid}
           >
-            {loading ? 'Enregistrement...' : 'Valider'}
-          </button>
+            Enregistrer
+          </Button>
+        </>
+      }
+    >
+      <form id="profile-form" onSubmit={saveProfile} className="flex flex-col gap-4">
+        <div className="flex items-center gap-4">
+          {/* L'aperçu se met à jour pendant la saisie : le résultat est visible
+              avant d'être validé. */}
+          <Avatar src={form.avatar_url || undefined} name={fullName} size={56} />
+          <p className="k-footnote k-ink-tertiary">
+            Voici comment vous apparaîtrez dans les fils de discussion.
+          </p>
         </div>
-      </div>
-    </div>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Prénom">
+            {(props) => (
+              <Input
+                {...props}
+                required
+                autoComplete="given-name"
+                placeholder="Jean"
+                value={form.first_name}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, first_name: event.target.value }))
+                }
+                data-autofocus
+              />
+            )}
+          </Field>
+
+          <Field label="Nom">
+            {(props) => (
+              <Input
+                {...props}
+                required
+                autoComplete="family-name"
+                placeholder="Dupont"
+                value={form.last_name}
+                onChange={(event) =>
+                  setForm((current) => ({ ...current, last_name: event.target.value }))
+                }
+              />
+            )}
+          </Field>
+        </div>
+
+        <Field
+          label="Photo de profil"
+          optional
+          hint="Collez l’adresse d’une image. Sans photo, vos initiales sont utilisées."
+        >
+          {(props) => (
+            <Input
+              {...props}
+              type="url"
+              placeholder="https://…"
+              value={form.avatar_url}
+              onChange={(event) =>
+                setForm((current) => ({ ...current, avatar_url: event.target.value }))
+              }
+            />
+          )}
+        </Field>
+      </form>
+    </Modal>
   );
 }

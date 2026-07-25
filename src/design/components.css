@@ -1,0 +1,955 @@
+/*
+ * Kartie — primitives visuelles.
+ *
+ * Chaque composant React de src/components/ui s'appuie sur ces classes. Aucune
+ * valeur en dur : uniquement des tokens, pour qu'un ajustement se propage
+ * partout d'un seul geste.
+ */
+
+/* ==========================================================================
+   Bouton
+   ========================================================================== */
+
+.k-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--k-space-2);
+  position: relative;
+  border-radius: var(--k-radius-md);
+  font-weight: 560;
+  white-space: nowrap;
+  text-align: center;
+  min-height: var(--k-touch-target);
+  padding: 0 var(--k-space-4);
+  font-size: var(--k-text-subhead-size);
+  letter-spacing: var(--k-text-subhead-tracking);
+  /* Le retour vit sur la pression et arrive immédiatement. */
+  transition:
+    transform var(--k-duration-instant) var(--k-ease-out),
+    background-color var(--k-duration-fast) var(--k-ease-out),
+    border-color var(--k-duration-fast) var(--k-ease-out),
+    color var(--k-duration-fast) var(--k-ease-out),
+    box-shadow var(--k-duration-fast) var(--k-ease-out);
+}
+
+.k-btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+.k-btn:disabled,
+.k-btn[aria-disabled='true'] {
+  cursor: not-allowed;
+  opacity: 0.42;
+  transform: none;
+}
+
+.k-btn--sm {
+  min-height: 2rem;
+  padding: 0 var(--k-space-3);
+  font-size: var(--k-text-footnote-size);
+  border-radius: var(--k-radius-sm);
+}
+
+.k-btn--lg {
+  min-height: 3.25rem;
+  padding: 0 var(--k-space-6);
+  font-size: var(--k-text-callout-size);
+  border-radius: var(--k-radius-lg);
+}
+
+.k-btn--block {
+  width: 100%;
+}
+
+/* Icône seule : la cible reste carrée et jamais sous 44 px. */
+.k-btn--icon {
+  padding: 0;
+  width: var(--k-touch-target);
+  min-width: var(--k-touch-target);
+}
+
+.k-btn--icon.k-btn--sm {
+  width: 2rem;
+  min-width: 2rem;
+}
+
+.k-btn--icon.k-btn--lg {
+  width: 3.25rem;
+  min-width: 3.25rem;
+}
+
+/* -- Variantes ------------------------------------------------------------ */
+
+.k-btn--primary {
+  background-color: var(--k-accent);
+  color: var(--k-ink-on-accent);
+  box-shadow: var(--k-shadow-xs);
+}
+
+.k-btn--primary:hover:not(:disabled) {
+  background-color: var(--k-accent-hover);
+}
+
+.k-btn--primary:active:not(:disabled) {
+  background-color: var(--k-accent-active);
+}
+
+.k-btn--secondary {
+  background-color: var(--k-surface);
+  color: var(--k-ink);
+  border: var(--k-hairline) solid var(--k-separator-strong);
+  box-shadow: var(--k-shadow-xs);
+}
+
+.k-btn--secondary:hover:not(:disabled) {
+  background-color: var(--k-surface-secondary);
+}
+
+.k-btn--tinted {
+  background-color: var(--k-accent-soft);
+  color: var(--k-accent);
+}
+
+.k-btn--tinted:hover:not(:disabled) {
+  background-color: var(--k-accent-soft-hover);
+}
+
+.k-btn--ghost {
+  background-color: transparent;
+  color: var(--k-ink-secondary);
+}
+
+.k-btn--ghost:hover:not(:disabled) {
+  background-color: var(--k-surface-secondary);
+  color: var(--k-ink);
+}
+
+.k-btn--plain {
+  background-color: transparent;
+  color: var(--k-accent);
+  min-height: auto;
+  padding: var(--k-space-1) 0;
+}
+
+.k-btn--plain:hover:not(:disabled) {
+  color: var(--k-accent-hover);
+}
+
+.k-btn--danger {
+  background-color: var(--k-danger);
+  color: #fff;
+}
+
+.k-btn--danger:hover:not(:disabled) {
+  background-color: var(--k-danger-hover);
+}
+
+.k-btn--danger-tinted {
+  background-color: var(--k-danger-soft);
+  color: var(--k-danger);
+}
+
+.k-btn--danger-tinted:hover:not(:disabled) {
+  background-color: var(--k-danger);
+  color: #fff;
+}
+
+.k-btn--warm {
+  background-color: var(--k-warm);
+  color: #fff;
+}
+
+.k-btn--warm:hover:not(:disabled) {
+  background-color: var(--k-warm-hover);
+}
+
+/* Bouton posé sur un matériau translucide : la vibrance garde le texte lisible
+ * quel que soit le contenu qui défile dessous. */
+.k-btn--on-material {
+  background-color: rgb(255 255 255 / 70%);
+  color: var(--k-ink);
+  font-weight: 580;
+  letter-spacing: 0.006em;
+}
+
+.k-btn__spinner {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+}
+
+.k-btn--loading .k-btn__content {
+  opacity: 0;
+}
+
+/* ==========================================================================
+   Surface
+   ========================================================================== */
+
+.k-card {
+  background-color: var(--k-surface);
+  border-radius: var(--k-radius-lg);
+  border: var(--k-hairline) solid var(--k-separator);
+}
+
+.k-card--flat {
+  border: 0;
+  box-shadow: none;
+}
+
+.k-card--raised {
+  border-color: transparent;
+  box-shadow: var(--k-shadow-md);
+}
+
+.k-card--sunken {
+  background-color: var(--k-canvas-sunken);
+  border-color: transparent;
+}
+
+/* Surface cliquable : elle se soulève à peine, et se rétracte à l'appui. */
+.k-card--interactive {
+  display: block;
+  text-align: inherit;
+  width: 100%;
+  transition:
+    transform var(--k-duration-fast) var(--k-ease-out),
+    box-shadow var(--k-duration-base) var(--k-ease-out),
+    border-color var(--k-duration-fast) var(--k-ease-out);
+}
+
+.k-card--interactive:hover {
+  border-color: var(--k-separator-strong);
+  box-shadow: var(--k-shadow-md);
+}
+
+.k-card--interactive:active {
+  transform: scale(0.99);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .k-card--interactive:active,
+  .k-btn:active:not(:disabled) {
+    transform: none;
+  }
+}
+
+/* ==========================================================================
+   Champs de formulaire
+   ========================================================================== */
+
+.k-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--k-space-2);
+}
+
+.k-field__label {
+  font-size: var(--k-text-subhead-size);
+  font-weight: 560;
+  color: var(--k-ink);
+}
+
+.k-field__optional {
+  color: var(--k-ink-tertiary);
+  font-weight: 400;
+}
+
+.k-field__hint {
+  font-size: var(--k-text-footnote-size);
+  color: var(--k-ink-tertiary);
+}
+
+.k-field__error {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--k-space-2);
+  font-size: var(--k-text-footnote-size);
+  color: var(--k-danger);
+}
+
+.k-input {
+  width: 100%;
+  min-height: var(--k-touch-target);
+  padding: var(--k-space-3) var(--k-space-4);
+  background-color: var(--k-surface);
+  border: var(--k-hairline) solid var(--k-separator-strong);
+  border-radius: var(--k-radius-md);
+  color: var(--k-ink);
+  font-size: var(--k-text-body-size);
+  transition:
+    border-color var(--k-duration-fast) var(--k-ease-out),
+    box-shadow var(--k-duration-fast) var(--k-ease-out),
+    background-color var(--k-duration-fast) var(--k-ease-out);
+}
+
+.k-input::placeholder {
+  color: var(--k-ink-quaternary);
+}
+
+.k-input:hover:not(:disabled):not(:focus) {
+  border-color: var(--k-ink-quaternary);
+}
+
+.k-input:focus {
+  outline: none;
+  border-color: var(--k-accent);
+  box-shadow: 0 0 0 3px var(--k-accent-soft);
+}
+
+.k-input:disabled {
+  background-color: var(--k-surface-secondary);
+  color: var(--k-ink-tertiary);
+  cursor: not-allowed;
+}
+
+.k-input[aria-invalid='true'] {
+  border-color: var(--k-danger);
+}
+
+.k-input[aria-invalid='true']:focus {
+  box-shadow: 0 0 0 3px var(--k-danger-soft);
+}
+
+textarea.k-input {
+  resize: vertical;
+  min-height: 6rem;
+  line-height: var(--k-text-body-leading);
+}
+
+select.k-input {
+  appearance: none;
+  padding-right: var(--k-space-10);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235a6068' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5.4 9.4 6.6 6.6 6.6-6.6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right var(--k-space-3) center;
+  background-size: 1.125rem;
+}
+
+/* Champ discret pour les composeurs : le cadre n'apparaît qu'au focus. */
+.k-input--seamless {
+  border-color: transparent;
+  background-color: transparent;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.k-input--seamless:hover:not(:disabled):not(:focus) {
+  border-color: transparent;
+}
+
+.k-input--seamless:focus {
+  box-shadow: none;
+  border-color: transparent;
+}
+
+.k-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--k-space-3);
+  cursor: pointer;
+  min-height: var(--k-touch-target);
+  padding: var(--k-space-2) 0;
+}
+
+.k-checkbox input {
+  width: 1.25rem;
+  height: 1.25rem;
+  margin-top: 0.125rem;
+  accent-color: var(--k-accent);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+/* ==========================================================================
+   Contrôle segmenté / onglets
+   ========================================================================== */
+
+.k-segmented {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.1875rem;
+  background-color: var(--k-canvas-sunken);
+  border-radius: var(--k-radius-md);
+  overflow-x: auto;
+  scrollbar-width: none;
+  max-width: 100%;
+}
+
+.k-segmented::-webkit-scrollbar {
+  display: none;
+}
+
+.k-segmented--block {
+  display: flex;
+  width: 100%;
+}
+
+/* L'indicateur glisse d'un onglet à l'autre : la sélection se déplace, elle
+ * n'est pas redessinée ailleurs. */
+.k-segmented__indicator {
+  position: absolute;
+  top: 0.1875rem;
+  bottom: 0.1875rem;
+  left: 0;
+  border-radius: calc(var(--k-radius-md) - 0.1875rem);
+  background-color: var(--k-surface);
+  box-shadow: var(--k-shadow-sm);
+  transition:
+    transform var(--k-spring-snap-duration) var(--k-spring-snap),
+    width var(--k-spring-snap-duration) var(--k-spring-snap);
+  pointer-events: none;
+}
+
+.k-segmented__indicator[data-initial='true'] {
+  transition: none;
+}
+
+.k-segmented__item {
+  position: relative;
+  z-index: 1;
+  flex: 1 1 auto;
+  min-height: 2.25rem;
+  padding: 0 var(--k-space-4);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--k-space-2);
+  border-radius: calc(var(--k-radius-md) - 0.1875rem);
+  font-size: var(--k-text-subhead-size);
+  font-weight: 540;
+  color: var(--k-ink-secondary);
+  white-space: nowrap;
+  transition: color var(--k-duration-fast) var(--k-ease-out);
+}
+
+.k-segmented__item:hover {
+  color: var(--k-ink);
+}
+
+.k-segmented__item[aria-selected='true'],
+.k-segmented__item[data-selected='true'] {
+  color: var(--k-ink);
+  font-weight: 600;
+}
+
+/* Onglets soulignés : pour la navigation de section, là où le segmenté serait
+ * trop lourd. */
+.k-tabs {
+  position: relative;
+  display: flex;
+  gap: var(--k-space-1);
+  overflow-x: auto;
+  scrollbar-width: none;
+  border-bottom: var(--k-hairline) solid var(--k-separator);
+}
+
+.k-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.k-tabs__item {
+  position: relative;
+  padding: var(--k-space-3) var(--k-space-3);
+  min-height: var(--k-touch-target);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--k-space-2);
+  font-size: var(--k-text-subhead-size);
+  font-weight: 540;
+  color: var(--k-ink-secondary);
+  white-space: nowrap;
+  transition: color var(--k-duration-fast) var(--k-ease-out);
+}
+
+.k-tabs__item:hover {
+  color: var(--k-ink);
+}
+
+.k-tabs__item[aria-selected='true'] {
+  color: var(--k-accent);
+  font-weight: 620;
+}
+
+.k-tabs__indicator {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  height: 2px;
+  border-radius: 2px;
+  background-color: var(--k-accent);
+  transition:
+    transform var(--k-spring-snap-duration) var(--k-spring-snap),
+    width var(--k-spring-snap-duration) var(--k-spring-snap);
+}
+
+.k-tabs__indicator[data-initial='true'] {
+  transition: none;
+}
+
+/* ==========================================================================
+   Badge
+   ========================================================================== */
+
+.k-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--k-space-1);
+  padding: 0.1875rem var(--k-space-2);
+  border-radius: var(--k-radius-xs);
+  font-size: var(--k-text-caption-size);
+  line-height: var(--k-text-caption-leading);
+  letter-spacing: var(--k-text-caption-tracking);
+  font-weight: 580;
+  background-color: var(--k-surface-secondary);
+  color: var(--k-ink-secondary);
+  white-space: nowrap;
+}
+
+.k-badge--accent { background-color: var(--k-accent-soft); color: var(--k-accent); }
+.k-badge--warm { background-color: var(--k-warm-soft); color: var(--k-warm); }
+.k-badge--success { background-color: var(--k-success-soft); color: var(--k-success); }
+.k-badge--warning { background-color: var(--k-warning-soft); color: var(--k-warning); }
+.k-badge--danger { background-color: var(--k-danger-soft); color: var(--k-danger); }
+.k-badge--solid { background-color: var(--k-ink); color: var(--k-surface); }
+.k-badge--outline { background-color: transparent; border: var(--k-hairline) solid var(--k-separator-strong); }
+
+.k-badge--pill { border-radius: var(--k-radius-full); padding-inline: var(--k-space-3); }
+
+/* Pastille d'état : l'anneau la détache de tout arrière-plan. */
+.k-badge__dot {
+  width: 0.4375rem;
+  height: 0.4375rem;
+  border-radius: 50%;
+  background-color: currentColor;
+  flex-shrink: 0;
+}
+
+.k-badge__dot--live {
+  animation: k-pulse 2s var(--k-ease-in-out) infinite;
+}
+
+@keyframes k-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .k-badge__dot--live { animation: none; }
+}
+
+/* ==========================================================================
+   Surfaces modales
+   ========================================================================== */
+
+.k-scrim {
+  position: fixed;
+  inset: 0;
+  background-color: var(--k-scrim);
+  backdrop-filter: var(--k-scrim-filter);
+  -webkit-backdrop-filter: var(--k-scrim-filter);
+  animation: k-fade-in var(--k-duration-base) var(--k-ease-out) both;
+}
+
+.k-modal-root {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--k-space-4);
+}
+
+/* Sur mobile la surface arrive par le bas et repart par le bas : elle
+ * disparaît par le chemin qu'elle a emprunté. */
+.k-modal-root--sheet {
+  align-items: flex-end;
+  padding: 0;
+}
+
+.k-modal {
+  position: relative;
+  width: 100%;
+  max-width: 32rem;
+  max-height: calc(100dvh - var(--k-space-8));
+  display: flex;
+  flex-direction: column;
+  background-color: var(--k-surface);
+  border-radius: var(--k-radius-xl);
+  box-shadow: var(--k-shadow-xl);
+  overflow: hidden;
+  animation: k-materialize var(--k-spring-smooth-duration) var(--k-spring-smooth) both;
+}
+
+.k-modal--wide { max-width: 48rem; }
+.k-modal--narrow { max-width: 24rem; }
+
+.k-modal--sheet {
+  max-width: 100%;
+  max-height: 92dvh;
+  border-radius: var(--k-radius-2xl) var(--k-radius-2xl) 0 0;
+  padding-bottom: var(--k-safe-bottom);
+  animation: k-sheet-in var(--k-spring-smooth-duration) var(--k-spring-smooth) both;
+  /* Le geste écrit directement dans le transform : on ne le laisse pas se
+   * battre avec une transition CSS. */
+  will-change: transform;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .k-modal,
+  .k-modal--sheet {
+    animation: k-fade-in var(--k-duration-fast) var(--k-ease-out) both;
+  }
+}
+
+/* Poignée de préhension : elle annonce que la feuille se saisit. */
+.k-sheet-handle {
+  flex-shrink: 0;
+  padding: var(--k-space-3) 0 var(--k-space-2);
+  display: grid;
+  place-items: center;
+  cursor: grab;
+  touch-action: none;
+}
+
+.k-sheet-handle:active {
+  cursor: grabbing;
+}
+
+.k-sheet-handle::before {
+  content: '';
+  width: 2.25rem;
+  height: 0.3125rem;
+  border-radius: var(--k-radius-full);
+  background-color: var(--k-ink-quaternary);
+}
+
+.k-modal__header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--k-space-4);
+  padding: var(--k-space-5) var(--k-space-5) var(--k-space-4);
+}
+
+.k-modal__header--bordered {
+  border-bottom: var(--k-hairline) solid var(--k-separator);
+}
+
+.k-modal__title {
+  font-size: var(--k-text-title3-size);
+  line-height: var(--k-text-title3-leading);
+  letter-spacing: var(--k-text-title3-tracking);
+  font-weight: 620;
+}
+
+.k-modal__body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 var(--k-space-5) var(--k-space-5);
+}
+
+.k-modal__footer {
+  flex-shrink: 0;
+  display: flex;
+  gap: var(--k-space-3);
+  padding: var(--k-space-4) var(--k-space-5);
+  border-top: var(--k-hairline) solid var(--k-separator);
+  background-color: var(--k-surface);
+}
+
+.k-modal__footer > * {
+  flex: 1 1 auto;
+}
+
+/* ==========================================================================
+   Notifications
+   ========================================================================== */
+
+.k-toast-region {
+  position: fixed;
+  z-index: 300;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(var(--k-tabbar-height) + var(--k-safe-bottom) + var(--k-space-3));
+  display: flex;
+  flex-direction: column-reverse;
+  gap: var(--k-space-2);
+  width: min(26rem, calc(100vw - var(--k-space-8)));
+  pointer-events: none;
+}
+
+@media (min-width: 768px) {
+  .k-toast-region {
+    left: auto;
+    right: var(--k-space-6);
+    bottom: var(--k-space-6);
+    transform: none;
+  }
+}
+
+.k-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--k-space-3);
+  padding: var(--k-space-3) var(--k-space-4);
+  border-radius: var(--k-radius-lg);
+  background-color: var(--k-material-popover-bg);
+  backdrop-filter: var(--k-material-popover-filter);
+  -webkit-backdrop-filter: var(--k-material-popover-filter);
+  border: var(--k-hairline) solid var(--k-separator);
+  box-shadow: var(--k-shadow-lg);
+  animation: k-toast-in var(--k-spring-smooth-duration) var(--k-spring-smooth) both;
+}
+
+.k-toast[data-leaving='true'] {
+  animation: k-toast-out var(--k-duration-base) var(--k-ease-in) both;
+}
+
+@keyframes k-toast-in {
+  from { opacity: 0; transform: translate3d(0, 0.75rem, 0) scale(0.96); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes k-toast-out {
+  from { opacity: 1; transform: none; }
+  /* Elle repart par où elle est venue. */
+  to { opacity: 0; transform: translate3d(0, 0.75rem, 0) scale(0.96); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .k-toast { animation: k-fade-in var(--k-duration-fast) var(--k-ease-out) both; }
+  .k-toast[data-leaving='true'] { animation: k-fade-in var(--k-duration-fast) reverse both; }
+}
+
+.k-toast__icon { flex-shrink: 0; margin-top: 0.0625rem; }
+.k-toast__icon--success { color: var(--k-success); }
+.k-toast__icon--error { color: var(--k-danger); }
+.k-toast__icon--warning { color: var(--k-warning); }
+.k-toast__icon--info { color: var(--k-accent); }
+
+.k-toast__content { flex: 1 1 auto; min-width: 0; }
+
+.k-toast__title {
+  font-size: var(--k-text-subhead-size);
+  font-weight: 580;
+  color: var(--k-ink);
+}
+
+.k-toast__description {
+  font-size: var(--k-text-footnote-size);
+  color: var(--k-ink-secondary);
+  margin-top: 0.125rem;
+}
+
+/* ==========================================================================
+   Chargement et états vides
+   ========================================================================== */
+
+.k-skeleton {
+  position: relative;
+  overflow: hidden;
+  background-color: var(--k-canvas-sunken);
+  border-radius: var(--k-radius-sm);
+}
+
+.k-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 65%),
+    transparent
+  );
+  animation: k-shimmer 1.4s var(--k-ease-in-out) infinite;
+}
+
+@keyframes k-shimmer {
+  to { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .k-skeleton::after { animation: none; opacity: 0.4; }
+}
+
+.k-spinner {
+  display: inline-block;
+  border-radius: 50%;
+  border-style: solid;
+  border-color: currentColor;
+  border-right-color: transparent;
+  animation: k-spin 0.7s linear infinite;
+  opacity: 0.85;
+}
+
+@keyframes k-spin {
+  to { transform: rotate(360deg); }
+}
+
+.k-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--k-space-3);
+  padding: var(--k-space-12) var(--k-space-6);
+}
+
+.k-empty__icon {
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: var(--k-radius-full);
+  background-color: var(--k-surface-secondary);
+  color: var(--k-ink-tertiary);
+  margin-bottom: var(--k-space-1);
+}
+
+/* ==========================================================================
+   Divers
+   ========================================================================== */
+
+.k-avatar {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: var(--k-radius-full);
+  background-color: var(--k-accent-soft);
+  color: var(--k-accent);
+  font-weight: 600;
+  overflow: hidden;
+  user-select: none;
+}
+
+.k-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.k-progress {
+  position: relative;
+  width: 100%;
+  height: 0.375rem;
+  border-radius: var(--k-radius-full);
+  background-color: var(--k-canvas-sunken);
+  overflow: hidden;
+}
+
+.k-progress__fill {
+  height: 100%;
+  border-radius: inherit;
+  background-color: var(--k-accent);
+  transition: width var(--k-spring-smooth-duration) var(--k-spring-smooth);
+}
+
+.k-progress__fill--warm { background-color: var(--k-warm); }
+.k-progress__fill--success { background-color: var(--k-success); }
+
+/* Message inline : statut, avertissement, erreur. Toujours à côté de ce qu'il
+ * concerne, jamais dans une alerte navigateur. */
+.k-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--k-space-3);
+  padding: var(--k-space-3) var(--k-space-4);
+  border-radius: var(--k-radius-md);
+  font-size: var(--k-text-subhead-size);
+  background-color: var(--k-surface-secondary);
+  color: var(--k-ink-secondary);
+}
+
+.k-notice--info { background-color: var(--k-accent-soft); color: var(--k-accent); }
+.k-notice--success { background-color: var(--k-success-soft); color: var(--k-success); }
+.k-notice--warning { background-color: var(--k-warning-soft); color: var(--k-warning); }
+.k-notice--danger { background-color: var(--k-danger-soft); color: var(--k-danger); }
+
+.k-notice__icon { flex-shrink: 0; margin-top: 0.0625rem; }
+
+
+/* ==========================================================================
+   Structure de page
+   ========================================================================== */
+
+/* Une seule gouttière, une seule largeur utile, un seul rythme vertical entre
+ * les sections : c'est ce qui fait que deux vues mises côte à côte
+ * appartiennent visiblement au même produit. */
+.k-page {
+  width: 100%;
+  max-width: var(--k-page-max);
+  margin-inline: auto;
+  padding-inline: var(--k-gutter);
+  padding-bottom: var(--k-space-16);
+}
+
+@media (min-width: 768px) {
+  .k-page {
+    padding-inline: var(--k-space-8);
+  }
+}
+
+.k-page--reading {
+  max-width: 52rem;
+}
+
+.k-section + .k-section {
+  margin-top: var(--k-space-16);
+}
+
+/* Grille réutilisée par les listes d'articles, d'événements, de quartiers et
+ * d'associations. */
+.k-grid {
+  display: grid;
+  gap: var(--k-space-5);
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+}
+
+.k-grid--wide {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 21rem), 1fr));
+}
+
+.k-grid--narrow {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 13rem), 1fr));
+}
+
+/* Rangée qui déborde volontairement en mobile : le geste latéral y est plus
+ * naturel qu'un empilement vertical sans fin. */
+.k-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(15rem, 1fr);
+  gap: var(--k-space-4);
+  overflow-x: auto;
+  padding-bottom: var(--k-space-2);
+  margin-inline: calc(var(--k-gutter) * -1);
+  padding-inline: var(--k-gutter);
+  scrollbar-width: none;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+}
+
+.k-rail > * {
+  scroll-snap-align: start;
+}
+
+.k-rail::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .k-rail {
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+}

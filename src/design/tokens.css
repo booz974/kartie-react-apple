@@ -1,0 +1,277 @@
+/*
+ * Kartie — socle du design system « Lagon ».
+ *
+ * Une seule source de vérité pour la couleur, la typographie, l'espace, les
+ * rayons, les matériaux et le mouvement. Tout composant doit puiser ici plutôt
+ * que de réintroduire des valeurs isolées.
+ */
+
+:root {
+  color-scheme: light;
+
+  /* ---------------------------------------------------------------- Couleur
+   * Neutres légèrement chauds : le blanc pur est trop clinique pour une
+   * plateforme de proximité, le gris bleuté trop froid pour La Réunion.
+   */
+  --k-canvas: #f5f5f3;
+  --k-canvas-sunken: #eeeeeb;
+  --k-surface: #ffffff;
+  --k-surface-raised: #ffffff;
+  --k-surface-secondary: #f2f2ef;
+  --k-surface-tertiary: #e9e9e5;
+
+  --k-ink: #16181c;
+  --k-ink-secondary: #5a6068;
+  --k-ink-tertiary: #868c95;
+  --k-ink-quaternary: #b0b5bc;
+  --k-ink-on-accent: #ffffff;
+
+  --k-separator: rgb(22 24 28 / 9%);
+  --k-separator-strong: rgb(22 24 28 / 16%);
+  --k-hairline: 1px;
+
+  /* Accent « lagon » — le seul bleu-vert du produit, réservé à l'interactif. */
+  --k-accent-50: #eaf6f7;
+  --k-accent-100: #cfeaec;
+  --k-accent-200: #a3d6da;
+  --k-accent-300: #6bbac1;
+  --k-accent-400: #359aa4;
+  --k-accent: #0e7c88;
+  --k-accent-hover: #0a6b76;
+  --k-accent-active: #075a63;
+  --k-accent-soft: rgb(14 124 136 / 10%);
+  --k-accent-soft-hover: rgb(14 124 136 / 16%);
+
+  /* Accent chaud « flamboyant » — uniquement les moments de participation. */
+  --k-warm-50: #fdf1ee;
+  --k-warm-100: #fadcd4;
+  --k-warm-200: #f2b3a5;
+  --k-warm: #c4503c;
+  --k-warm-hover: #ab4433;
+  --k-warm-soft: rgb(196 80 60 / 10%);
+
+  /* Sémantique. */
+  --k-success: #16794b;
+  --k-success-soft: rgb(22 121 75 / 10%);
+  --k-warning: #9a6300;
+  --k-warning-soft: rgb(154 99 0 / 12%);
+  --k-danger: #b3261e;
+  --k-danger-hover: #971e17;
+  --k-danger-soft: rgb(179 38 30 / 10%);
+  --k-info: var(--k-accent);
+  --k-info-soft: var(--k-accent-soft);
+
+  --k-focus-ring: rgb(14 124 136 / 45%);
+
+  /* ----------------------------------------------------------- Typographie
+   * La police système embarque déjà l'optical sizing et les tables de crénage.
+   * Le tracking est spécifique à chaque palier : serré en display, neutre en
+   * corps de texte, légèrement ouvert en légende.
+   */
+  --k-font-sans:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, Inter, system-ui,
+    'Helvetica Neue', Arial, sans-serif;
+  --k-font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, monospace;
+
+  --k-text-caption2-size: 0.6875rem;
+  --k-text-caption2-leading: 1.35;
+  --k-text-caption2-tracking: 0.012em;
+
+  --k-text-caption-size: 0.75rem;
+  --k-text-caption-leading: 1.4;
+  --k-text-caption-tracking: 0.006em;
+
+  --k-text-footnote-size: 0.8125rem;
+  --k-text-footnote-leading: 1.46;
+  --k-text-footnote-tracking: 0.002em;
+
+  --k-text-subhead-size: 0.875rem;
+  --k-text-subhead-leading: 1.5;
+  --k-text-subhead-tracking: 0em;
+
+  --k-text-body-size: 1rem;
+  --k-text-body-leading: 1.55;
+  --k-text-body-tracking: 0em;
+
+  --k-text-callout-size: 1.0625rem;
+  --k-text-callout-leading: 1.5;
+  --k-text-callout-tracking: -0.004em;
+
+  --k-text-title3-size: 1.1875rem;
+  --k-text-title3-leading: 1.35;
+  --k-text-title3-tracking: -0.01em;
+
+  --k-text-title2-size: 1.4375rem;
+  --k-text-title2-leading: 1.28;
+  --k-text-title2-tracking: -0.014em;
+
+  --k-text-title1-size: 1.8125rem;
+  --k-text-title1-leading: 1.2;
+  --k-text-title1-tracking: -0.019em;
+
+  --k-text-large-size: clamp(1.75rem, 1.25rem + 2vw, 2.375rem);
+  --k-text-large-leading: 1.14;
+  --k-text-large-tracking: -0.022em;
+
+  --k-text-display-size: clamp(2.125rem, 1.3rem + 3.4vw, 3.5rem);
+  --k-text-display-leading: 1.06;
+  --k-text-display-tracking: -0.028em;
+
+  /* ---------------------------------------------------------------- Espace
+   * Échelle 4 px exprimée en rem, pour que la mise en page grandisse avec le
+   * réglage de taille de texte de l'utilisateur.
+   */
+  --k-space-1: 0.25rem;
+  --k-space-2: 0.5rem;
+  --k-space-3: 0.75rem;
+  --k-space-4: 1rem;
+  --k-space-5: 1.25rem;
+  --k-space-6: 1.5rem;
+  --k-space-8: 2rem;
+  --k-space-10: 2.5rem;
+  --k-space-12: 3rem;
+  --k-space-16: 4rem;
+  --k-space-20: 5rem;
+  --k-space-24: 6rem;
+
+  --k-gutter: 1.25rem;
+  --k-measure: 42rem;
+  --k-page-max: 76rem;
+
+  /* --------------------------------------------------------------- Rayons
+   * Mesurés : un rayon trop grand fait perdre la lecture des bords. On monte
+   * avec la taille de la surface, jamais par défaut.
+   */
+  --k-radius-xs: 0.375rem;
+  --k-radius-sm: 0.5rem;
+  --k-radius-md: 0.75rem;
+  --k-radius-lg: 1rem;
+  --k-radius-xl: 1.25rem;
+  --k-radius-2xl: 1.5rem;
+  --k-radius-full: 999px;
+
+  /* --------------------------------------------------------------- Ombres
+   * Deux couches : un contact court et net, une diffusion large et très
+   * légère. Plus la surface est grande, plus elle est « épaisse ».
+   */
+  --k-shadow-xs: 0 1px 2px rgb(22 24 28 / 5%);
+  --k-shadow-sm: 0 1px 2px rgb(22 24 28 / 5%), 0 2px 6px rgb(22 24 28 / 4%);
+  --k-shadow-md: 0 1px 2px rgb(22 24 28 / 5%), 0 6px 16px rgb(22 24 28 / 7%);
+  --k-shadow-lg: 0 2px 4px rgb(22 24 28 / 5%), 0 12px 32px rgb(22 24 28 / 10%);
+  --k-shadow-xl: 0 4px 8px rgb(22 24 28 / 6%), 0 24px 60px rgb(22 24 28 / 15%);
+
+  /* ------------------------------------------------------------ Matériaux
+   * La translucidité n'est pas décorative : elle signale une couche qui
+   * flotte au-dessus du contenu, sous laquelle celui-ci continue de défiler.
+   */
+  --k-material-chrome-bg: rgb(250 250 249 / 72%);
+  --k-material-chrome-filter: saturate(180%) blur(20px);
+  --k-material-chrome-border: rgb(255 255 255 / 55%);
+
+  --k-material-sheet-bg: rgb(255 255 255 / 88%);
+  --k-material-sheet-filter: saturate(180%) blur(30px);
+
+  --k-material-popover-bg: rgb(255 255 255 / 82%);
+  --k-material-popover-filter: saturate(180%) blur(24px);
+
+  --k-scrim: rgb(18 20 23 / 32%);
+  --k-scrim-filter: blur(2px);
+
+  /* ------------------------------------------------------------ Mouvement
+   * Courbes de ressort échantillonnées (amortissement + réponse façon Apple)
+   * exprimées en linear() : le rendu d'un ressort sans coût JS.
+   *
+   *   snap   ζ=1.00 réponse 0.28s — micro-interactions, onglets, bascules
+   *   smooth ζ=1.00 réponse 0.40s — surfaces, panneaux, transitions de page
+   *   gentle ζ=1.00 réponse 0.55s — grands déplacements, à utiliser rarement
+   *   bounce ζ=0.72 réponse 0.38s — uniquement après un geste porteur d'élan
+   */
+  --k-spring-snap: linear(0, 0.0163, 0.0576, 0.1147, 0.1806, 0.2507, 0.3213, 0.3902, 0.4558, 0.5171, 0.5736, 0.6252, 0.6717, 0.7135, 0.7507, 0.7837, 0.8127, 0.8383, 0.8606, 0.88, 0.897, 0.9116, 0.9243, 0.9353, 0.9447, 0.9529, 0.9598, 0.9658, 0.9709, 0.9753, 0.979, 0.9822, 0.9849, 0.9872, 0.9892, 0.9909, 0.9923, 0.9935, 0.9945, 0.9953, 1);
+  --k-spring-snap-duration: 343ms;
+
+  --k-spring-smooth: linear(0, 0.0163, 0.0575, 0.1145, 0.1804, 0.2503, 0.3209, 0.3897, 0.4553, 0.5166, 0.5731, 0.6246, 0.6712, 0.713, 0.7502, 0.7832, 0.8123, 0.8379, 0.8602, 0.8797, 0.8967, 0.9114, 0.9241, 0.9351, 0.9445, 0.9527, 0.9597, 0.9657, 0.9708, 0.9752, 0.9789, 0.9821, 0.9848, 0.9872, 0.9891, 0.9908, 0.9922, 0.9934, 0.9945, 0.9953, 1);
+  --k-spring-smooth-duration: 490ms;
+
+  --k-spring-gentle: linear(0, 0.0163, 0.0575, 0.1144, 0.1802, 0.2501, 0.3206, 0.3894, 0.455, 0.5162, 0.5728, 0.6243, 0.6709, 0.7127, 0.7499, 0.7829, 0.812, 0.8376, 0.86, 0.8795, 0.8965, 0.9112, 0.9239, 0.9349, 0.9444, 0.9526, 0.9596, 0.9656, 0.9707, 0.9751, 0.9789, 0.9821, 0.9848, 0.9871, 0.9891, 0.9908, 0.9922, 0.9934, 0.9944, 0.9953, 1);
+  --k-spring-gentle-duration: 673ms;
+
+  --k-spring-bounce: linear(0, 0.0149, 0.0546, 0.1123, 0.1821, 0.2594, 0.3402, 0.4214, 0.5005, 0.5758, 0.6461, 0.7103, 0.7682, 0.8194, 0.8641, 0.9024, 0.9348, 0.9616, 0.9834, 1.0007, 1.014, 1.0238, 1.0307, 1.0352, 1.0376, 1.0384, 1.0379, 1.0365, 1.0343, 1.0316, 1.0287, 1.0256, 1.0225, 1.0194, 1.0165, 1.0138, 1.0113, 1.0091, 1.0071, 1.0053, 1);
+  --k-spring-bounce-duration: 437ms;
+
+  /* Courbes symétriques : une transition réversible doit revenir par le même
+   * chemin qu'elle a emprunté à l'aller. */
+  --k-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --k-ease-in: cubic-bezier(0.64, 0, 0.78, 0);
+  --k-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+
+  --k-duration-instant: 100ms;
+  --k-duration-fast: 160ms;
+  --k-duration-base: 220ms;
+  --k-duration-slow: 320ms;
+
+  /* Cibles tactiles : jamais en dessous de 44 px de côté utile. */
+  --k-touch-target: 2.75rem;
+
+  --k-nav-height: 3.5rem;
+  --k-tabbar-height: 3.625rem;
+  --k-safe-bottom: env(safe-area-inset-bottom, 0px);
+  --k-safe-top: env(safe-area-inset-top, 0px);
+}
+
+/*
+ * Réduction de transparence — les matériaux deviennent opaques et le flou
+ * disparaît. Ce n'est pas une dégradation : c'est la même hiérarchie rendue
+ * autrement.
+ */
+@media (prefers-reduced-transparency: reduce) {
+  :root {
+    --k-material-chrome-bg: #fafaf9;
+    --k-material-chrome-filter: none;
+    --k-material-sheet-bg: #ffffff;
+    --k-material-sheet-filter: none;
+    --k-material-popover-bg: #ffffff;
+    --k-material-popover-filter: none;
+    --k-scrim: rgb(18 20 23 / 45%);
+    --k-scrim-filter: none;
+  }
+}
+
+/*
+ * Contraste renforcé — fonds quasi opaques, séparateurs affirmés, accent
+ * assombri pour dépasser le 7:1 sur les surfaces claires.
+ */
+@media (prefers-contrast: more) {
+  :root {
+    --k-ink-secondary: #3d434b;
+    --k-ink-tertiary: #5a6068;
+    --k-ink-quaternary: #767c85;
+    --k-separator: rgb(22 24 28 / 22%);
+    --k-separator-strong: rgb(22 24 28 / 38%);
+    --k-accent: #05545e;
+    --k-accent-hover: #04454d;
+    --k-material-chrome-bg: #ffffff;
+    --k-material-chrome-filter: none;
+    --k-material-sheet-bg: #ffffff;
+    --k-material-sheet-filter: none;
+    --k-material-popover-bg: #ffffff;
+    --k-material-popover-filter: none;
+    --k-focus-ring: rgb(5 84 94 / 85%);
+  }
+}
+
+/*
+ * Mouvement réduit — on ne supprime pas le retour, on le rend non
+ * vestibulaire : les déplacements et les ressorts deviennent de brefs fondus.
+ */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --k-spring-snap: linear(0, 1);
+    --k-spring-smooth: linear(0, 1);
+    --k-spring-gentle: linear(0, 1);
+    --k-spring-bounce: linear(0, 1);
+    --k-spring-snap-duration: 1ms;
+    --k-spring-smooth-duration: 1ms;
+    --k-spring-gentle-duration: 1ms;
+    --k-spring-bounce-duration: 1ms;
+  }
+}
