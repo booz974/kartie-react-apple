@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router';
 import type { Session } from '@supabase/supabase-js';
 import AdminDeleteButton from '@/components/ui/AdminDeleteButton';
+import CardGlass from '@/components/ui/CardGlass';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/ui/Icon';
@@ -72,6 +73,8 @@ export default function PetitionCard({ petition, session, onDelete }: PetitionCa
         className: 'k-glass--petition group relative flex h-full flex-col overflow-hidden',
       })}
     >
+      <CardGlass />
+
       <AdminDeleteButton tableName="petitions" itemId={petition.id} onDeleted={onDelete} />
 
       {/* Le dégradé de repli suit le thème : deux pétitions côte à côte ne

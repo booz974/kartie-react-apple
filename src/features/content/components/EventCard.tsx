@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import AdminDeleteButton from '@/components/ui/AdminDeleteButton';
+import CardGlass from '@/components/ui/CardGlass';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/ui/Icon';
 import Media from '@/components/ui/Media';
@@ -35,6 +36,8 @@ export default function EventCard({ event, onDelete }: EventCardProps) {
         className: 'k-glass--event group relative flex h-full flex-col overflow-hidden',
       })}
     >
+      <CardGlass />
+
       <AdminDeleteButton
         tableName={tableName}
         itemId={targetId}

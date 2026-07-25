@@ -102,12 +102,14 @@
  * deux `backdrop-filter` empilés, donc deux fois le coût, et un fond opaque
  * sous la réfraction, donc plus rien à réfracter.
  */
-.k-liquid-host.k-material-chrome,
-.k-liquid-host.k-material-popover,
-.k-liquid-host.k-modal,
-.k-liquid-host.k-glass,
-.k-liquid-host.k-glass-thin,
-.k-liquid-host.k-glass-thick {
+/*
+ * La condition `:has()` n'est pas une précaution de style : `k-liquid-host` est
+ * posé par `surfaceClass()` sur toutes les cartes, alors que la couche, elle,
+ * ne s'allume qu'aux abords du champ visible. Sans cette condition, une carte
+ * hors champ céderait son fond et son flou à une couche absente, et
+ * disparaîtrait purement et simplement.
+ */
+.k-liquid-host:has(> .k-liquid-refract) {
   background-color: transparent;
   background-image: none;
   backdrop-filter: none;
@@ -119,6 +121,34 @@
 .k-liquid-host.k-material-chrome { --k-liquid-tint: rgb(255 255 255 / 44%); }
 .k-liquid-host.k-material-popover { --k-liquid-tint: rgb(255 255 255 / 62%); }
 .k-liquid-host.k-modal { --k-liquid-tint: rgb(255 255 255 / 66%); }
+
+/*
+ * Une carte conserve la teinte colorée de sa nature de contenu : c'est elle qui
+ * distingue une pétition d'un événement, et la remplacer par un blanc neutre
+ * ferait retomber toute la grille à plat. La couche de teinte reprend donc
+ * exactement le fond du verre dépoli, dégradé de catégorie compris, puisque
+ * l'hôte vient de céder le sien.
+ */
+.k-liquid-host.k-card .k-liquid-tint {
+  background-color: var(--k-glass-bg);
+  background-image: linear-gradient(
+    135deg,
+    var(--k-glass-tint) 0%,
+    transparent 42%,
+    var(--k-glass-tint) 100%
+  );
+}
+
+.k-liquid-host.k-card--flat .k-liquid-tint,
+.k-liquid-host.k-card--sunken .k-liquid-tint {
+  background-color: var(--k-surface-secondary);
+  background-image: none;
+}
+
+/* La carte porte déjà sa tranche par `box-shadow` : une seconde la doublerait. */
+.k-liquid-host.k-card .k-liquid-specular {
+  display: none;
+}
 
 /* ============================================================ Verre dépoli */
 
@@ -207,8 +237,9 @@
   position: relative;
 }
 
-/* Le reflet vit sous le contenu, jamais devant. */
-.k-card > * {
+/* Le reflet vit sous le contenu, jamais devant. Les couches du verre liquide
+ * sont exclues : elles se placent elles-mêmes, en dessous de tout. */
+.k-card > *:not(.k-liquid-refract):not(.k-liquid-tint):not(.k-liquid-specular) {
   position: relative;
   z-index: 1;
 }

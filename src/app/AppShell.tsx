@@ -1,6 +1,7 @@
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { Link, Outlet, useLocation, useNavigate } from 'react-router';
 import Icon from '@/components/ui/Icon';
+import LiquidGlassDefs from '@/components/ui/LiquidGlassDefs';
 import Modal from '@/components/ui/Modal';
 import Spinner from '@/components/ui/Spinner';
 import type { MenuItem } from '@/components/ui/Menu';
@@ -114,6 +115,10 @@ export default function AppShell() {
 
   return (
     <div className="flex min-h-dvh flex-col">
+      {/* Une définition de filtre par géométrie distincte, partagée par toutes
+          les surfaces de mêmes dimensions. */}
+      <LiquidGlassDefs />
+
       <a href="#contenu" className="k-skip-link k-subhead font-medium">
         Aller au contenu
       </a>

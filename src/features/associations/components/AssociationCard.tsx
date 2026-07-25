@@ -1,6 +1,7 @@
 import type { Session } from '@supabase/supabase-js';
 import { useEffect, useState } from 'react';
 import Badge from '@/components/ui/Badge';
+import CardGlass from '@/components/ui/CardGlass';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/ui/Icon';
 import Media from '@/components/ui/Media';
@@ -132,7 +133,9 @@ export default function AssociationCard({
   const followers = association.followers_count || 0;
 
   return (
-    <article className="k-card k-card--interactive group flex h-full flex-col overflow-hidden p-0">
+    <article className="k-card k-liquid-host k-card--interactive group flex h-full flex-col overflow-hidden p-0">
+      <CardGlass />
+
       {/* Bandeau : la couverture si elle existe, sinon la couleur de la catégorie. */}
       <Media
         src={coverUrl}

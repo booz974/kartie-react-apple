@@ -1,4 +1,5 @@
 import type { HTMLAttributes, ReactNode } from 'react';
+import CardGlass from './CardGlass';
 
 type SurfaceVariant = 'default' | 'flat' | 'raised' | 'sunken';
 
@@ -21,6 +22,9 @@ export function surfaceClass({
 } = {}): string {
   return [
     'k-card',
+    // Hôte du verre liquide. Inoffensif à lui seul : le CSS ne prend la main
+    // sur le fond que si une couche `<CardGlass>` est réellement posée dessous.
+    'k-liquid-host',
     variant !== 'default' ? `k-card--${variant}` : '',
     interactive ? 'k-card--interactive' : '',
     className ?? '',
@@ -51,6 +55,7 @@ export default function Surface({
       })}
       {...rest}
     >
+      <CardGlass />
       {children}
     </div>
   );

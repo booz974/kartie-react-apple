@@ -1,4 +1,5 @@
 import AdminDeleteButton from '@/components/ui/AdminDeleteButton';
+import CardGlass from '@/components/ui/CardGlass';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
 import Media from '@/components/ui/Media';
@@ -31,6 +32,8 @@ export default function ConsultationCard({
     <article
       className={surfaceClass({ className: 'k-glass--consult group relative flex h-full flex-col overflow-hidden' })}
     >
+      <CardGlass />
+
       <AdminDeleteButton
         tableName="consultations"
         itemId={consultation.id}

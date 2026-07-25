@@ -1,5 +1,13 @@
-import { useEffect, useId, useRef, useState } from 'react';
-import { buildDisplacementMap, supportsBackdropRefraction } from '@/design/displacementMap';
+import { useEffect, useRef, useState } from 'react';
+import {
+  acquireLiquidFilter,
+  claimRefractionSlot,
+  freeRefractionSlot,
+  releaseLiquidFilter,
+  waitForRefractionSlot,
+  type LiquidSpec,
+} from '@/design/liquidFilters';
+import { supportsBackdropRefraction } from '@/design/displacementMap';
 import { useMediaQuery } from '@/design/useMediaQuery';
 
 /**
@@ -10,16 +18,16 @@ import { useMediaQuery } from '@/design/useMediaQuery';
  * déviation, et elle seule, qui sépare les deux matériaux à l'oeil.
  *
  * Le composant se pose en enfant absolu d'un hôte positionné, mesure la taille
- * réelle de cet hôte, fabrique une carte de déplacement à ses dimensions puis
- * l'applique par `backdrop-filter`. La mesure n'est pas un luxe : `feImage`
- * étire sa carte à la région du filtre, donc une carte aux mauvaises
- * dimensions décale le biseau par rapport au bord visible, et la réfraction
- * cesse de coïncider avec la forme.
+ * réelle de cet hôte, réserve un filtre à ces dimensions puis l'applique par
+ * `backdrop-filter`. La mesure n'est pas un luxe : `feImage` étire sa carte à
+ * la région du filtre, donc une carte aux mauvaises dimensions décale le biseau
+ * par rapport au bord visible, et la réfraction cesse de coïncider avec la
+ * forme.
  *
- * Le coût est réel, une passe GPU par surface, aussi la réserve-t-on à la
- * chrome flottante : barre supérieure, barre d'onglets, modales, menus. Apple
- * fait le même choix, et pour la même raison : le verre est la couche de
- * commande qui survole le contenu, pas le contenu lui-même.
+ * Deux mécanismes tiennent le coût : les filtres sont partagés entre surfaces
+ * de mêmes dimensions, et `lazy` limite la réfraction aux surfaces proches du
+ * champ visible. Sur une liste longue, la dépense reste celle d'un écran, quel
+ * que soit le nombre d'éléments.
  */
 
 type LiquidGlassLayerProps = {
@@ -36,35 +44,57 @@ type LiquidGlassLayerProps = {
    * changement de ce qui passe derrière.
    */
   chromatic?: boolean;
+  /**
+   * N'active la réfraction qu'aux abords du champ visible. Indispensable dès
+   * qu'une page peut en aligner plus d'une poignée.
+   */
+  lazy?: boolean;
   /** Teinte propre du verre. Par défaut, celle héritée de l'hôte. */
   tint?: string;
+  /**
+   * L'hôte porte déjà sa propre tranche lumineuse : inutile d'en superposer une
+   * seconde, qui doublerait le liseré.
+   */
+  rim?: boolean;
   className?: string;
 };
 
-/** Dimensions et rayon effectivement mesurés sur l'hôte. */
-type Geometry = { width: number; height: number; radius: number };
-
 /**
- * Les dimensions sont arrondies avant d'entrer dans le cache : sans cela, un
- * redimensionnement continu produirait une carte par pixel parcouru.
+ * Les dimensions sont arrondies avant d'entrer dans le registre : sans cela un
+ * redimensionnement continu produirait un filtre par pixel parcouru, et deux
+ * cartes d'une même grille ne partageraient pas le leur pour un écart d'un
+ * pixel de hauteur.
  */
 function quantize(value: number): number {
-  return Math.max(8, Math.round(value / 4) * 4);
+  return Math.max(8, Math.round(value / 8) * 8);
 }
+
+/**
+ * Marge d'anticipation : le verre est prêt un peu avant d'entrer dans le champ,
+ * mais pas au point d'allumer un écran entier de cartes qu'on ne verra jamais.
+ */
+const LAZY_MARGIN = '80px';
+
+/** Une carte à peine effleurée par le bord de l'écran ne mérite pas sa place. */
+const LAZY_THRESHOLD = 0.2;
 
 export default function LiquidGlassLayer({
   bezel = 18,
   blur = 14,
   chromatic = false,
+  lazy = false,
   tint,
+  rim = true,
   className,
 }: LiquidGlassLayerProps) {
-  const rawId = useId();
-  const filterId = `k-liquid-${rawId.replace(/[^a-zA-Z0-9]/g, '')}`;
-
   const ref = useRef<HTMLSpanElement>(null);
-  const [geometry, setGeometry] = useState<Geometry | null>(null);
-  const [map, setMap] = useState<string | null>(null);
+  const [spec, setSpec] = useState<LiquidSpec | null>(null);
+  const [filterId, setFilterId] = useState<string | null>(null);
+  const [near, setNear] = useState(!lazy);
+  // Une surface différée n'obtient sa réfraction que si le budget global le
+  // permet ; sinon elle reste du verre dépoli, ce qui ne se remarque pas sur
+  // une carte mais se remarquerait beaucoup au défilement.
+  const [granted, setGranted] = useState(!lazy);
 
   // La transparence réduite et le contraste renforcé demandent une surface
   // franche : dans ce cas le matériau disparaît entièrement.
@@ -72,10 +102,72 @@ export default function LiquidGlassLayer({
     '(prefers-reduced-transparency: reduce), (prefers-contrast: more)',
   );
 
+  // Proximité du champ visible. Observé sur l'hôte, pas sur la couche, pour que
+  // la mesure reste valable même quand la couche n'a pas encore de filtre.
+  useEffect(() => {
+    if (!lazy) {
+      setNear(true);
+      return;
+    }
+    const element = ref.current;
+    if (!element || typeof IntersectionObserver === 'undefined') {
+      setNear(true);
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (records) =>
+        setNear(
+          records.some(
+            (record) =>
+              record.isIntersecting && record.intersectionRatio >= LAZY_THRESHOLD,
+          ),
+        ),
+      { rootMargin: LAZY_MARGIN, threshold: [0, LAZY_THRESHOLD, 1] },
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [lazy]);
+
+  // Réservation d'une place dans le budget global, tant que la surface est à
+  // portée du champ visible.
+  useEffect(() => {
+    if (!lazy) {
+      setGranted(true);
+      return;
+    }
+    if (!near || plain || !supportsBackdropRefraction()) {
+      setGranted(false);
+      return;
+    }
+
+    let held = false;
+    let unwait: (() => void) | undefined;
+
+    function attempt() {
+      if (held) return;
+      if (claimRefractionSlot()) {
+        held = true;
+        setGranted(true);
+      } else {
+        // Plafond atteint : on se met en file plutôt que de réessayer en
+        // boucle, ce qui coûterait précisément ce qu'on cherche à économiser.
+        unwait = waitForRefractionSlot(attempt);
+      }
+    }
+
+    attempt();
+
+    return () => {
+      unwait?.();
+      if (held) freeRefractionSlot();
+      setGranted(false);
+    };
+  }, [lazy, near, plain]);
+
   useEffect(() => {
     const element = ref.current;
-    if (!element || plain || !supportsBackdropRefraction()) {
-      setGeometry(null);
+    if (!element || plain || !granted || !supportsBackdropRefraction()) {
+      setSpec(null);
       return;
     }
 
@@ -88,21 +180,31 @@ export default function LiquidGlassLayer({
       // `border-radius: inherit` est résolu par le navigateur en pixels : on
       // relit la valeur utilisée plutôt que de la redemander en propriété, ce
       // qui garderait les deux réglages à synchroniser à la main.
-      const radiusRaw = getComputedStyle(node).borderTopLeftRadius;
-      const parsed = Number.parseFloat(radiusRaw);
+      const parsed = Number.parseFloat(getComputedStyle(node).borderTopLeftRadius);
       const width = quantize(rect.width);
       const height = quantize(rect.height);
-      const radius = Number.isFinite(parsed)
-        ? Math.min(parsed, Math.min(width, height) / 2)
-        : 0;
+      const half = Math.min(width, height) / 2;
+      const radius = Number.isFinite(parsed) ? Math.min(parsed, half) : 0;
 
-      setGeometry((previous) =>
+      const next: LiquidSpec = {
+        width,
+        height,
+        radius,
+        // Le biseau ne peut pas dépasser la demi-épaisseur, sinon les deux
+        // bords opposés se recouvrent et la surface entière se met à onduler.
+        bezel: Math.min(bezel, half),
+        chromatic,
+      };
+
+      setSpec((previous) =>
         previous &&
-        previous.width === width &&
-        previous.height === height &&
-        previous.radius === radius
+        previous.width === next.width &&
+        previous.height === next.height &&
+        previous.radius === next.radius &&
+        previous.bezel === next.bezel &&
+        previous.chromatic === next.chromatic
           ? previous
-          : { width, height, radius },
+          : next,
       );
     }
 
@@ -110,138 +212,30 @@ export default function LiquidGlassLayer({
     const observer = new ResizeObserver(measure);
     observer.observe(element);
     return () => observer.disconnect();
-  }, [plain]);
+  }, [plain, granted, bezel, chromatic]);
 
+  // Réservation du filtre partagé, rendue à la sortie du champ ou au démontage.
   useEffect(() => {
-    if (!geometry) {
-      setMap(null);
+    if (!spec) {
+      setFilterId(null);
       return;
     }
-    // Le biseau ne peut pas dépasser la demi-épaisseur, sinon les deux bords
-    // opposés se recouvrent et la surface entière se met à onduler.
-    const limit = Math.min(geometry.width, geometry.height) / 2;
-    setMap(
-      buildDisplacementMap({
-        width: geometry.width,
-        height: geometry.height,
-        radius: geometry.radius,
-        bezel: Math.min(bezel, limit),
-      }),
-    );
-  }, [geometry, bezel]);
-
-  const active = Boolean(geometry && map);
-  // L'échelle vaut l'épaisseur du biseau : la carte encode une amplitude
-  // normalisée, c'est l'échelle qui la ramène en pixels. Positive, parce que le
-  // vecteur encodé pointe déjà vers le centre.
-  const scale = geometry ? Math.min(bezel, Math.min(geometry.width, geometry.height) / 2) : 0;
+    const id = acquireLiquidFilter(spec);
+    setFilterId(id);
+    return () => releaseLiquidFilter(spec);
+  }, [spec]);
 
   // L'hôte a délégué son flou à cette couche : elle doit donc le porter même
   // quand la réfraction n'est pas disponible, sinon la chrome deviendrait
   // franchement transparente sur les navigateurs non Chromium.
   const filterValue = plain
     ? undefined
-    : active
+    : filterId
       ? `blur(${blur}px) url(#${filterId}) saturate(180%) brightness(1.04)`
       : `blur(${blur}px) saturate(180%)`;
 
   return (
     <>
-      {active && geometry && map ? (
-        <svg
-          aria-hidden="true"
-          focusable="false"
-          width={0}
-          height={0}
-          style={{ position: 'absolute', overflow: 'hidden' }}
-        >
-          <defs>
-            {/* `sRGB` est obligatoire : sans lui le navigateur applique une
-                correction gamma aux canaux avant de les lire comme des
-                décalages, et le neutre cesse d'être neutre. */}
-            <filter
-              id={filterId}
-              colorInterpolationFilters="sRGB"
-              x="0%"
-              y="0%"
-              width="100%"
-              height="100%"
-            >
-              <feImage
-                result="map"
-                x="0"
-                y="0"
-                width={geometry.width}
-                height={geometry.height}
-                preserveAspectRatio="none"
-                href={map}
-              />
-
-              {chromatic ? (
-                <>
-                  {/* Le verre disperse : chaque longueur d'onde est déviée d'un
-                      angle légèrement différent. Un écart de quelques pour cent
-                      suffit à faire apparaître une frange colorée sur la
-                      tranche ; au delà, l'image paraît simplement déréglée. */}
-                  <feDisplacementMap
-                    in="SourceGraphic"
-                    in2="map"
-                    scale={scale}
-                    xChannelSelector="R"
-                    yChannelSelector="G"
-                    result="pass-r"
-                  />
-                  <feColorMatrix
-                    in="pass-r"
-                    type="matrix"
-                    values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0"
-                    result="only-r"
-                  />
-                  <feDisplacementMap
-                    in="SourceGraphic"
-                    in2="map"
-                    scale={scale * 1.07}
-                    xChannelSelector="R"
-                    yChannelSelector="G"
-                    result="pass-g"
-                  />
-                  <feColorMatrix
-                    in="pass-g"
-                    type="matrix"
-                    values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0"
-                    result="only-g"
-                  />
-                  <feDisplacementMap
-                    in="SourceGraphic"
-                    in2="map"
-                    scale={scale * 1.035}
-                    xChannelSelector="R"
-                    yChannelSelector="G"
-                    result="pass-b"
-                  />
-                  <feColorMatrix
-                    in="pass-b"
-                    type="matrix"
-                    values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0"
-                    result="only-b"
-                  />
-                  <feBlend in="only-r" in2="only-g" mode="screen" result="rg" />
-                  <feBlend in="rg" in2="only-b" mode="screen" />
-                </>
-              ) : (
-                <feDisplacementMap
-                  in="SourceGraphic"
-                  in2="map"
-                  scale={scale}
-                  xChannelSelector="R"
-                  yChannelSelector="G"
-                />
-              )}
-            </filter>
-          </defs>
-        </svg>
-      ) : null}
-
       {/* Couche 0 : réfraction. Elle porte aussi le flou, pour que l'hôte n'ait
           pas un second `backdrop-filter` qui doublerait le coût. */}
       <span
@@ -262,7 +256,7 @@ export default function LiquidGlassLayer({
       />
 
       {/* Couche 2 : lumière sur la tranche. */}
-      <span aria-hidden="true" className="k-liquid-specular" />
+      {rim ? <span aria-hidden="true" className="k-liquid-specular" /> : null}
     </>
   );
 }

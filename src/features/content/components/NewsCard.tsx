@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import AdminDeleteButton from '@/components/ui/AdminDeleteButton';
+import CardGlass from '@/components/ui/CardGlass';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/ui/Icon';
 import Media from '@/components/ui/Media';
@@ -30,6 +31,8 @@ export default function NewsCard({ news, onDelete }: NewsCardProps) {
         className: 'k-glass--news group relative flex flex-col overflow-hidden',
       })}
     >
+      <CardGlass />
+
       <AdminDeleteButton tableName="actualites" itemId={news.id} onDeleted={onDelete} />
 
       <Media

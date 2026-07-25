@@ -1,5 +1,6 @@
 import { Link } from 'react-router';
 import AdminDeleteButton from '@/components/ui/AdminDeleteButton';
+import CardGlass from '@/components/ui/CardGlass';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/ui/Icon';
 import Media from '@/components/ui/Media';
@@ -36,6 +37,8 @@ export default function ArticleCard({ article, onDelete }: ArticleCardProps) {
         className: 'k-glass--project group relative flex h-full flex-col overflow-hidden',
       })}
     >
+      <CardGlass />
+
       <AdminDeleteButton tableName="realisations" itemId={article.id} onDeleted={onDelete} />
 
       <Media src={imageUrl} category="project" emoji={emoji} ratio="16 / 10" />

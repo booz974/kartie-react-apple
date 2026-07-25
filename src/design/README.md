@@ -43,10 +43,24 @@ d'Apple d'un simple flou. On l'obtient en posant `<LiquidGlassLayer>` dans un
 hôte marqué `k-liquid-host`, qui empile alors quatre couches : réfraction,
 teinte, tranche, contenu.
 
-Le prix est d'une passe GPU par surface, aussi le budget est-il de trois à six
-surfaces réfractantes par écran. C'est également le choix d'Apple : le verre
-est la couche de commande qui survole le contenu, il ne remplace pas le
-contenu. Une grille de cartes reste en verre dépoli.
+Les cartes le portent aussi, via `<CardGlass>`, qui n'est qu'un réglage de
+`<LiquidGlassLayer>` : biseau plus court, flou plus faible, et activation
+différée.
+
+Le prix est d'une passe GPU par surface, et il se mesure. Sur la grille des
+quartiers en 1280 par 900, sous rendu logiciel, dix-sept surfaces réfractantes
+font tomber le défilement à quinze images par seconde contre vingt-neuf sans
+réfraction. Trois mécanismes tiennent ce coût :
+
+- les filtres sont **partagés** par géométrie, si bien qu'une grille de vingt
+  cartes n'ajoute que deux définitions ;
+- la réfraction ne s'allume qu'aux abords du champ visible, ce qui borne la
+  dépense à un écran quelle que soit la longueur de la liste ;
+- un **plafond global** de huit surfaces réfractantes simultanées, dans
+  `liquidFilters.ts`. Au delà, les cartes restent en verre dépoli, ce qui ne se
+  voit pas sur une carte mais se verrait beaucoup au défilement.
+
+C'est le levier à tourner si le rendu doit être allégé ou enrichi.
 
 **3. Les photos portent le contenu.** Tout ce qui a une image l'affiche en
 grand, via `<Media>`. Quand elle manque, `<Media>` produit un dégradé de la

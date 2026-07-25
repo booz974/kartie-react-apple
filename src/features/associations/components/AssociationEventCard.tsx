@@ -1,4 +1,5 @@
 import Badge from '@/components/ui/Badge';
+import CardGlass from '@/components/ui/CardGlass';
 import Button from '@/components/ui/Button';
 import Icon from '@/components/ui/Icon';
 import Media from '@/components/ui/Media';
@@ -66,7 +67,9 @@ export default function AssociationEventCard({
   const { emoji, gradient } = associationEventStyle(event.category);
 
   return (
-    <article className="k-card k-card--interactive group flex h-full flex-col overflow-hidden p-0">
+    <article className="k-card k-liquid-host k-card--interactive group flex h-full flex-col overflow-hidden p-0">
+      <CardGlass />
+
       <Media
         src={event.image_url}
         category="event"

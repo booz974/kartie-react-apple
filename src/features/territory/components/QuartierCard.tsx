@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router';
 import Media from '@/components/ui/Media';
+import CardGlass from '@/components/ui/CardGlass';
 import { getStorageUrl } from '@/utils/imageUtils';
 
 interface QuartierCardQuartier {
@@ -40,8 +41,10 @@ export default function QuartierCard({ quartier, compact = false }: QuartierCard
   return (
     <Link
       to={`/quartiers/${quartier.id}`}
-      className="k-card k-card--interactive k-glass--quartier group overflow-hidden p-0"
+      className="k-card k-liquid-host k-card--interactive k-glass--quartier group overflow-hidden p-0"
     >
+      <CardGlass />
+
       <Media
         src={imageUrl}
         fallbackSrc={FALLBACK_IMAGE}
