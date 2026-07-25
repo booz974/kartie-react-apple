@@ -27,8 +27,12 @@ export default function CreateNewsForm({ onCancel, onCreateNews }: CreateNewsFor
   return (
     <Modal
       onClose={onCancel}
-      title="Publier une actualité"
-      description={`Elle sera datée du ${form.date}.`}
+      title={
+        <>
+          <span aria-hidden="true">📰 </span>Publier une actualité
+        </>
+      }
+      description={`Elle sera datée du ${form.date} et apparaîtra en tête du fil du quartier.`}
       footer={
         <>
           <Button variant="secondary" onClick={onCancel}>

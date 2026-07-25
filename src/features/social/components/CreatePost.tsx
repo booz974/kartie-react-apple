@@ -9,16 +9,18 @@ import {
   type TextareaHTMLAttributes,
 } from 'react';
 import Button from '@/components/ui/Button';
+import Chip from '@/components/ui/Chip';
 import Field, { Checkbox, Input, Select } from '@/components/ui/Field';
-import Icon, { type IconName } from '@/components/ui/Icon';
+import Icon from '@/components/ui/Icon';
 import ImageUploader from '@/components/ui/ImageUploader';
 import Notice from '@/components/ui/Notice';
 import Segmented from '@/components/ui/Segmented';
 import Skeleton from '@/components/ui/Skeleton';
+import { POST_TYPE_EMOJI, type CategoryKey } from '@/design/categories';
 import type { LocationValue } from '@/features/social/components/LocationPicker';
 import type { Quartier } from '@/lib/types/contract';
 
-/** Leaflet only when a map post-type is selected — keeps feed chunk lean (T-803 / NFR-5). */
+/** Leaflet only when a map post-type is selected, which keeps the feed chunk lean (T-803 / NFR-5). */
 const LocationPicker = lazy(() => import('@/features/social/components/LocationPicker'));
 
 export interface CreatePostPayload {
@@ -33,14 +35,19 @@ interface CreatePostProps {
   isSubmitting?: boolean;
 }
 
+/**
+ * Le choix du type est le premier geste de la publication : chaque option porte
+ * son émoji et sa teinte, pour qu'on repère « Alerte » ou « Entraide » sans
+ * lire la rangée entière.
+ */
 const postTypes = [
-  { value: 'regular', label: 'Message', icon: 'chat' },
-  { value: 'entraide', label: 'Entraide', icon: 'handshake' },
-  { value: 'perdu_trouve', label: 'Perdu/Trouvé', icon: 'search' },
-  { value: 'alerte', label: 'Alerte', icon: 'warning' },
-  { value: 'signalement', label: 'Signalement', icon: 'camera' },
-  { value: 'village_square', label: 'Place du Village', icon: 'stadium' },
-] as const satisfies readonly { value: string; label: string; icon: IconName }[];
+  { value: 'regular', label: 'Message', tone: 'news' },
+  { value: 'entraide', label: 'Entraide', tone: 'asso' },
+  { value: 'perdu_trouve', label: 'Perdu/Trouvé', tone: 'project' },
+  { value: 'alerte', label: 'Alerte', tone: 'event' },
+  { value: 'signalement', label: 'Signalement', tone: 'petition' },
+  { value: 'village_square', label: 'Place du Village', tone: 'consult' },
+] as const satisfies readonly { value: string; label: string; tone: CategoryKey }[];
 
 type PostType = (typeof postTypes)[number]['value'];
 
@@ -106,10 +113,20 @@ const defaultMetadata = (): PostMetadata => ({
   location: null,
 });
 
-/** Le panneau propre à un type : posé dans le flux, sans carte flottante. */
+/** Libellé de segment : l'émoji donne le repère, le mot reste seul à être lu. */
+function EmojiLabel({ emoji, children }: { emoji: string; children: React.ReactNode }) {
+  return (
+    <>
+      <span aria-hidden="true">{emoji}</span>
+      {children}
+    </>
+  );
+}
+
+/** Le panneau propre à un type : un verre fin posé dans le flux. */
 function TypePanel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="k-animate-fade-in flex flex-col gap-4 rounded-lg bg-canvas-sunken p-4">
+    <div className="k-card k-card--flat k-animate-fade-in flex flex-col gap-4 p-4">
       {children}
     </div>
   );
@@ -215,10 +232,18 @@ export default function CreatePost({ quartier, onSubmit, isSubmitting = false }:
     (selectedType === 'signalement' || selectedType === 'perdu_trouve') && !metadata.location;
 
   return (
-    <section aria-labelledby="create-post-title" className="flex flex-col gap-5">
-      <h2 id="create-post-title" className="k-title-3">
-        Prendre la parole
-      </h2>
+    <section aria-labelledby="create-post-title" className="k-card flex flex-col gap-5 p-4 sm:p-5">
+      <div className="flex items-center gap-3">
+        <Chip tone="accent" size={44}>
+          ✍️
+        </Chip>
+        <div className="min-w-0">
+          <h2 id="create-post-title" className="k-title-3">
+            Prendre la parole
+          </h2>
+          <p className="k-footnote k-ink-tertiary">Votre quartier vous lit.</p>
+        </div>
+      </div>
 
       {/* Le choix du type déborde volontairement : le geste latéral est plus
           naturel qu'un empilement, et rien n'est tronqué à 375 px. */}
@@ -235,13 +260,18 @@ export default function CreatePost({ quartier, onSubmit, isSubmitting = false }:
               type="button"
               aria-pressed={selected}
               onClick={() => selectType(type.value)}
-              className={`k-press k-subhead inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 font-medium ${
+              style={
+                selected ? { backgroundImage: `var(--k-cat-${type.tone}-gradient)` } : undefined
+              }
+              className={`k-press k-subhead inline-flex shrink-0 items-center gap-2 rounded-full px-4 py-2 font-semibold ${
                 selected
-                  ? 'bg-accent text-ink-on-accent'
-                  : 'bg-surface-secondary k-ink-secondary hover:bg-surface-tertiary'
+                  ? 'text-ink-on-accent shadow-md'
+                  : 'k-glass-thin k-ink-secondary hover:text-ink'
               }`}
             >
-              <Icon name={type.icon} size={16} />
+              <span aria-hidden="true" className="text-base leading-none">
+                {POST_TYPE_EMOJI[type.value]}
+              </span>
               {type.label}
             </button>
           );
@@ -256,8 +286,8 @@ export default function CreatePost({ quartier, onSubmit, isSubmitting = false }:
             value={metadata.entraideType === 'request' ? 'request' : 'offer'}
             onChange={(value) => setMetadata((m) => ({ ...m, entraideType: value }))}
             options={[
-              { value: 'offer', label: 'Je propose', icon: 'gift' },
-              { value: 'request', label: 'Je recherche', icon: 'handRaised' },
+              { value: 'offer', label: <EmojiLabel emoji="🎁">Je propose</EmojiLabel> },
+              { value: 'request', label: <EmojiLabel emoji="🙋">Je recherche</EmojiLabel> },
             ]}
           />
 
@@ -292,7 +322,7 @@ export default function CreatePost({ quartier, onSubmit, isSubmitting = false }:
           </div>
 
           <Checkbox
-            label="Bénévole — c’est gratuit"
+            label="Bénévole, c’est gratuit"
             checked={metadata.isVolunteer}
             onChange={(e) => setMetadata((m) => ({ ...m, isVolunteer: e.target.checked }))}
           />
@@ -307,8 +337,8 @@ export default function CreatePost({ quartier, onSubmit, isSubmitting = false }:
             value={metadata.status === 'found' ? 'found' : 'lost'}
             onChange={(value) => setMetadata((m) => ({ ...m, status: value }))}
             options={[
-              { value: 'lost', label: 'Perdu' },
-              { value: 'found', label: 'Trouvé' },
+              { value: 'lost', label: <EmojiLabel emoji="❓">Perdu</EmojiLabel> },
+              { value: 'found', label: <EmojiLabel emoji="🎯">Trouvé</EmojiLabel> },
             ]}
           />
 
@@ -337,7 +367,10 @@ export default function CreatePost({ quartier, onSubmit, isSubmitting = false }:
           </div>
 
           <div className="k-field">
-            <span className="k-field__label">Où ?</span>
+            <span className="k-field__label">
+              <span aria-hidden="true">📍 </span>
+              Où ?
+            </span>
             <p className="k-field__hint">Déplacez la carte pour viser l’endroit exact.</p>
             <Suspense fallback={<MapFallback height="16rem" />}>
               <LocationPicker
@@ -369,9 +402,9 @@ export default function CreatePost({ quartier, onSubmit, isSubmitting = false }:
               }
               onChange={(value) => setMetadata((m) => ({ ...m, urgency: value }))}
               options={[
-                { value: 'yellow', label: 'Info' },
-                { value: 'orange', label: 'Vigilance' },
-                { value: 'red', label: 'Danger' },
+                { value: 'yellow', label: <EmojiLabel emoji="🟡">Info</EmojiLabel> },
+                { value: 'orange', label: <EmojiLabel emoji="🟠">Vigilance</EmojiLabel> },
+                { value: 'red', label: <EmojiLabel emoji="🔴">Danger</EmojiLabel> },
               ]}
             />
           </div>
@@ -411,7 +444,10 @@ export default function CreatePost({ quartier, onSubmit, isSubmitting = false }:
           </Field>
 
           <div className="k-field">
-            <span className="k-field__label">Localisation précise</span>
+            <span className="k-field__label">
+              <span aria-hidden="true">📍 </span>
+              Localisation précise
+            </span>
             <p className="k-field__hint">Visez le point exact avec la carte.</p>
             <Suspense fallback={<MapFallback height="12rem" />}>
               <LocationPicker
@@ -447,7 +483,8 @@ export default function CreatePost({ quartier, onSubmit, isSubmitting = false }:
       {IMAGE_TYPES.includes(selectedType) ? (
         <div className="k-field">
           <span className="k-field__label">
-            Photo<span className="k-field__optional"> — facultatif</span>
+            <span aria-hidden="true">📷 </span>
+            Photo<span className="k-field__optional"> (facultatif)</span>
           </span>
 
           <ImageUploader
@@ -467,7 +504,7 @@ export default function CreatePost({ quartier, onSubmit, isSubmitting = false }:
             <div className="relative inline-block">
               <img
                 src={uploadedImageUrl}
-                className="h-20 w-20 rounded-md object-cover"
+                className="h-28 w-28 rounded-lg object-cover shadow-md"
                 alt="Aperçu de la photo jointe"
               />
               <button

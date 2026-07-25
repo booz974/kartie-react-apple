@@ -9,9 +9,10 @@ import Icon from '@/components/ui/Icon';
 import Notice from '@/components/ui/Notice';
 import { Page, PageHeader, Section } from '@/components/ui/Page';
 import Skeleton, { SkeletonText } from '@/components/ui/Skeleton';
-import Surface from '@/components/ui/Surface';
 import { useToast } from '@/components/ui/Toast';
-import AssociationCard from '@/features/associations/components/AssociationCard';
+import AssociationCard, {
+  associationCategoryStyle,
+} from '@/features/associations/components/AssociationCard';
 import AssociationForm, {
   type AssociationFormPayload,
 } from '@/features/associations/components/AssociationForm';
@@ -23,17 +24,21 @@ import type { Association } from '@/lib/types/contract';
 /** Gabarit calqué sur AssociationCard : le remplacement ne déplace rien. */
 function AssociationCardSkeleton() {
   return (
-    <Surface className="flex flex-col gap-4">
-      <div className="flex items-start gap-4">
-        <Skeleton width="3.5rem" height="3.5rem" radius="var(--k-radius-lg)" />
-        <div className="flex-1">
-          <Skeleton height="1.25rem" width="70%" />
-          <Skeleton height="1rem" width="40%" className="mt-2" />
-        </div>
+    <div className="k-card overflow-hidden p-0">
+      <Skeleton height="6rem" radius="0" />
+      <div className="flex flex-col gap-3 px-5 pb-5">
+        <Skeleton
+          width="4.25rem"
+          height="4.25rem"
+          radius="var(--k-radius-md)"
+          className="-mt-10"
+        />
+        <Skeleton height="1.5rem" width="70%" />
+        <Skeleton height="1.25rem" width="40%" radius="var(--k-radius-full)" />
+        <SkeletonText lines={3} />
+        <Skeleton height="2.75rem" width="9rem" radius="var(--k-radius-full)" />
       </div>
-      <SkeletonText lines={3} />
-      <Skeleton height="2.75rem" width="9rem" radius="var(--k-radius-md)" />
-    </Surface>
+    </div>
   );
 }
 
@@ -139,7 +144,7 @@ export default function QuartierAssociationsView() {
   if (!quartier) {
     return (
       <Page className="pt-6 md:pt-10">
-        <PageHeader eyebrow="Vie associative" title="Associations du quartier" />
+        <PageHeader eyebrow="🤝 Vie associative" title="Associations du quartier" />
         <div className="k-grid k-grid--wide">
           {Array.from({ length: 6 }, (_, index) => (
             <AssociationCardSkeleton key={index} />
@@ -153,7 +158,7 @@ export default function QuartierAssociationsView() {
     <Page className="pt-6 md:pt-10">
       <PageHeader
         back={{ to: `/quartiers/${quartier.id}`, label: 'Retour au quartier' }}
-        eyebrow="Vie associative"
+        eyebrow="🤝 Vie associative"
         title={quartier.name ? `Associations de ${quartier.name}` : 'Associations du quartier'}
         description="Découvrez la vie associative locale, suivez vos initiatives préférées et retrouvez leurs événements dans le quartier."
         actions={
@@ -182,7 +187,7 @@ export default function QuartierAssociationsView() {
       ) : null}
 
       <Section
-        title="Toutes les associations"
+        title="✨ Toutes les associations"
         description={
           isLoading
             ? undefined
@@ -193,7 +198,7 @@ export default function QuartierAssociationsView() {
         }
       >
         <div className="mb-6 flex flex-col gap-4">
-          <div className="grid gap-3 md:grid-cols-[1fr_16rem]">
+          <div className="k-card grid gap-3 p-4 md:grid-cols-[1fr_18rem]">
             <Input
               type="search"
               value={search}
@@ -206,10 +211,10 @@ export default function QuartierAssociationsView() {
               onChange={(event) => setSelectedCategory(event.target.value)}
               aria-label="Filtrer par catégorie"
             >
-              <option value="">Toutes les catégories</option>
+              <option value="">🎨 Toutes les catégories</option>
               {ASSOCIATION_CATEGORIES.map((category) => (
                 <option key={category.value} value={category.value}>
-                  {category.label}
+                  {`${associationCategoryStyle(category.value).emoji} ${category.label}`}
                 </option>
               ))}
             </Select>

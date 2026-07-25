@@ -37,7 +37,7 @@
 
   --k-ink: #12161c;
   --k-ink-secondary: #454c56;
-  --k-ink-tertiary: #626973;
+  --k-ink-tertiary: #555c65;
   --k-ink-quaternary: #8b9099;
   --k-ink-on-accent: #ffffff;
   --k-ink-on-warm: #ffffff;
@@ -61,7 +61,10 @@
   --k-accent-active: #076272;
   --k-accent-soft: rgb(10 139 160 / 12%);
   --k-accent-soft-hover: rgb(10 139 160 / 20%);
-  --k-accent-gradient: linear-gradient(135deg, #14a8bb 0%, #0a8ba0 55%, #0a7688 100%);
+  /* Porte du texte blanc : chaque arrêt tient le 4.5:1. */
+  --k-accent-gradient: linear-gradient(135deg, #07788c 0%, #06707f 55%, #05616f 100%);
+  /* Purement décoratif (pastilles à émoji, replis de vignette) : reste vif. */
+  --k-accent-gradient-vivid: linear-gradient(135deg, #14a8bb 0%, #0a8ba0 100%);
 
   /* Accent chaud « flamboyant » — les moments de participation. */
   --k-warm-50: #fff1ed;
@@ -71,7 +74,8 @@
   --k-warm-ink: #a63a1c;
   --k-warm-hover: #c94a28;
   --k-warm-soft: rgb(227 90 53 / 13%);
-  --k-warm-gradient: linear-gradient(135deg, #ff8a5b 0%, #e35a35 55%, #c94a28 100%);
+  --k-warm-gradient: linear-gradient(135deg, #c94a28 0%, #b84222 55%, #a83a1f 100%);
+  --k-warm-gradient-vivid: linear-gradient(135deg, #ff8a5b 0%, #e35a35 100%);
 
   /* ------------------------------------------------- Couleurs de contenu
    * Chaque nature d'information a sa teinte, pour qu'un coup d'œil suffise à
@@ -94,7 +98,7 @@
   --k-cat-project-gradient: linear-gradient(135deg, #c39bfb 0%, #9b5cf6 100%);
 
   --k-cat-petition: #f08c00;
-  --k-cat-petition-ink: #94570b;
+  --k-cat-petition-ink: #8a5009;
   --k-cat-petition-soft: rgb(240 140 0 / 16%);
   --k-cat-petition-gradient: linear-gradient(135deg, #ffc046 0%, #f08c00 100%);
 
@@ -114,8 +118,8 @@
   --k-cat-quartier-gradient: linear-gradient(135deg, #7dabff 0%, #3b82f6 100%);
 
   /* Sémantique. */
-  --k-success: #0f8f52;
-  --k-success-soft: rgb(15 143 82 / 14%);
+  --k-success: #0a6b3d;
+  --k-success-soft: rgb(10 107 61 / 14%);
   --k-warning: #94570b;
   --k-warning-soft: rgb(240 140 0 / 16%);
   --k-danger: #c02a20;
@@ -184,6 +188,7 @@
   --k-space-4: 1rem;
   --k-space-5: 1.25rem;
   --k-space-6: 1.5rem;
+  --k-space-7: 1.75rem;
   --k-space-8: 2rem;
   --k-space-10: 2.5rem;
   --k-space-12: 3rem;
@@ -246,6 +251,9 @@
 
   --k-material-popover-bg: rgb(255 255 255 / 76%);
   --k-material-popover-filter: blur(32px) saturate(200%);
+
+  /* Bandeaux pleins portant du texte blanc. */
+  --k-banner-consult: linear-gradient(135deg, #05707f 0%, #045260 100%);
 
   --k-scrim: rgb(10 24 34 / 34%);
   --k-scrim-filter: blur(4px);

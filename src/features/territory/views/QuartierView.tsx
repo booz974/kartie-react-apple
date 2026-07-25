@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router';
 import Badge from '@/components/ui/Badge';
 import Button, { buttonClass } from '@/components/ui/Button';
+import Chip from '@/components/ui/Chip';
+import Media from '@/components/ui/Media';
 import EmptyState from '@/components/ui/EmptyState';
 import Icon from '@/components/ui/Icon';
 import Notice from '@/components/ui/Notice';
@@ -26,10 +28,9 @@ import { getConsultationDetails } from '@/api/democracy';
 import {
   formatDateShort,
   formatStatValue,
-  getCategoryColor,
   getPetitionProgress,
-  getPetitionThemeIcon,
 } from '@/features/territory/utils/quartierHelpers';
+import { categoryKeyFor, petitionThemeEmoji, themeEmoji } from '@/design/categories';
 import type {
   AgendaEvent,
   Association,
@@ -266,10 +267,10 @@ export default function QuartierView() {
     `/quartiers/${quartier.id}/list?type=${type}${create ? '&create=true' : ''}`;
 
   const keyStats = [
-    { label: 'Habitants', value: (stats?.population as string) || 'N/A' },
-    { label: 'Jeunes 0-29 ans', value: formatStatValue(stats?.jeunes) },
-    { label: 'Taux de pauvreté', value: formatStatValue(stats?.pauvrete) },
-    { label: 'Logements sociaux', value: formatStatValue(stats?.logementsSociaux) },
+    { emoji: '🧑‍🤝‍🧑', label: 'Habitants', value: (stats?.population as string) || 'N/A', tone: 'quartier' as const },
+    { emoji: '🎓', label: 'Jeunes 0-29 ans', value: formatStatValue(stats?.jeunes), tone: 'consult' as const },
+    { emoji: '📊', label: 'Taux de pauvreté', value: formatStatValue(stats?.pauvrete), tone: 'petition' as const },
+    { emoji: '🏠', label: 'Logements sociaux', value: formatStatValue(stats?.logementsSociaux), tone: 'asso' as const },
   ];
 
   const upcomingEvents = (quartier.events ?? []) as AgendaEvent[];
@@ -314,22 +315,22 @@ export default function QuartierView() {
         }
       />
 
-      <section
-        aria-label="Le quartier en chiffres"
-        className="k-hairline-top k-hairline-bottom py-6"
-      >
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-6 md:grid-cols-4">
+      <section aria-label="Le quartier en chiffres">
+        <dl className="grid grid-cols-2 gap-3 md:grid-cols-4">
           {keyStats.map((stat) => (
-            <div key={stat.label} className="flex flex-col-reverse gap-1">
-              <dt className="k-caption k-ink-tertiary">{stat.label}</dt>
-              <dd className="k-title-2 tabular-nums">{stat.value}</dd>
+            <div key={stat.label} className="k-card flex flex-col gap-1 p-4">
+              <Chip tone={stat.tone} size={38} className="mb-1">
+                {stat.emoji}
+              </Chip>
+              <dt className="k-caption k-ink-tertiary order-2">{stat.label}</dt>
+              <dd className="k-title-2 tabular-nums order-1">{stat.value}</dd>
             </div>
           ))}
         </dl>
       </section>
 
       <Section
-        title="Votre avis compte"
+        title="🗳️ Votre avis compte"
         description="Une question posée aux habitants du quartier. Votre réponse est comptabilisée immédiatement."
         className="pt-14"
         action={
@@ -363,7 +364,7 @@ export default function QuartierView() {
       <div className="k-section grid gap-12 lg:grid-cols-3">
         <Section
           className="k-section--flush lg:col-span-2"
-          title="À ne pas manquer"
+          title="🎉 À ne pas manquer"
           action={
             <div className="flex gap-2">
               {isAdmin ? (
@@ -394,9 +395,9 @@ export default function QuartierView() {
                     to={eventPath(event)}
                     className="k-press group flex gap-4 py-4 first:pt-0"
                   >
-                    <span className="flex h-14 w-14 shrink-0 flex-col items-center justify-center rounded-md bg-accent-soft text-accent">
-                      <Icon name="calendar" size={20} />
-                    </span>
+                    <Chip tone={event.source === 'association' ? 'asso' : 'event'} size={52}>
+                      {event.source === 'association' ? '🤝' : '🎉'}
+                    </Chip>
                     <span className="min-w-0 flex-1">
                       {event.source === 'association' ? (
                         <span className="k-caption k-ink-tertiary block">
@@ -404,10 +405,10 @@ export default function QuartierView() {
                           {event.association_name ? ` · ${event.association_name}` : ''}
                         </span>
                       ) : null}
-                      <span className="k-title-3 block truncate group-hover:text-accent">
+                      <span className="k-title-3 block truncate group-hover:text-accent-ink">
                         {event.title}
                       </span>
-                      <span className="k-footnote block text-accent">{event.date}</span>
+                      <span className="k-footnote block text-accent-ink">{event.date}</span>
                       <span className="k-footnote k-ink-secondary mt-1 line-clamp-2 block">
                         {(event as { description?: string }).description}
                       </span>
@@ -427,7 +428,7 @@ export default function QuartierView() {
 
         <Section
           className="k-section--flush"
-          title="Dernières nouvelles"
+          title="📰 Dernières nouvelles"
           action={
             <div className="flex gap-2">
               {isAdmin ? (
@@ -462,7 +463,7 @@ export default function QuartierView() {
                       {formatDateShort(item.date)}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="k-subhead block truncate font-medium group-hover:text-accent">
+                      <span className="k-subhead block truncate font-medium group-hover:text-accent-ink">
                         {item.title}
                       </span>
                       <span className="k-footnote k-ink-tertiary line-clamp-1 block">
@@ -481,7 +482,7 @@ export default function QuartierView() {
 
       {quartier.associations && quartier.associations.length > 0 ? (
         <Section
-          title="Vie associative"
+          title="🤝 Vie associative"
           action={
             <Link
               to={`/quartiers/${quartier.id}/associations`}
@@ -497,7 +498,7 @@ export default function QuartierView() {
               <Link
                 key={association.id}
                 to={`/associations/${association.slug || association.id}`}
-                className="k-press rounded-lg border border-separator bg-surface p-5 transition-colors hover:border-separator-strong"
+                className="k-card k-card--interactive p-5"
               >
                 <div className="mb-3 flex items-center gap-3">
                   {association.logo_url ? (
@@ -505,12 +506,12 @@ export default function QuartierView() {
                       src={association.logo_url as string}
                       alt=""
                       loading="lazy"
-                      className="h-11 w-11 rounded-md object-cover"
+                      className="h-14 w-14 rounded-lg object-cover shadow-sm"
                     />
                   ) : (
-                    <span className="flex h-11 w-11 items-center justify-center rounded-md bg-accent-soft text-accent">
-                      <Icon name="handshake" size={20} />
-                    </span>
+                    <Chip tone="asso" size={56}>
+                      {themeEmoji(association.category_label as string, '🤝')}
+                    </Chip>
                   )}
                   <span className="min-w-0">
                     <span className="k-subhead block truncate font-semibold">
@@ -532,7 +533,7 @@ export default function QuartierView() {
 
       {cleanRealisations.length > 0 ? (
         <Section
-          title="Nos réalisations"
+          title="🏗️ Nos réalisations"
           description="Les projets déjà sortis de terre."
           action={
             <div className="flex gap-2">
@@ -561,31 +562,22 @@ export default function QuartierView() {
               <Link
                 key={realisation.id}
                 to={`/realisations/${realisation.id}`}
-                className="k-press overflow-hidden rounded-lg border border-separator bg-surface"
+                className="k-card k-card--interactive group overflow-hidden p-0"
               >
-                <div className="relative aspect-[16/10] bg-canvas-sunken">
-                  {realisation.image_url ? (
-                    <img
-                      src={realisation.image_url as string}
-                      alt=""
-                      loading="lazy"
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full w-full items-center justify-center text-ink-quaternary">
-                      <Icon name="trophy" size={28} />
-                    </div>
-                  )}
-                </div>
+                <Media
+                  src={realisation.image_url as string | null}
+                  category={categoryKeyFor(realisation.category as string)}
+                  emoji={themeEmoji(realisation.category as string, '🏗️')}
+                  ratio="16 / 10"
+                />
                 <div className="p-4">
-                  <span
-                    className={`k-badge ${getCategoryColor(realisation.category as string)}`}
+                  <Badge
+                    tone={categoryKeyFor(realisation.category as string)}
+                    emoji={themeEmoji(realisation.category as string, '🏗️')}
                   >
                     {(realisation.category as string) || 'Projet'}
-                  </span>
-                  <h3 className="k-subhead mt-2.5 line-clamp-2 font-semibold">
-                    {realisation.title}
-                  </h3>
+                  </Badge>
+                  <h3 className="k-title-3 mt-3 line-clamp-2">{realisation.title}</h3>
                   <p className="k-footnote k-ink-secondary mt-1.5 line-clamp-3">
                     {(realisation.description as string) || realisation.content}
                   </p>
@@ -598,7 +590,7 @@ export default function QuartierView() {
 
       {quartier.petitions !== undefined ? (
         <Section
-          title="Les habitants se mobilisent"
+          title="✍️ Les habitants se mobilisent"
           description="Des initiatives lancées par des voisins. Une signature suffit pour les soutenir."
           action={
             quartier.petitions && quartier.petitions.length > 0 ? (
@@ -622,12 +614,15 @@ export default function QuartierView() {
                   <Link
                     key={petition.id}
                     to={`/petitions/${petition.id}`}
-                    className="k-press flex flex-col rounded-lg border border-separator bg-surface p-5 transition-colors hover:border-separator-strong"
+                    className="k-card k-card--interactive flex flex-col p-5"
                   >
-                    <span className="k-badge mb-3 self-start">
-                      <Icon name={getPetitionThemeIcon(petition.theme)} size={13} />
+                    <Badge
+                      tone="petition"
+                      emoji={petitionThemeEmoji(petition.theme)}
+                      className="mb-3 self-start"
+                    >
                       {petition.theme || 'Mobilisation'}
-                    </span>
+                    </Badge>
                     <h3 className="k-title-3 line-clamp-2">{petition.title}</h3>
                     <p className="k-footnote k-ink-secondary mt-2 line-clamp-2 flex-1">
                       {(petition.summary as string) || petition.description}
@@ -646,10 +641,10 @@ export default function QuartierView() {
               {session ? (
                 <Link
                   to={listPath('petitions', true)}
-                  className="k-press flex flex-col items-center justify-center rounded-lg border border-dashed border-separator-strong p-6 text-center transition-colors hover:border-accent hover:bg-accent-soft"
+                  className="k-press flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-warm/40 bg-warm-soft p-6 text-center transition-all hover:-translate-y-1 hover:border-warm hover:shadow-md"
                 >
-                  <Icon name="megaphone" size={26} className="text-accent" />
-                  <span className="k-subhead mt-3 font-semibold">Une idée pour le quartier ?</span>
+                  <span className="text-4xl" aria-hidden="true">📣</span>
+                  <span className="k-title-3 mt-3 text-warm-ink">Une idée pour le quartier ?</span>
                   <span className="k-footnote k-ink-secondary mt-1">
                     Lancez votre pétition et mobilisez vos voisins.
                   </span>

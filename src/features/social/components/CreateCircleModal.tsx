@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import Button from '@/components/ui/Button';
+import Chip from '@/components/ui/Chip';
 import Field, { Input, Textarea } from '@/components/ui/Field';
 import Icon from '@/components/ui/Icon';
 import Modal from '@/components/ui/Modal';
@@ -58,6 +59,15 @@ export default function CreateCircleModal({
       }
     >
       <form id="create-circle-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
+        <div className="k-card k-card--flat flex items-center gap-3 p-3">
+          <Chip tone="asso" size={44}>
+            🌱
+          </Chip>
+          <p className="k-footnote k-ink-secondary">
+            Jardinage, covoiturage, coups de main : un cercle réunit les voisins autour d’un sujet.
+          </p>
+        </div>
+
         <Field label="Nom du cercle" error={nameError || undefined}>
           {(props) => (
             <Input
@@ -95,8 +105,24 @@ export default function CreateCircleModal({
               value={type}
               onChange={setType}
               options={[
-                { value: 'private', label: 'Privé', icon: 'lock' },
-                { value: 'public', label: 'Public', icon: 'globe' },
+                {
+                  value: 'private',
+                  label: (
+                    <>
+                      <span aria-hidden="true">🔒</span>
+                      Privé
+                    </>
+                  ),
+                },
+                {
+                  value: 'public',
+                  label: (
+                    <>
+                      <span aria-hidden="true">🌍</span>
+                      Public
+                    </>
+                  ),
+                },
               ]}
             />
             <p className="k-field__hint">

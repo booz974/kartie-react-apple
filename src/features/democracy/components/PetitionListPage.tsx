@@ -1,6 +1,7 @@
 import type { Session } from '@supabase/supabase-js';
+import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
-import EmptyState from '@/components/ui/EmptyState';
+import Chip from '@/components/ui/Chip';
 import Icon from '@/components/ui/Icon';
 import Notice from '@/components/ui/Notice';
 import { Page, PageHeader, Section } from '@/components/ui/Page';
@@ -34,9 +35,20 @@ export default function PetitionListPage({
       </Button>
 
       <PageHeader
-        eyebrow="Pétitions"
-        title={`Toutes les pétitions pour ${quartierName}`}
-        description="Chaque soutien compte : il rend visible une demande auprès de la ville."
+        eyebrow={
+          <>
+            <span aria-hidden="true">✍️ </span>Pétitions
+          </>
+        }
+        title={`Ce que demandent les habitants de ${quartierName}`}
+        description="Chaque soutien compte : c'est lui qui rend une demande visible auprès de la ville."
+        meta={
+          petitions.length > 0 ? (
+            <Badge tone="petition" size="lg" emoji="✍️">
+              {petitions.length} {petitions.length > 1 ? 'pétitions en cours' : 'pétition en cours'}
+            </Badge>
+          ) : null
+        }
       />
 
       <Section>
@@ -58,16 +70,22 @@ export default function PetitionListPage({
             ))}
           </div>
         ) : (
-          <EmptyState
-            icon="petition"
-            title="Aucune pétition en cours"
-            description={`Personne n'a encore lancé de pétition à ${quartierName}. Revenez au quartier pour en créer une.`}
-            action={
+          <div className="k-empty">
+            <Chip tone="petition" size={72}>
+              ✍️
+            </Chip>
+            <p className="k-title-3">Aucune pétition en cours</p>
+            <p className="k-subhead k-ink-secondary k-measure">
+              Personne n&apos;a encore lancé de demande à {quartierName}. Une idée pour améliorer le
+              quartier ? Elle commence ici.
+            </p>
+            <div className="mt-2">
               <Button variant="tinted" onClick={onBack}>
+                <span aria-hidden="true">📍</span>
                 Retour au quartier
               </Button>
-            }
-          />
+            </div>
+          </div>
         )}
       </Section>
     </Page>

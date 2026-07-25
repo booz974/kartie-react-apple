@@ -2,6 +2,7 @@ import { Link } from 'react-router';
 import AdminDeleteButton from '@/components/ui/AdminDeleteButton';
 import Badge from '@/components/ui/Badge';
 import Icon from '@/components/ui/Icon';
+import Media from '@/components/ui/Media';
 import { surfaceClass } from '@/components/ui/Surface';
 import type { AgendaEvent } from '@/lib/types/contract';
 
@@ -10,6 +11,13 @@ interface EventCardProps {
   onDelete: (id: number | string) => void;
 }
 
+/**
+ * Vignette d'un événement.
+ *
+ * L'affiche passe devant : c'est elle qui donne envie d'y aller. Faute de
+ * photo, le dégradé corail des événements et son émoji prennent la place, pour
+ * qu'une grille d'agenda ne retombe jamais en rectangles gris.
+ */
 export default function EventCard({ event, onDelete }: EventCardProps) {
   const target = event.routePath || `/events/${event.id}`;
 
@@ -24,7 +32,7 @@ export default function EventCard({ event, onDelete }: EventCardProps) {
     <article
       className={surfaceClass({
         interactive: true,
-        className: 'relative flex h-full flex-col overflow-hidden',
+        className: 'group relative flex h-full flex-col overflow-hidden',
       })}
     >
       <AdminDeleteButton
@@ -33,25 +41,21 @@ export default function EventCard({ event, onDelete }: EventCardProps) {
         onDeleted={() => onDelete(event.id)}
       />
 
-      {imageUrl ? (
-        <img
-          src={imageUrl}
-          alt=""
-          loading="lazy"
-          className="aspect-[16/9] w-full bg-canvas-sunken object-cover"
-        />
-      ) : (
-        <div
-          className="grid aspect-[16/9] w-full place-items-center bg-canvas-sunken text-ink-quaternary"
-          aria-hidden="true"
-        >
-          <Icon name="calendar" size={26} />
-        </div>
-      )}
+      <Media src={imageUrl} category="event" ratio="16 / 10" />
+
+      {/* La date se lit sur l'affiche : c'est la première question qu'on se
+          pose devant un événement. */}
+      {event.date ? (
+        <span className="absolute left-3 top-3 z-10 max-w-[calc(100%-5rem)]">
+          <Badge tone="event" emoji="📅" onMedia>
+            <span className="min-w-0 truncate">{event.date}</span>
+          </Badge>
+        </span>
+      ) : null}
 
       <div className="flex flex-1 flex-col gap-2 p-5">
         {event.source === 'association' ? (
-          <Badge tone="accent" icon="users" className="self-start">
+          <Badge tone="asso" emoji="🤝" className="self-start">
             {event.association_name || 'Association'}
           </Badge>
         ) : null}
@@ -62,16 +66,9 @@ export default function EventCard({ event, onDelete }: EventCardProps) {
           </Link>
         </h3>
 
-        {event.date ? (
-          <p className="k-footnote flex items-center gap-1.5 font-medium text-accent">
-            <Icon name="calendar" size={15} />
-            <span className="min-w-0 truncate">{event.date}</span>
-          </p>
-        ) : null}
-
         {location ? (
-          <p className="k-footnote k-ink-tertiary flex items-center gap-1.5">
-            <Icon name="mapPin" size={15} />
+          <p className="k-footnote k-ink-secondary flex items-center gap-1.5">
+            <Icon name="mapPin" size={15} className="shrink-0 text-cat-event" />
             <span className="min-w-0 truncate">{location}</span>
           </p>
         ) : null}
@@ -79,6 +76,15 @@ export default function EventCard({ event, onDelete }: EventCardProps) {
         {description ? (
           <p className="k-subhead k-ink-secondary mt-1 line-clamp-3">{description}</p>
         ) : null}
+
+        <p className="k-footnote mt-auto flex items-center gap-1 pt-3 font-semibold text-cat-event-ink">
+          Voir l&apos;événement
+          <Icon
+            name="arrowRight"
+            size={15}
+            className="transition-transform duration-200 group-hover:translate-x-1"
+          />
+        </p>
       </div>
     </article>
   );

@@ -37,7 +37,11 @@ export default function CreatePetitionForm({
   return (
     <Modal
       onClose={onCancel}
-      title="Lancer une pétition"
+      title={
+        <>
+          <span aria-hidden="true">✍️ </span>Lancer une pétition
+        </>
+      }
       description="Formulez une demande claire : c'est elle que vos voisins soutiendront."
       footer={
         <>
@@ -100,7 +104,10 @@ export default function CreatePetitionForm({
             l'enveloppe pas dans un Field, dont le `for` ne viserait rien. */}
         <div className="k-field">
           <p className="k-field__label">
-            Image <span className="k-field__optional">— facultatif</span>
+            Image <span className="k-field__optional">(facultatif)</span>
+          </p>
+          <p className="k-field__hint">
+            Une photo du lieu concerné rend la demande concrète, et donne envie de la soutenir.
           </p>
           <ImageUploader onUploadSuccess={(url) => setForm((f) => ({ ...f, image: url }))} />
         </div>

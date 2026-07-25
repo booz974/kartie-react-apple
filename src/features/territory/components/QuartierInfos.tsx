@@ -1,5 +1,6 @@
-import Icon, { type IconName } from '@/components/ui/Icon';
+import Chip from '@/components/ui/Chip';
 import { Page, PageHeader, Section } from '@/components/ui/Page';
+import type { CategoryKey } from '@/design/categories';
 import type { Quartier } from '@/lib/types/contract';
 
 interface QuartierInfosProps {
@@ -8,15 +9,26 @@ interface QuartierInfosProps {
 }
 
 export default function QuartierInfos({ quartier }: QuartierInfosProps) {
-  const sections: { icon: IconName; title: string; html: string }[] = [
-    { icon: 'target', title: 'Les grands défis', html: quartier.enjeux as string },
+  const sections: { emoji: string; tone: CategoryKey; title: string; html: string }[] = [
+    { emoji: '🎯', tone: 'petition', title: 'Les grands défis', html: quartier.enjeux as string },
     {
-      icon: 'wrench',
+      emoji: '🏗️',
+      tone: 'project',
       title: 'Actions et projets structurants',
       html: quartier.problematiques as string,
     },
-    { icon: 'sparkles', title: 'Ce qui le rend unique', html: quartier.particularites as string },
-    { icon: 'trendingUp', title: 'Les atouts pour demain', html: quartier.opportunites as string },
+    {
+      emoji: '✨',
+      tone: 'consult',
+      title: 'Ce qui le rend unique',
+      html: quartier.particularites as string,
+    },
+    {
+      emoji: '🚀',
+      tone: 'asso',
+      title: 'Les atouts pour demain',
+      html: quartier.opportunites as string,
+    },
   ];
 
   const filled = sections.filter((section) => section.html?.trim());
@@ -26,7 +38,7 @@ export default function QuartierInfos({ quartier }: QuartierInfosProps) {
       <PageHeader
         className="pt-8 md:pt-12"
         back={{ to: `/quartiers/${quartier.id}`, label: 'Retour au quartier' }}
-        eyebrow="Portrait de quartier"
+        eyebrow="📍 Portrait de quartier"
         title={quartier.name}
         description="Les enjeux, les projets et les atouts qui dessinent l’avenir du quartier."
       />
@@ -35,8 +47,10 @@ export default function QuartierInfos({ quartier }: QuartierInfosProps) {
         <div className="k-list">
           {filled.map((section) => (
             <Section key={section.title} className="py-10 first:pt-2">
-              <h2 className="k-title-2 mb-4 flex items-center gap-2.5">
-                <Icon name={section.icon} size={20} className="text-accent" />
+              <h2 className="k-title-2 mb-4 flex items-center gap-3">
+                <Chip tone={section.tone} size={40}>
+                  {section.emoji}
+                </Chip>
                 {section.title}
               </h2>
               {/* Contenu éditorial issu de la base : la mise en forme est

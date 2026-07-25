@@ -127,9 +127,13 @@ export default function CreateConsultationView() {
   return (
     <Page className="k-page--reading pt-6">
       <PageHeader
-        eyebrow="Consultation"
+        eyebrow={
+          <>
+            <span aria-hidden="true">🗳️ </span>Consultation
+          </>
+        }
         title="Créer un sondage"
-        description="Une question claire, deux réponses au minimum. C'est ce qui sera soumis aux habitants du quartier."
+        description="Une question claire, deux réponses au minimum. C'est ce que verront les habitants du quartier."
       />
 
       <form onSubmit={(e) => void submitConsultation(e)}>
@@ -164,7 +168,11 @@ export default function CreateConsultationView() {
         </Section>
 
         <Section
-          title="Options de réponse"
+          title={
+            <>
+              <span aria-hidden="true">📝 </span>Options de réponse
+            </>
+          }
           description="Deux au minimum. Formulez-les à la même échelle pour que le choix reste comparable."
           action={
             <Button
@@ -207,7 +215,14 @@ export default function CreateConsultationView() {
           </ul>
         </Section>
 
-        <Section title="Contexte" description="Facultatif, mais cela aide à répondre en connaissance de cause.">
+        <Section
+          title={
+            <>
+              <span aria-hidden="true">💡 </span>Contexte
+            </>
+          }
+          description="Facultatif, mais cela aide à répondre en connaissance de cause."
+        >
           <div className="flex flex-col gap-5">
             <Field
               label="Résumé court"
@@ -241,7 +256,11 @@ export default function CreateConsultationView() {
                 l'enveloppe pas dans un Field, dont le `for` ne viserait rien. */}
             <div className="k-field">
               <p className="k-field__label">
-                Image de couverture <span className="k-field__optional">— facultatif</span>
+                Image de couverture <span className="k-field__optional">(facultatif)</span>
+              </p>
+              <p className="k-field__hint">
+                Elle porte la carte du sondage dans la liste : une photo du lieu concerné vaut
+                mieux qu&apos;un long résumé.
               </p>
               <ImageUploader
                 bucketName="post_images"

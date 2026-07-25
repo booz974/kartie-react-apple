@@ -86,6 +86,7 @@ module.exports = {
         'danger-soft': 'var(--k-danger-soft)',
         separator: 'var(--k-separator)',
         'separator-strong': 'var(--k-separator-strong)',
+        glass: 'var(--k-glass-border)',
       },
       fontFamily: {
         sans: 'var(--k-font-sans)',
@@ -93,7 +94,9 @@ module.exports = {
       },
       backgroundImage: {
         'accent-gradient': 'var(--k-accent-gradient)',
+        'accent-vivid': 'var(--k-accent-gradient-vivid)',
         'warm-gradient': 'var(--k-warm-gradient)',
+        'warm-vivid': 'var(--k-warm-gradient-vivid)',
       },
       borderRadius: {
         xs: 'var(--k-radius-xs)',

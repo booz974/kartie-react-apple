@@ -54,7 +54,7 @@
 
 .k-btn--lg {
   min-height: 3.25rem;
-  padding: 0 var(--k-space-7, 1.75rem);
+  padding: 0 var(--k-space-7);
   font-size: var(--k-text-callout-size);
 }
 
@@ -83,7 +83,8 @@
 
 .k-btn--primary {
   background-image: var(--k-accent-gradient);
-  background-color: var(--k-accent);
+  /* Repli plein si le dégradé ne rend pas : il doit lui aussi tenir le blanc. */
+  background-color: var(--k-accent-hover);
   color: var(--k-ink-on-accent);
   box-shadow: var(--k-glass-sheen), var(--k-shadow-sm);
 }
@@ -426,6 +427,9 @@ select.k-input {
   overflow-x: auto;
   scrollbar-width: none;
   max-width: 100%;
+  /* Sans cela, une colonne de grille dimensionnée par son contenu s'élargirait
+     jusqu'à contenir tous les onglets, et la page déborderait. */
+  min-width: 0;
 }
 
 .k-segmented::-webkit-scrollbar {
@@ -1015,7 +1019,7 @@ select.k-input {
 .k-rail {
   display: grid;
   grid-auto-flow: column;
-  grid-auto-columns: minmax(15rem, 1fr);
+  grid-auto-columns: minmax(15rem, 20rem);
   gap: var(--k-space-4);
   overflow-x: auto;
   padding-bottom: var(--k-space-2);
@@ -1140,10 +1144,10 @@ select.k-input {
 .k-chip--consult { background-image: var(--k-cat-consult-gradient); }
 .k-chip--asso { background-image: var(--k-cat-asso-gradient); }
 .k-chip--quartier { background-image: var(--k-cat-quartier-gradient); }
-.k-chip--accent { background-image: var(--k-accent-gradient); }
-.k-chip--warm { background-image: var(--k-warm-gradient); }
+.k-chip--accent { background-image: var(--k-accent-gradient-vivid); }
+.k-chip--warm { background-image: var(--k-warm-gradient-vivid); }
 
 /* Bandeau d'en-tête coloré, pour les blocs qui doivent appeler à agir. */
 .k-banner--accent { background-image: var(--k-accent-gradient); color: #fff; }
 .k-banner--warm { background-image: var(--k-warm-gradient); color: #fff; }
-.k-banner--consult { background-image: var(--k-cat-consult-gradient); color: #fff; }
+.k-banner--consult { background-image: var(--k-banner-consult); color: #fff; }

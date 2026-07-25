@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
 import Button from '@/components/ui/Button';
@@ -49,6 +49,10 @@ export default function QuartierListView() {
   const [items, setItems] = useState<ListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadFailed, setLoadFailed] = useState(false);
+  // Le résumé du quartier n'est chargé qu'une fois par quartier. Dépendre de
+  // l'objet `quartier` lui-même rouvrait une boucle : chaque chargement en
+  // produisait un nouveau, ce qui recréait `loadData` et relançait l'effet.
+  const loadedQuartierIdRef = useRef<number | null>(null);
 
   const quartierId = id ? Number(id) : undefined;
 
@@ -83,9 +87,10 @@ export default function QuartierListView() {
     setLoadFailed(false);
 
     try {
-      if (!quartier || quartier.id !== quartierId) {
+      if (loadedQuartierIdRef.current !== quartierId) {
         const qData = await getQuartierSummary(quartierId);
         if (!qData) throw new Error('Quartier not found');
+        loadedQuartierIdRef.current = quartierId;
         setQuartier(qData);
       }
 
@@ -105,7 +110,7 @@ export default function QuartierListView() {
     } finally {
       setLoading(false);
     }
-  }, [quartier, quartierId, type]);
+  }, [quartierId, type]);
 
   useEffect(() => {
     void loadData();

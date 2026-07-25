@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import Button from '@/components/ui/Button';
+import Chip from '@/components/ui/Chip';
 import Icon from '@/components/ui/Icon';
 import { Input } from '@/components/ui/Field';
 import {
@@ -51,13 +52,13 @@ function MapMoveHandler({ onMoveEnd }: { onMoveEnd: (lat: number, lng: number) =
 
 /**
  * Le viseur reste immobile pendant que la carte glisse dessous : c'est la carte
- * qu'on déplace, pas un marqueur qu'on pose. Une seule teinte — l'accent — quel
+ * qu'on déplace, pas un marqueur qu'on pose. Une seule teinte, l'accent, quel
  * que soit le contexte d'appel.
  */
 function Crosshair() {
   return (
     <div className="pointer-events-none absolute inset-0 z-[1000] flex items-center justify-center">
-      <div className="relative text-accent">
+      <div className="relative text-accent-ink">
         <div className="h-8 w-8 rounded-full border-2 border-current bg-accent-soft" />
         <div className="absolute left-1/2 top-1/2 h-1 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full bg-current" />
         <div className="absolute left-full top-1/2 h-0.5 w-2 -translate-y-1/2 bg-current" />
@@ -185,7 +186,7 @@ export default function LocationPicker({
 
       {searchError ? <p className="k-footnote text-danger">{searchError}</p> : null}
 
-      <div className="relative z-0 h-48 overflow-hidden rounded-md border border-separator">
+      <div className="relative z-0 h-56 overflow-hidden rounded-lg border border-separator shadow-sm">
         <MapContainer
           key={mapKey}
           center={center}
@@ -202,9 +203,11 @@ export default function LocationPicker({
         <Crosshair />
       </div>
 
-      <div className="rounded-md bg-surface-secondary p-3">
-        <div className="mb-2 flex items-start gap-2">
-          <Icon name="mapPin" size={17} className="mt-0.5 text-accent" />
+      <div className="k-card k-card--flat p-3">
+        <div className="mb-2 flex items-center gap-3">
+          <Chip tone="quartier" size={38}>
+            📍
+          </Chip>
           <div className="min-w-0">
             <p className="k-eyebrow">Secteur détecté</p>
             <p className="k-subhead k-ink mt-0.5">

@@ -39,8 +39,11 @@ export default function QuartierPoll({
 }: QuartierPollProps) {
   if (!consultation) {
     return (
-      <div className="rounded-xl border border-separator bg-surface p-6 text-center">
-        <p className="k-subhead k-ink-tertiary">Aucune consultation ouverte pour le moment.</p>
+      <div className="k-card p-8 text-center">
+        <p className="text-4xl" aria-hidden="true">🗳️</p>
+        <p className="k-subhead k-ink-secondary mt-3">
+          Aucune consultation ouverte pour le moment.
+        </p>
         <Button variant="plain" size="sm" className="mt-2" onClick={onSeeAll}>
           Voir les consultations passées
         </Button>
@@ -53,21 +56,23 @@ export default function QuartierPoll({
   const isMultiple = Boolean(consultation.multiple_choices);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-separator bg-surface">
-      <div className="border-b border-separator bg-warm-soft px-5 py-4 md:px-6">
-        <p className="k-eyebrow flex items-center gap-2 text-warm">
-          <Icon name="ballot" size={15} />
+    <div className="k-card overflow-hidden p-0">
+      {/* Bandeau plein : c'est le seul endroit de la page où la couleur appelle
+          franchement à agir. */}
+      <div className="k-banner--warm px-5 py-5 md:px-6">
+        <p className="k-eyebrow flex items-center gap-2 text-white/85">
+          <span aria-hidden="true">🗳️</span>
           Consultation express
         </p>
-        <h3 className="k-title-3 mt-2 text-balance">{consultation.title}</h3>
-        {summary ? <p className="k-subhead k-ink-secondary mt-2">{summary}</p> : null}
+        <h3 className="k-title-3 k-vibrant mt-2 text-balance">{consultation.title}</h3>
+        {summary ? <p className="k-subhead mt-2 text-white/90">{summary}</p> : null}
       </div>
 
       <div className="p-5 md:p-6">
         {showResults && details ? (
           <div>
-            <p className="k-subhead mb-5 flex items-center gap-2 font-medium text-success">
-              <Icon name="checkCircle" size={17} />
+            <p className="k-subhead mb-5 flex items-center gap-2 font-semibold text-success">
+              <span aria-hidden="true">🎉</span>
               Votre vote a bien été pris en compte.
             </p>
 
@@ -123,10 +128,10 @@ export default function QuartierPoll({
                     aria-checked={isMultiple ? selected : false}
                     onClick={() => onOptionClick(consultation, option.id)}
                     disabled={isVoting}
-                    className={`k-press flex w-full items-center gap-3 rounded-md border px-4 py-3.5 text-left k-body transition-colors disabled:opacity-50 ${
+                    className={`k-press flex w-full items-center gap-3 rounded-lg border px-4 py-4 text-left k-body font-medium transition-all disabled:opacity-50 ${
                       selected
-                        ? 'border-warm bg-warm-soft font-medium text-warm'
-                        : 'border-separator-strong hover:border-ink-quaternary hover:bg-surface-secondary'
+                        ? 'border-warm bg-warm-soft text-warm-ink shadow-sm'
+                        : 'border-glass bg-white/55 hover:-translate-y-0.5 hover:bg-white/80 hover:shadow-md'
                     }`}
                   >
                     {isMultiple ? (
@@ -141,7 +146,7 @@ export default function QuartierPoll({
                     ) : null}
                     <span className="flex-1">{getOptionText(option)}</span>
                     {!isMultiple ? (
-                      <Icon name="chevronRight" size={17} className="k-ink-quaternary" />
+                      <Icon name="chevronRight" size={18} className="k-ink-quaternary" />
                     ) : null}
                   </button>
                 );

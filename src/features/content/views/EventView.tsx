@@ -1,8 +1,10 @@
 import { useNavigate, useParams } from 'react-router';
 import DOMPurify from 'dompurify';
+import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
-import EmptyState from '@/components/ui/EmptyState';
+import Chip from '@/components/ui/Chip';
 import Icon from '@/components/ui/Icon';
+import Media from '@/components/ui/Media';
 import Notice from '@/components/ui/Notice';
 import { Page } from '@/components/ui/Page';
 import Skeleton, { SkeletonText } from '@/components/ui/Skeleton';
@@ -41,7 +43,7 @@ export default function EventView() {
     return (
       <Page className="k-page--reading pt-6">
         <div className="flex flex-col gap-4" aria-busy="true">
-          <Skeleton height="14rem" radius="var(--k-radius-lg)" />
+          <Skeleton height="18rem" radius="var(--k-radius-xl)" />
           <Skeleton height="2rem" className="mt-2" />
           <Skeleton width="60%" height="1rem" />
           <Skeleton width="40%" height="1rem" />
@@ -71,16 +73,22 @@ export default function EventView() {
     return (
       <Page className="k-page--reading pt-6">
         <h1 className="k-visually-hidden">Événement introuvable</h1>
-        <EmptyState
-          icon="calendar"
-          title="Cet événement est introuvable"
-          description="Il a peut-être été annulé, ou l'adresse est incorrecte."
-          action={
+        <div className="k-empty">
+          <Chip tone="event" size={72}>
+            🎉
+          </Chip>
+          <p className="k-title-3">Cet événement n&apos;est plus à l&apos;affiche</p>
+          <p className="k-subhead k-ink-secondary k-measure">
+            Il a peut-être été annulé, ou l&apos;adresse est incorrecte. D&apos;autres rendez-vous
+            vous attendent près de chez vous.
+          </p>
+          <div className="mt-2">
             <Button variant="primary" onClick={() => navigate('/')}>
+              <span aria-hidden="true">🏠</span>
               Retour à l&apos;accueil
             </Button>
-          }
-        />
+          </div>
+        </div>
       </Page>
     );
   }
@@ -94,35 +102,49 @@ export default function EventView() {
       <BackButton onClick={goBack} />
 
       <article>
-        {imageSrc ? (
-          <img
-            src={imageSrc}
-            alt=""
-            className="mb-6 h-64 w-full rounded-lg bg-canvas-sunken object-cover"
-          />
-        ) : null}
+        {/* L'affiche ouvre la page : on décide d'y aller sur une image, pas sur
+            une fiche. */}
+        <Media
+          src={imageSrc}
+          category="event"
+          ratio={imageSrc ? '16 / 9' : '21 / 9'}
+          rounded="var(--k-radius-xl)"
+          loading="eager"
+          className="shadow-lg"
+        />
 
-        <h1 className="k-title-large text-balance">{event.title}</h1>
+        <Badge tone="event" emoji="🎉" size="lg" className="mt-6">
+          Événement
+        </Badge>
+
+        <h1 className="k-title-large mt-3 text-balance">{event.title}</h1>
 
         {/* Date et lieu sont les deux informations qui décident d'y aller ou
-            non : elles viennent juste après le titre, groupées. */}
-        <dl className="mt-4 flex flex-col gap-2">
-          <div className="flex items-center gap-2">
+            non : elles viennent juste après le titre, groupées, et posées sur
+            leur propre plaque de verre. */}
+        <dl className="k-card mt-5 flex flex-col gap-3 p-4">
+          <div className="flex items-center gap-3">
             <dt className="k-visually-hidden">Date</dt>
-            <Icon name="calendar" size={17} className="text-accent" />
-            <dd className="k-callout font-medium text-accent">{formatEventDate(event.date)}</dd>
+            <Chip tone="event" size={38}>
+              📅
+            </Chip>
+            <dd className="k-callout font-semibold text-cat-event-ink">
+              {formatEventDate(event.date)}
+            </dd>
           </div>
           {location ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <dt className="k-visually-hidden">Lieu</dt>
-              <Icon name="mapPin" size={17} className="k-ink-tertiary" />
-              <dd className="k-subhead k-ink-secondary">{location}</dd>
+              <Chip tone="quartier" size={38}>
+                📍
+              </Chip>
+              <dd className="k-callout k-ink-secondary">{location}</dd>
             </div>
           ) : null}
         </dl>
 
         <div
-          className="k-prose k-measure k-hairline-top mt-6 pt-6"
+          className="k-prose k-measure mt-8"
           dangerouslySetInnerHTML={{ __html: descriptionHtml }}
         />
       </article>

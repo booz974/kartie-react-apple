@@ -2,8 +2,9 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
-import EmptyState from '@/components/ui/EmptyState';
+import Chip from '@/components/ui/Chip';
 import Icon from '@/components/ui/Icon';
+import Media from '@/components/ui/Media';
 import Notice from '@/components/ui/Notice';
 import { Page } from '@/components/ui/Page';
 import Progress from '@/components/ui/Progress';
@@ -180,7 +181,7 @@ export default function ConsultationView() {
     return (
       <Page className="k-page--reading pt-6">
         <div className="flex flex-col gap-4" aria-busy="true">
-          <Skeleton height="14rem" radius="var(--k-radius-lg)" />
+          <Skeleton height="16rem" radius="var(--k-radius-xl)" />
           <Skeleton height="2rem" className="mt-2" />
           <SkeletonText lines={3} />
           <Skeleton height="1.25rem" width="70%" className="mt-6" />
@@ -212,16 +213,22 @@ export default function ConsultationView() {
     return (
       <Page className="k-page--reading pt-6">
         <h1 className="k-visually-hidden">Sondage introuvable</h1>
-        <EmptyState
-          icon="ballot"
-          title="Ce sondage est introuvable"
-          description="Il a peut-être été clos, ou l'adresse est incorrecte."
-          action={
+        <div className="k-empty">
+          <Chip tone="consult" size={72}>
+            🗳️
+          </Chip>
+          <p className="k-title-3">Ce sondage est clos ou introuvable</p>
+          <p className="k-subhead k-ink-secondary k-measure">
+            Il a peut-être été retiré, ou l&apos;adresse est incorrecte. D&apos;autres questions
+            attendent votre avis.
+          </p>
+          <div className="mt-2">
             <Button variant="primary" onClick={() => navigate('/')}>
+              <span aria-hidden="true">🏠</span>
               Retour à l&apos;accueil
             </Button>
-          }
-        />
+          </div>
+        </div>
       </Page>
     );
   }
@@ -229,6 +236,9 @@ export default function ConsultationView() {
   // Une consultation renvoyée sans tableau d'options faisait planter le rendu
   // entier ; on dégrade vers un état vide explicite.
   const options = (detailedConsultation.options ?? []) as ConsultationOptionWithVotes[];
+  // Sert uniquement à repérer visuellement la réponse en tête dans les
+  // résultats : aucun calcul de vote n'en dépend.
+  const leadingVotes = options.reduce((max, option) => Math.max(max, option.votes ?? 0), 0);
   const showResults = !session || hasVoted;
   const multiple = Boolean(detailedConsultation.multiple_choices);
   const coverImage = detailedConsultation.cover_image as string | undefined;
@@ -239,30 +249,41 @@ export default function ConsultationView() {
       <BackButton onClick={goBack} />
 
       <article>
-        {coverImage ? (
-          <img
-            src={coverImage}
-            alt=""
-            className="mb-6 h-64 w-full rounded-lg bg-canvas-sunken object-cover"
-          />
-        ) : null}
+        {/* La couverture ouvre la page : un sondage sur un parc ou une école se
+            comprend d'abord par l'image. */}
+        <Media
+          src={coverImage ?? ''}
+          category="consult"
+          ratio={coverImage ? '16 / 9' : '21 / 9'}
+          rounded="var(--k-radius-xl)"
+          loading="eager"
+          className="shadow-lg"
+        />
 
         {/* Un sondage ouvert est un moment de participation : c'est le seul
             endroit de la page où l'accent chaud apparaît. */}
-        {!showResults ? (
-          <Badge tone="warm" dot live className="mb-3">
-            Vote ouvert
+        <div className="mt-6 flex flex-wrap items-center gap-2">
+          <Badge tone="consult" emoji="🗳️" size="lg">
+            Consultation
           </Badge>
-        ) : null}
+          {!showResults ? (
+            <Badge tone="warm" dot live size="lg">
+              Vote ouvert
+            </Badge>
+          ) : null}
+        </div>
 
-        <h1 className="k-title-large text-balance">{detailedConsultation.title}</h1>
+        <h1 className="k-title-large mt-3 text-balance">{detailedConsultation.title}</h1>
 
         {description ? (
           <p className="k-callout k-ink-secondary k-measure mt-4">{description}</p>
         ) : null}
 
-        <section className="k-hairline-top mt-8 pt-6">
-          <h2 className="k-title-2 text-balance">{detailedConsultation.question}</h2>
+        <section className="k-card mt-8 p-6">
+          <h2 className="k-title-2 text-balance">
+            <span aria-hidden="true">💬 </span>
+            {detailedConsultation.question}
+          </h2>
 
           {showResults ? (
             <>
@@ -285,16 +306,23 @@ export default function ConsultationView() {
                 {options.map((option) => {
                   const votes = option.votes ?? 0;
                   const percentage = getPercentage(votes, totalVotes);
+                  // La réponse en tête se repère sans compter : elle prend la
+                  // médaille et la barre verte.
+                  const leading = totalVotes > 0 && votes === leadingVotes;
                   return (
                     <li key={option.id}>
                       <div className="mb-2 flex items-baseline justify-between gap-4">
-                        <span className="k-subhead font-medium">{option.option_text}</span>
-                        <span className="k-footnote k-ink-tertiary shrink-0 tabular-nums">
+                        <span className="k-subhead font-medium">
+                          {leading ? <span aria-hidden="true">🥇 </span> : null}
+                          {option.option_text}
+                        </span>
+                        <span className="k-footnote k-ink-secondary shrink-0 tabular-nums">
                           {percentage}% · {votes} {votes > 1 ? 'votes' : 'vote'}
                         </span>
                       </div>
                       <Progress
                         value={percentage}
+                        tone={leading ? 'success' : 'accent'}
                         label={`${option.option_text ?? 'Option'} : ${percentage}%`}
                       />
                     </li>
@@ -302,40 +330,53 @@ export default function ConsultationView() {
                 })}
               </ul>
 
-              <p className="k-footnote k-ink-tertiary mt-5 tabular-nums">
+              <p className="k-footnote k-ink-secondary mt-5 tabular-nums">
+                <span aria-hidden="true">📊 </span>
                 {totalVotes} {totalVotes > 1 ? 'votes exprimés' : 'vote exprimé'}
               </p>
             </>
           ) : (
             <>
-              <p className="k-subhead k-ink-tertiary mt-2">
-                {multiple ? 'Plusieurs choix possibles.' : 'Un seul choix possible.'}
+              <p className="k-subhead k-ink-secondary mt-2">
+                <span aria-hidden="true">👉 </span>
+                {multiple
+                  ? 'Cochez toutes les réponses qui vous conviennent.'
+                  : 'Choisissez une seule réponse.'}
               </p>
 
               <fieldset className="mt-5">
                 <legend className="k-visually-hidden">{detailedConsultation.question}</legend>
 
-                <div className="k-list k-hairline-all overflow-hidden rounded-lg bg-surface">
-                  {options.map((option) => (
-                    <label
-                      key={option.id}
-                      className="k-press-subtle flex cursor-pointer items-center gap-3 px-4 py-3.5 hover:bg-surface-secondary"
-                    >
-                      <input
-                        type={multiple ? 'checkbox' : 'radio'}
-                        name="vote-option"
-                        value={option.id}
-                        checked={
-                          multiple
-                            ? Array.isArray(selectedOptions) && selectedOptions.includes(option.id)
-                            : selectedOptions === option.id
-                        }
-                        onChange={(e) => handleOptionChange(option.id, e.target.checked, multiple)}
-                        className="h-5 w-5 shrink-0 accent-accent"
-                      />
-                      <span className="k-body">{option.option_text}</span>
-                    </label>
-                  ))}
+                {/* Chaque réponse est une plaque à part : le choix retenu prend
+                    la couleur de la consultation, on voit ce qu'on a coché sans
+                    avoir à chercher la pastille. */}
+                <div className="flex flex-col gap-2.5">
+                  {options.map((option) => {
+                    const checked = multiple
+                      ? Array.isArray(selectedOptions) && selectedOptions.includes(option.id)
+                      : selectedOptions === option.id;
+                    return (
+                      <label
+                        key={option.id}
+                        className={[
+                          'k-card k-press-subtle flex cursor-pointer items-center gap-3 p-4 transition-colors',
+                          checked ? 'border-cat-consult bg-cat-consult-soft' : '',
+                        ]
+                          .filter(Boolean)
+                          .join(' ')}
+                      >
+                        <input
+                          type={multiple ? 'checkbox' : 'radio'}
+                          name="vote-option"
+                          value={option.id}
+                          checked={checked}
+                          onChange={(e) => handleOptionChange(option.id, e.target.checked, multiple)}
+                          className="h-5 w-5 shrink-0 accent-cat-consult"
+                        />
+                        <span className="k-body font-medium">{option.option_text}</span>
+                      </label>
+                    );
+                  })}
                 </div>
               </fieldset>
 

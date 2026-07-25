@@ -62,8 +62,12 @@ export default function CreateArticleForm({
     <Modal
       onClose={onCancel}
       size="wide"
-      title="Nouvel article"
-      description="Racontez une réalisation du quartier : ce qui a changé, pour qui, et pourquoi."
+      title={
+        <>
+          <span aria-hidden="true">🏗️ </span>Nouvelle réalisation
+        </>
+      }
+      description="Racontez ce qui a changé dans le quartier : quoi, pour qui, et pourquoi ça compte."
       footer={
         <>
           <Button variant="secondary" onClick={onCancel}>
@@ -116,7 +120,11 @@ export default function CreateArticleForm({
           )}
         </Field>
 
-        <Field label="URL de l'image de couverture" error={errors.image_url}>
+        <Field
+          label="URL de l'image de couverture"
+          hint="C'est la photo qui portera la carte dans la liste : choisissez-la parlante."
+          error={errors.image_url}
+        >
           {(props) => (
             <Input
               {...props}

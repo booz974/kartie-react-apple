@@ -4,10 +4,12 @@ import {
   ASSOCIATION_EVENT_STATUS_OPTIONS,
 } from '@/api/associations';
 import Button from '@/components/ui/Button';
+import Chip from '@/components/ui/Chip';
 import Field, { Input, Select, Textarea } from '@/components/ui/Field';
 import Icon from '@/components/ui/Icon';
 import ImageUploader from '@/components/ui/ImageUploader';
 import type { AssociationEvent } from '@/lib/types/contract';
+import { associationCategoryStyle } from './AssociationCard';
 
 export interface AssociationEventFormPayload {
   title: string;
@@ -100,13 +102,18 @@ export default function AssociationEventForm({
   }
 
   return (
-    <section className="flex flex-col gap-6">
+    <section className="k-card flex flex-col gap-6 p-5 md:p-6">
       <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <h2 className="k-title-3 text-balance">{submitLabel}</h2>
-          <p className="k-subhead k-ink-secondary k-measure mt-1.5">
-            Publiez un événement visible sur la page de l’association et dans le quartier.
-          </p>
+        <div className="flex min-w-0 items-center gap-3">
+          <Chip tone="event" size={44}>
+            🎉
+          </Chip>
+          <div className="min-w-0">
+            <h2 className="k-title-3 text-balance">{submitLabel}</h2>
+            <p className="k-subhead k-ink-secondary k-measure mt-1.5">
+              Publiez un événement visible sur la page de l’association et dans le quartier.
+            </p>
+          </div>
         </div>
         {showCancel ? (
           <Button variant="ghost" onClick={onCancel} leading={<Icon name="close" size={17} />}>
@@ -149,10 +156,10 @@ export default function AssociationEventForm({
                 value={form.category}
                 onChange={(event) => setForm((prev) => ({ ...prev, category: event.target.value }))}
               >
-                <option value="">Sans catégorie</option>
+                <option value="">🎉 Sans catégorie</option>
                 {ASSOCIATION_CATEGORIES.map((category) => (
                   <option key={category.value} value={category.value}>
-                    {category.label}
+                    {`${associationCategoryStyle(category.value).emoji} ${category.label}`}
                   </option>
                 ))}
               </Select>
@@ -230,7 +237,12 @@ export default function AssociationEventForm({
         </div>
 
         <div className="k-field">
-          <p className="k-field__label">Image</p>
+          <p className="k-field__label">
+            <span aria-hidden="true">🖼️</span> Image de l’événement
+          </p>
+          <p className="k-field__hint">
+            Une photo donne trois fois plus envie de cliquer qu’un titre seul.
+          </p>
           <ImageUploader
             bucketName="post_images"
             initialImageUrl={form.image_url || null}

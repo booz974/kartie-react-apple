@@ -173,14 +173,14 @@ export default function HomeView() {
       <section aria-label="La commune en chiffres">
         <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           {KEY_FIGURES.map((figure) => (
-            <div key={figure.label} className="k-card flex flex-col gap-2 p-4">
-              <Chip tone={figure.tone} size={38}>
+            <div key={figure.label} className="k-card flex flex-col gap-1 p-4">
+              <Chip tone={figure.tone} size={38} className="mb-1">
                 {figure.emoji}
               </Chip>
-              <div className="flex flex-col-reverse">
-                <dt className="k-caption k-ink-tertiary">{figure.label}</dt>
-                <dd className="k-title-2 tabular-nums">{figure.value}</dd>
-              </div>
+              {/* L'ordre visuel place la valeur avant son étiquette, mais le
+                  balisage garde la succession terme puis définition. */}
+              <dt className="k-caption k-ink-tertiary order-2">{figure.label}</dt>
+              <dd className="k-title-2 tabular-nums order-1">{figure.value}</dd>
             </div>
           ))}
         </dl>

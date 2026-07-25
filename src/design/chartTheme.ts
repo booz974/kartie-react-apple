@@ -1,32 +1,38 @@
 /**
  * Habillage commun des graphiques Chart.js.
  *
- * Les couleurs et les graduations sont alignées sur les tokens : un graphique
- * doit se lire comme le reste de la page, pas comme une capture importée d'un
- * autre produit. Les grilles reculent, les axes s'effacent, la donnée reste.
+ * Les couleurs viennent des tokens « Lagon » : un graphique doit se lire comme
+ * le reste de la page, pas comme une capture importée d'un autre produit. Les
+ * barres reprennent le rayon des surfaces, la grille recule, les axes
+ * s'effacent, la donnée reste.
  */
 
 export const CHART_COLORS = {
-  accent: '#0a6b76',
-  accentSoft: 'rgba(10, 107, 118, 0.12)',
-  warm: '#ad3d29',
-  warmSoft: 'rgba(173, 61, 41, 0.12)',
-  success: '#16794b',
-  ink: '#16181c',
-  inkSecondary: '#4d535b',
-  inkTertiary: '#676c75',
-  grid: 'rgba(22, 24, 28, 0.07)',
+  accent: '#0a8ba0',
+  accentSoft: 'rgba(10, 139, 160, 0.16)',
+  warm: '#e35a35',
+  warmSoft: 'rgba(227, 90, 53, 0.16)',
+  success: '#16b364',
+  ink: '#12161c',
+  inkSecondary: '#454c56',
+  inkTertiary: '#626973',
+  grid: 'rgba(18, 22, 28, 0.06)',
   surface: '#ffffff',
 } as const;
 
-/** Séquence catégorielle : au-delà de six séries, un graphique cesse de se lire. */
+/**
+ * Séquence catégorielle : les couleurs de contenu du produit, dans un ordre qui
+ * garde deux séries voisines distinguables. Au-delà de sept séries, un
+ * graphique cesse de se lire.
+ */
 export const CHART_SERIES = [
   CHART_COLORS.accent,
   CHART_COLORS.warm,
-  '#2d8e99',
-  '#9a6300',
-  CHART_COLORS.success,
-  '#63b3bb',
+  '#2e90fa', // actualité
+  '#9b5cf6', // réalisation
+  '#f08c00', // pétition
+  '#16b364', // association
+  '#06aec4', // consultation
 ] as const;
 
 const FONT_FAMILY =
@@ -54,9 +60,30 @@ export const baseChartOptions = {
       backgroundColor: CHART_COLORS.ink,
       titleFont: { family: FONT_FAMILY, size: 12, weight: 600 as const },
       bodyFont: { family: FONT_FAMILY, size: 12 },
-      padding: 10,
-      cornerRadius: 8,
+      padding: 12,
+      cornerRadius: 14,
       displayColors: false,
+    },
+  },
+  /*
+   * Les barres reprennent le rayon des surfaces : arrondies sur les quatre
+   * coins, jamais collées les unes aux autres, et jamais plus larges qu'une
+   * vignette.
+   */
+  elements: {
+    bar: {
+      borderRadius: 10,
+      borderSkipped: false as const,
+    },
+    line: {
+      tension: 0.35,
+      borderWidth: 2.5,
+    },
+    point: {
+      radius: 3,
+      hoverRadius: 6,
+      borderWidth: 2,
+      backgroundColor: CHART_COLORS.surface,
     },
   },
   scales: {

@@ -36,7 +36,7 @@ export default function SelectQuartier({ onQuartierSaved, onClose }: SelectQuart
       onClose={onClose ?? (() => {})}
       dismissible={Boolean(onClose)}
       hideCloseButton={!onClose}
-      title="Quel est votre quartier ?"
+      title="📍 Quel est votre quartier ?"
       description="Il détermine le fil, les associations et les consultations qui vous sont proposés. Vous pourrez en changer à tout moment."
       bodyClassName="pb-0"
       footer={
@@ -83,10 +83,10 @@ export default function SelectQuartier({ onQuartierSaved, onClose }: SelectQuart
               onClick={() => setSelectedId(quartier.id)}
               className="k-press flex w-full items-center gap-3 px-1 py-3 text-left"
             >
-              <span className={`k-body flex-1 ${selected ? 'font-semibold text-accent' : 'k-ink'}`}>
+              <span className={`k-body flex-1 ${selected ? 'font-semibold text-accent-ink' : 'k-ink'}`}>
                 {quartier.name}
               </span>
-              {selected ? <Icon name="check" size={18} className="text-accent" /> : null}
+              {selected ? <Icon name="check" size={18} className="text-accent-ink" /> : null}
             </button>
           );
         })}

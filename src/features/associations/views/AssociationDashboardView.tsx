@@ -15,14 +15,17 @@ import {
 } from '@/api/associations';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
+import Chip from '@/components/ui/Chip';
 import { useConfirm } from '@/components/ui/Confirm';
 import EmptyState from '@/components/ui/EmptyState';
 import Icon from '@/components/ui/Icon';
+import Media from '@/components/ui/Media';
 import Notice from '@/components/ui/Notice';
 import { Page, PageHeader } from '@/components/ui/Page';
 import Segmented from '@/components/ui/Segmented';
 import Skeleton, { SkeletonText } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
+import { associationCategoryStyle } from '@/features/associations/components/AssociationCard';
 import AssociationEventCard from '@/features/associations/components/AssociationEventCard';
 import AssociationEventForm, {
   type AssociationEventFormPayload,
@@ -45,17 +48,19 @@ import type {
 
 type DashboardTab = 'profile' | 'posts' | 'events';
 
-const tabs = [
-  { value: 'profile' as const, label: 'Fiche', icon: 'document' as const },
-  { value: 'posts' as const, label: 'Posts', icon: 'megaphone' as const },
-  { value: 'events' as const, label: 'Événements', icon: 'calendar' as const },
-];
-
 const POST_STATUS_TONES: Record<string, 'neutral' | 'success' | 'warning' | 'danger'> = {
   draft: 'warning',
   published: 'success',
   archived: 'neutral',
   removed: 'danger',
+};
+
+/** Pastille d'état d'une publication : un brouillon ne se lit pas comme un publié. */
+const POST_STATUS_EMOJI: Record<string, string> = {
+  draft: '📝',
+  published: '✅',
+  archived: '📦',
+  removed: '🚫',
 };
 
 function postStatusLabel(status: string): string {
@@ -326,13 +331,40 @@ export default function AssociationDashboardView() {
   }
 
   const quartierId = association.quartier_id as number | null | undefined;
+  const followers = association.followers_count || 0;
+  const style = associationCategoryStyle(
+    association.category as string | null | undefined,
+    association.category_label,
+  );
+  const tabOptions = [
+    { value: 'profile' as const, label: 'Fiche', icon: 'document' as const },
+    { value: 'posts' as const, label: 'Posts', icon: 'megaphone' as const, count: posts.length },
+    {
+      value: 'events' as const,
+      label: 'Événements',
+      icon: 'calendar' as const,
+      count: events.length,
+    },
+  ];
 
   return (
     <Page className="pt-6 md:pt-10">
       <PageHeader
         back={{ to: `/associations/${association.id}`, label: 'Retour à la page publique' }}
-        eyebrow="Espace de gestion"
-        title={association.name}
+        eyebrow={
+          <span className="inline-flex items-center gap-2">
+            <span aria-hidden="true">🛠️</span>
+            Espace de gestion
+          </span>
+        }
+        title={
+          <span className="inline-flex flex-wrap items-center gap-3">
+            <Chip tone={style.tone} size={44}>
+              {style.emoji}
+            </Chip>
+            {association.name}
+          </span>
+        }
         description="Gérez la fiche, les publications et les événements de votre association sans quitter Kartie."
         meta={
           <>
@@ -341,8 +373,23 @@ export default function AssociationDashboardView() {
                 {association.status_label}
               </Badge>
             ) : null}
-            <Badge icon="users">{association.followers_count || 0} abonné{(association.followers_count || 0) > 1 ? 's' : ''}</Badge>
-            {membership?.role ? <Badge icon="user">Rôle : {membership.role}</Badge> : null}
+            <Badge tone="asso" emoji="👥">
+              <span className="tabular-nums">{followers}</span>&nbsp;abonné
+              {followers > 1 ? 's' : ''}
+            </Badge>
+            {membership?.role ? (
+              <Badge tone="accent" emoji="🎫">
+                Rôle : {membership.role}
+              </Badge>
+            ) : null}
+            <Badge tone="event" emoji="📣">
+              <span className="tabular-nums">{posts.length}</span>&nbsp;post
+              {posts.length > 1 ? 's' : ''}
+            </Badge>
+            <Badge tone="petition" emoji="🎉">
+              <span className="tabular-nums">{events.length}</span>&nbsp;événement
+              {events.length > 1 ? 's' : ''}
+            </Badge>
           </>
         }
       />
@@ -351,7 +398,7 @@ export default function AssociationDashboardView() {
         label="Sections du tableau de bord"
         value={activeTab}
         onChange={setActiveTab}
-        options={tabs}
+        options={tabOptions}
         className="mb-8"
       />
 
@@ -377,9 +424,14 @@ export default function AssociationDashboardView() {
           />
 
           <section>
-            <div className="mb-4 flex items-end justify-between gap-3">
-              <h2 className="k-title-3">Publications</h2>
-              <span className="k-footnote k-ink-tertiary tabular-nums">{posts.length}</span>
+            <div className="mb-4 flex items-center gap-3">
+              <Chip tone="event" size={38}>
+                📣
+              </Chip>
+              <h2 className="k-title-3 flex-1">Publications</h2>
+              <Badge tone="event">
+                <span className="tabular-nums">{posts.length}</span>
+              </Badge>
             </div>
 
             {posts.length === 0 ? (
@@ -389,52 +441,75 @@ export default function AssociationDashboardView() {
                 description="Rédigez votre première publication : elle apparaîtra sur la page de l’association et dans le fil du quartier."
               />
             ) : (
-              <div className="k-list">
+              <div className="flex flex-col gap-3">
                 {posts.map((post) => {
                   const isEditing = editingPost?.id === post.id;
                   return (
-                    <article key={post.id} className="py-5 first:pt-0">
-                      <div className="flex flex-wrap items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          {post.title ? (
-                            <h3 className="k-callout font-semibold">{post.title}</h3>
-                          ) : null}
-                          <div className="mt-1 flex flex-wrap items-center gap-1.5">
-                            <Badge tone={POST_STATUS_TONES[post.status] ?? 'neutral'}>
-                              {postStatusLabel(post.status)}
-                            </Badge>
-                            {isEditing ? (
-                              <Badge tone="accent" icon="pencil">
-                                En cours d’édition
-                              </Badge>
+                    <article
+                      key={post.id}
+                      className={[
+                        'k-card flex gap-4 p-4',
+                        isEditing ? 'border-accent shadow-md' : '',
+                      ]
+                        .filter(Boolean)
+                        .join(' ')}
+                    >
+                      <Media
+                        src={post.image_url}
+                        category="news"
+                        emoji={POST_STATUS_EMOJI[post.status] ?? '📣'}
+                        ratio="1 / 1"
+                        veil={false}
+                        rounded="var(--k-radius-md)"
+                        className="w-16 shrink-0"
+                      />
+
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="min-w-0 flex-1">
+                            {post.title ? (
+                              <h3 className="k-callout font-semibold">{post.title}</h3>
                             ) : null}
+                            <div className="mt-1 flex flex-wrap items-center gap-1.5">
+                              <Badge
+                                tone={POST_STATUS_TONES[post.status] ?? 'neutral'}
+                                emoji={POST_STATUS_EMOJI[post.status]}
+                              >
+                                {postStatusLabel(post.status)}
+                              </Badge>
+                              {isEditing ? (
+                                <Badge tone="accent" icon="pencil">
+                                  En cours d’édition
+                                </Badge>
+                              ) : null}
+                            </div>
+                          </div>
+
+                          <div className="flex shrink-0 items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => setEditingPost(post)}
+                              leading={<Icon name="pencil" size={15} />}
+                            >
+                              Modifier
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="danger-tinted"
+                              loading={removingPostId === post.id}
+                              onClick={() => void handleRemovePost(post)}
+                              leading={<Icon name="trash" size={15} />}
+                            >
+                              Retirer
+                            </Button>
                           </div>
                         </div>
 
-                        <div className="flex shrink-0 items-center gap-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => setEditingPost(post)}
-                            leading={<Icon name="pencil" size={15} />}
-                          >
-                            Modifier
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="danger-tinted"
-                            loading={removingPostId === post.id}
-                            onClick={() => void handleRemovePost(post)}
-                            leading={<Icon name="trash" size={15} />}
-                          >
-                            Retirer
-                          </Button>
-                        </div>
+                        <p className="k-subhead k-ink-secondary mt-2 line-clamp-3 whitespace-pre-line">
+                          {String(post.content || '')}
+                        </p>
                       </div>
-
-                      <p className="k-subhead k-ink-secondary mt-2 line-clamp-3 whitespace-pre-line">
-                        {String(post.content || '')}
-                      </p>
                     </article>
                   );
                 })}
@@ -456,9 +531,14 @@ export default function AssociationDashboardView() {
           />
 
           <section>
-            <div className="mb-4 flex items-end justify-between gap-3">
-              <h2 className="k-title-3">Événements</h2>
-              <span className="k-footnote k-ink-tertiary tabular-nums">{events.length}</span>
+            <div className="mb-4 flex items-center gap-3">
+              <Chip tone="petition" size={38}>
+                🎉
+              </Chip>
+              <h2 className="k-title-3 flex-1">Événements</h2>
+              <Badge tone="petition">
+                <span className="tabular-nums">{events.length}</span>
+              </Badge>
             </div>
 
             {editingEvent ? (
@@ -509,7 +589,10 @@ export default function AssociationDashboardView() {
       ) : null}
 
       {quartierId != null ? (
-        <p className="k-footnote k-ink-tertiary k-hairline-top mt-14 pt-6">
+        <p className="k-footnote k-ink-secondary k-card mt-14 flex items-center gap-3 p-4">
+          <span aria-hidden="true" className="text-xl leading-none">
+            🏘️
+          </span>
           Les contenus publiés ici alimentent aussi le fil du quartier.
         </p>
       ) : null}

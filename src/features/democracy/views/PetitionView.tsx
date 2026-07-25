@@ -2,30 +2,21 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import Button from '@/components/ui/Button';
 import Badge from '@/components/ui/Badge';
-import EmptyState from '@/components/ui/EmptyState';
-import Icon, { type IconName } from '@/components/ui/Icon';
+import Chip from '@/components/ui/Chip';
+import Icon from '@/components/ui/Icon';
+import Media from '@/components/ui/Media';
 import Notice from '@/components/ui/Notice';
 import { Page } from '@/components/ui/Page';
 import Skeleton, { SkeletonText } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
 import { supportPetition } from '@/api/democracy';
+import { petitionThemeEmoji } from '@/design/categories';
 import {
   usePetition,
   usePetitionSupportStatus,
 } from '@/queries/democracy';
 import { useAuthStore } from '@/stores/authStore';
 import { useUiStore } from '@/stores/uiStore';
-
-function getThemeIcon(theme: string | null | undefined): IconName {
-  if (!theme) return 'tag';
-  const lower = theme.toLowerCase();
-  if (lower.includes('transport')) return 'road';
-  if (lower.includes('sécurité')) return 'shield';
-  if (lower.includes('environnement')) return 'leaf';
-  if (lower.includes('logement')) return 'building';
-  if (lower.includes('emploi')) return 'briefcase';
-  return 'tag';
-}
 
 function BackButton({ onClick }: { onClick: () => void }) {
   return (
@@ -108,8 +99,9 @@ export default function PetitionView() {
     return (
       <Page className="k-page--reading pt-6">
         <div className="flex flex-col gap-4" aria-busy="true">
-          <Skeleton width="6rem" height="1.25rem" radius="var(--k-radius-xs)" />
-          <Skeleton height="2.25rem" className="mt-1" />
+          <Skeleton height="16rem" radius="var(--k-radius-xl)" />
+          <Skeleton width="6rem" height="1.5rem" radius="var(--k-radius-full)" className="mt-2" />
+          <Skeleton height="2.25rem" />
           <Skeleton width="65%" height="2.25rem" />
           <SkeletonText lines={3} className="mt-3" />
           <Skeleton height="3.25rem" radius="var(--k-radius-lg)" className="mt-6" />
@@ -138,49 +130,78 @@ export default function PetitionView() {
     return (
       <Page className="k-page--reading pt-6">
         <h1 className="k-visually-hidden">Pétition introuvable</h1>
-        <EmptyState
-          icon="petition"
-          title="Cette pétition est introuvable"
-          description="Elle a peut-être été retirée, ou l'adresse est incorrecte."
-          action={
+        <div className="k-empty">
+          <Chip tone="petition" size={72}>
+            ✍️
+          </Chip>
+          <p className="k-title-3">Cette pétition n&apos;existe plus</p>
+          <p className="k-subhead k-ink-secondary k-measure">
+            Elle a peut-être été retirée, ou l&apos;adresse est incorrecte. D&apos;autres demandes
+            attendent votre soutien.
+          </p>
+          <div className="mt-2">
             <Button variant="primary" onClick={() => navigate('/')}>
+              <span aria-hidden="true">🏠</span>
               Retour à l&apos;accueil
             </Button>
-          }
-        />
+          </div>
+        </div>
       </Page>
     );
   }
+
+  const imageUrl =
+    ((petition as { image?: string }).image || (petition as { image_url?: string }).image_url) ?? '';
+  const emoji = petitionThemeEmoji(petition.theme);
 
   return (
     <Page className="k-page--reading pt-6">
       <BackButton onClick={goBack} />
 
       <article>
+        {/* La demande s'ouvre sur son sujet : une photo du lieu, ou le dégradé
+            ambré des pétitions et l'émoji de son thème. */}
+        <Media
+          src={imageUrl}
+          category="petition"
+          emoji={emoji}
+          ratio={imageUrl ? '16 / 9' : '21 / 9'}
+          rounded="var(--k-radius-xl)"
+          loading="eager"
+          className="shadow-lg"
+        />
+
         {petition.theme ? (
-          <Badge icon={getThemeIcon(petition.theme)} className="mb-3">
+          <Badge tone="petition" emoji={emoji} size="lg" className="mt-6">
             {petition.theme}
           </Badge>
         ) : null}
 
-        <h1 className="k-title-large text-balance">{petition.title}</h1>
+        <h1 className="k-title-large mt-3 text-balance">{petition.title}</h1>
 
         <p className="k-callout k-ink-secondary k-measure mt-4">{petition.summary as string}</p>
 
-        <section className="k-hairline-top mt-8 pt-6">
-          <h2 className="k-eyebrow mb-2">Source et contexte</h2>
+        <section className="mt-8">
+          <h2 className="k-title-3 mb-2">
+            <span aria-hidden="true">📌 </span>D&apos;où vient cette demande
+          </h2>
           <p className="k-subhead k-ink-secondary k-measure">{petition.source as string}</p>
         </section>
 
         {/* Le soutien est le moment de participation de la page : c'est le seul
             bloc qui se détache, et le seul qui porte l'accent chaud. */}
-        <section className="k-hairline-top mt-8 pt-6">
+        <section className="k-card mt-8 p-6">
           <h2 className="k-visually-hidden">Soutenir</h2>
 
-          <p className="flex items-baseline gap-2">
-            <span className="k-title-1 tabular-nums text-warm">{localSupports}</span>
-            <span className="k-subhead k-ink-secondary">
-              {localSupports > 1 ? 'personnes ont signé' : 'personne a signé'}
+          <p className="flex items-center gap-3">
+            <Chip tone="warm" size={48}>
+              ✍️
+            </Chip>
+            <span className="flex flex-col">
+              <span className="k-title-1 tabular-nums text-warm">{localSupports}</span>
+              <span className="k-subhead k-ink-secondary">
+                {localSupports > 1 ? 'personnes ont signé' : 'personne a signé'}
+              </span>
             </span>
           </p>
 
@@ -188,7 +209,7 @@ export default function PetitionView() {
             variant={isSupported ? 'secondary' : 'warm'}
             size="lg"
             block
-            className="mt-4 md:w-auto"
+            className="mt-5 md:w-auto"
             // Sans compte, le bouton ouvre la connexion au lieu d'être grisé :
             // un bouton désactivé qui dit « connectez-vous » est une impasse.
             onClick={session ? () => void handleSupport() : openAuthModal}

@@ -5,10 +5,15 @@ import {
   slugifyAssociationName,
 } from '@/api/associations';
 import Button from '@/components/ui/Button';
+import Chip from '@/components/ui/Chip';
 import Field, { Checkbox, Input, Select, Textarea } from '@/components/ui/Field';
 import Icon from '@/components/ui/Icon';
 import ImageUploader from '@/components/ui/ImageUploader';
+import type { CategoryKey } from '@/design/categories';
 import type { Association } from '@/lib/types/contract';
+import { associationCategoryStyle } from './AssociationCard';
+
+type ChipTone = CategoryKey | 'accent' | 'warm';
 
 export interface AssociationFormPayload {
   name: string;
@@ -90,14 +95,19 @@ function parseMultiline(value: string): string[] {
 
 /**
  * Bloc de champs. Un filet sépare les groupes plutôt qu'une carte par groupe :
- * la lecture reste continue et la page ne se fragmente pas.
+ * la lecture reste continue et la page ne se fragmente pas. La pastille colorée
+ * donne au formulaire son rythme et fait repérer un groupe au premier regard.
  */
 function Group({
   title,
+  emoji,
+  tone,
   divider = true,
   children,
 }: {
   title: string;
+  emoji: string;
+  tone: ChipTone;
   divider?: boolean;
   children: ReactNode;
 }) {
@@ -105,7 +115,12 @@ function Group({
     <section
       className={['flex flex-col gap-5', divider ? 'k-hairline-top pt-7' : ''].join(' ').trim()}
     >
-      <h3 className="k-eyebrow">{title}</h3>
+      <div className="flex items-center gap-3">
+        <Chip tone={tone} size={32}>
+          {emoji}
+        </Chip>
+        <h3 className="k-title-3">{title}</h3>
+      </div>
       {children}
     </section>
   );
@@ -177,13 +192,20 @@ export default function AssociationForm({
   }
 
   return (
-    <section className={['flex flex-col gap-6', className].filter(Boolean).join(' ')}>
+    <section
+      className={['k-card flex flex-col gap-6 p-5 md:p-7', className].filter(Boolean).join(' ')}
+    >
       <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <h2 className="k-title-2 text-balance">{submitLabel}</h2>
-          <p className="k-subhead k-ink-secondary k-measure mt-1.5">
-            Créez ou mettez à jour la fiche publique de l’association.
-          </p>
+        <div className="flex min-w-0 items-center gap-3">
+          <Chip tone="asso" size={46}>
+            🤝
+          </Chip>
+          <div className="min-w-0">
+            <h2 className="k-title-2 text-balance">{submitLabel}</h2>
+            <p className="k-subhead k-ink-secondary k-measure mt-1.5">
+              Créez ou mettez à jour la fiche publique de l’association.
+            </p>
+          </div>
         </div>
         {showCancel ? (
           <Button variant="ghost" onClick={onCancel} leading={<Icon name="close" size={17} />}>
@@ -193,7 +215,7 @@ export default function AssociationForm({
       </div>
 
       <form className="flex flex-col gap-7" onSubmit={handleSubmit}>
-        <Group title="Identité" divider={false}>
+        <Group title="Identité" emoji="🪪" tone="quartier" divider={false}>
           <div className="grid gap-5 md:grid-cols-2">
             <Field label="Nom">
               {(props) => (
@@ -227,7 +249,7 @@ export default function AssociationForm({
               >
                 {ASSOCIATION_CATEGORIES.map((category) => (
                   <option key={category.value} value={category.value}>
-                    {category.label}
+                    {`${associationCategoryStyle(category.value).emoji} ${category.label}`}
                   </option>
                 ))}
               </Select>
@@ -235,7 +257,7 @@ export default function AssociationForm({
           </Field>
         </Group>
 
-        <Group title="Présentation">
+        <Group title="Présentation" emoji="📖" tone="news">
           <Field
             label="Description courte"
             hint="Minimum 10 caractères. C’est le texte affiché dans les listes."
@@ -306,7 +328,7 @@ export default function AssociationForm({
           </div>
         </Group>
 
-        <Group title="Contact">
+        <Group title="Contact" emoji="✉️" tone="consult">
           <div className="grid gap-5 md:grid-cols-2">
             <Field label="Email de contact" optional>
               {(props) => (
@@ -356,7 +378,7 @@ export default function AssociationForm({
           </div>
         </Group>
 
-        <Group title="Images">
+        <Group title="Images" emoji="🖼️" tone="project">
           <div className="grid gap-5 md:grid-cols-2">
             <div className="k-field">
               <p className="k-field__label">Logo</p>
@@ -378,7 +400,7 @@ export default function AssociationForm({
         </Group>
 
         {allowModerationFields ? (
-          <Group title="Modération">
+          <Group title="Modération" emoji="🛡️" tone="warm">
             <div className="grid items-end gap-5 md:grid-cols-2">
               <Field label="Statut">
                 {(props) => (

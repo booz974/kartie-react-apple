@@ -1,6 +1,5 @@
 import { useEffect, useState, type HTMLAttributes, type ReactNode } from 'react';
 import { sanitizeStorageUrl } from '@/utils/imageUtils';
-import Icon from './Icon';
 
 interface SafeImageProps extends HTMLAttributes<HTMLImageElement | HTMLDivElement> {
   src?: string | null;
@@ -34,15 +33,20 @@ export default function SafeImage({
     );
   }
 
-  // Repli neutre : il occupe exactement la place de l'image, sans attirer l'œil
-  // ni faire sauter la mise en page au moment du remplacement.
+  // Repli vivant : il occupe exactement la place de l'image, sans faire sauter
+  // la mise en page, mais il porte la couleur du produit plutôt qu'un aplat gris.
   return (
     <div
-      className={`flex items-center justify-center overflow-hidden bg-surface-secondary text-ink-quaternary ${className ?? ''}`}
+      className={`flex items-center justify-center overflow-hidden text-2xl leading-none ${className ?? ''}`}
+      style={{ backgroundImage: 'var(--k-accent-gradient)' }}
       title={alt}
       {...rest}
     >
-      {fallback ?? <Icon name="image" size={24} />}
+      {fallback ?? (
+        <span aria-hidden="true" className="drop-shadow">
+          🖼️
+        </span>
+      )}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { ASSOCIATION_POST_STATUS_OPTIONS } from '@/api/associations';
 import Button from '@/components/ui/Button';
+import Chip from '@/components/ui/Chip';
 import Field, { Input, Select, Textarea } from '@/components/ui/Field';
 import Icon from '@/components/ui/Icon';
 import ImageUploader from '@/components/ui/ImageUploader';
@@ -64,13 +65,18 @@ export default function AssociationPostComposer({
   }
 
   return (
-    <section className="flex flex-col gap-6">
+    <section className="k-card flex flex-col gap-6 p-5 md:p-6">
       <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <h2 className="k-title-3 text-balance">{submitLabel}</h2>
-          <p className="k-subhead k-ink-secondary k-measure mt-1.5">
-            Créez une publication native au quartier, visible aussi sur la page de l’association.
-          </p>
+        <div className="flex min-w-0 items-center gap-3">
+          <Chip tone="news" size={44}>
+            📣
+          </Chip>
+          <div className="min-w-0">
+            <h2 className="k-title-3 text-balance">{submitLabel}</h2>
+            <p className="k-subhead k-ink-secondary k-measure mt-1.5">
+              Créez une publication native au quartier, visible aussi sur la page de l’association.
+            </p>
+          </div>
         </div>
         {showCancel ? (
           <Button variant="ghost" onClick={onCancel} leading={<Icon name="close" size={17} />}>
@@ -119,7 +125,10 @@ export default function AssociationPostComposer({
         </Field>
 
         <div className="k-field">
-          <p className="k-field__label">Image</p>
+          <p className="k-field__label">
+            <span aria-hidden="true">🖼️</span> Image
+          </p>
+          <p className="k-field__hint">Elle illustre le post dans le fil du quartier.</p>
           <ImageUploader
             bucketName="post_images"
             initialImageUrl={form.image_url || null}

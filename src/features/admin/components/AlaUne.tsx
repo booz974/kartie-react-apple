@@ -3,11 +3,13 @@ import type { Session } from '@supabase/supabase-js';
 import { checkUserAlaUneVote } from '@/api/alaUne';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
+import Chip from '@/components/ui/Chip';
 import Icon from '@/components/ui/Icon';
+import Media from '@/components/ui/Media';
 import Progress from '@/components/ui/Progress';
-import SafeImage from '@/components/ui/SafeImage';
-import { surfaceClass } from '@/components/ui/Surface';
 import { useToast } from '@/components/ui/Toast';
+import { sanitizeStorageUrl } from '@/utils/imageUtils';
+import type { CategoryKey } from '@/design/categories';
 import type { AlaUneContent, AlaUneVM } from '@/lib/types/contract';
 
 interface AlaUneSondageOption {
@@ -25,6 +27,23 @@ interface AlaUneProps {
   onViewEvent?: (event: AlaUneContent & { date?: string | null }) => void;
   onManage?: () => void;
 }
+
+/**
+ * Repères des options d'un sondage. Un chiffre coloré se vise plus vite qu'une
+ * puce grise, et il rend le bandeau lisible d'un coup d'œil.
+ */
+const OPTION_MARKERS = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣'];
+
+/** Teintes des barres de résultat : trois séries suffisent à distinguer. */
+const RESULT_TONES = ['accent', 'warm', 'success'] as const;
+
+/** Couleur et émoji tournants des flashs info, pour que la liste reste vivante. */
+const FLASH_TONES: { tone: CategoryKey; emoji: string }[] = [
+  { tone: 'petition', emoji: '📣' },
+  { tone: 'news', emoji: '⚡' },
+  { tone: 'asso', emoji: '📌' },
+  { tone: 'quartier', emoji: '🔔' },
+];
 
 export default function AlaUne({
   data,
@@ -68,6 +87,14 @@ export default function AlaUne({
     return options.reduce((sum, option) => sum + (option.vote_count || 0), 0) || 1;
   }, [data.sondage?.consultation_options]);
 
+  // Total réel, uniquement pour l'affichage : `totalVotes` ne peut pas descendre
+  // sous 1 puisqu'il sert de diviseur.
+  const castVotes = useMemo(() => {
+    const options = data.sondage?.consultation_options as AlaUneSondageOption[] | undefined;
+    if (!options) return 0;
+    return options.reduce((sum, option) => sum + (option.vote_count || 0), 0);
+  }, [data.sondage?.consultation_options]);
+
   function voteForOption(_option: AlaUneSondageOption, index: number) {
     if (!session?.user) {
       toast.warning('Connexion requise', 'Créez un compte ou connectez-vous pour voter.');
@@ -93,9 +120,14 @@ export default function AlaUne({
     if (data.event) onViewEvent?.(data.event);
   }
 
-  const articleImageUrl =
+  const articleImageUrl = sanitizeStorageUrl(
     (data.article as (AlaUneContent & { image_url?: string | null }) | undefined)?.image_url ??
-    null;
+      null,
+  );
+
+  const eventImageUrl = sanitizeStorageUrl(
+    (data.event as (AlaUneContent & { image_url?: string | null }) | undefined)?.image_url ?? null,
+  );
 
   const eventLocation =
     (data.event as (AlaUneContent & { location?: string | null }) | undefined)?.location ?? '';
@@ -104,130 +136,196 @@ export default function AlaUne({
   const eventDate = data.event?.date ? new Date(data.event.date) : null;
 
   return (
-    <div className="grid gap-8 lg:grid-cols-3">
-      <div className="flex flex-col gap-8 lg:col-span-2">
+    <div className="grid gap-6 lg:grid-cols-3">
+      <div className="flex flex-col gap-6 lg:col-span-2">
         {data.article ? (
           // Toute la mise en avant est une seule cible : un titre et une image
           // qui pointent vers le même endroit ne se cliquent pas séparément.
           <button
             type="button"
             onClick={viewArticle}
-            className="k-press k-press-subtle block w-full text-left"
+            className="k-card k-card--interactive group overflow-hidden p-0 text-left"
           >
-            <div className="relative">
-              <SafeImage
-                src={articleImageUrl}
-                alt={data.article.title ?? "Image de l'article"}
-                className="h-64 w-full rounded-lg object-cover"
-              />
-              <Badge tone="warm" className="absolute left-3 top-3">
-                Actualité
-              </Badge>
+            <Media
+              src={articleImageUrl}
+              category="news"
+              ratio="16 / 9"
+              overlay={
+                <>
+                  <Badge tone="news" emoji="📰" size="lg" onMedia>
+                    Actualité
+                  </Badge>
+                  <h3 className="k-title-1 k-vibrant mt-3 text-balance drop-shadow-lg">
+                    {data.article.title}
+                  </h3>
+                </>
+              }
+            />
+            <div className="p-5 md:p-6">
+              <p className="k-body k-ink-secondary k-measure line-clamp-3">
+                {data.article.description}
+              </p>
+              <span className="k-callout mt-4 inline-flex items-center gap-1.5 font-semibold text-accent-ink">
+                Lire la suite
+                <Icon
+                  name="arrowRight"
+                  size={18}
+                  className="transition-transform duration-200 group-hover:translate-x-1"
+                />
+              </span>
             </div>
-            <h3 className="k-title-2 mt-4 text-balance">{data.article.title}</h3>
-            <p className="k-body k-ink-secondary k-measure mt-2 line-clamp-3">
-              {data.article.description}
-            </p>
-            <span className="k-subhead mt-3 inline-flex items-center gap-1 font-semibold text-accent">
-              Lire la suite
-              <Icon name="arrowRight" size={16} />
-            </span>
           </button>
         ) : (
-          <p className="k-subhead k-ink-tertiary py-8 text-center">
-            Aucune actualité à la une pour le moment.
-          </p>
+          <div className="k-card k-empty">
+            <span className="text-5xl leading-none" aria-hidden="true">
+              📰
+            </span>
+            <p className="k-title-3">Aucune actualité à la une</p>
+            <p className="k-subhead k-ink-secondary k-measure">
+              La prochaine actualité mise en avant s&apos;affichera ici.
+            </p>
+          </div>
         )}
 
         {data.flashInfos && data.flashInfos.length > 0 ? (
-          <div className={surfaceClass({ variant: 'sunken', className: 'p-5' })}>
-            <h3 className="k-eyebrow mb-3 flex items-center gap-2">
-              <Icon name="megaphone" size={14} />
-              Flash infos
-            </h3>
-            <ul className="k-list">
-              {data.flashInfos.map((info) => (
-                <li key={info.id} className="k-subhead flex items-start gap-2.5 py-2.5">
-                  <Icon name="dot" size={9} className="mt-1.5 shrink-0 text-accent" />
-                  <span>{info.content}</span>
-                </li>
-              ))}
+          <div className="k-card overflow-hidden p-0">
+            <div className="k-banner--warm flex items-center gap-2.5 px-5 py-3.5">
+              <span aria-hidden="true" className="text-xl leading-none">
+                ⚡
+              </span>
+              <h3 className="k-callout k-vibrant font-semibold">Flash infos</h3>
+              <Badge tone="warm" onMedia className="ml-auto tabular-nums">
+                {data.flashInfos.length}
+              </Badge>
+            </div>
+            <ul className="k-list p-3">
+              {data.flashInfos.map((info, index) => {
+                const flash = FLASH_TONES[index % FLASH_TONES.length];
+                return (
+                  <li key={info.id} className="flex items-start gap-3 p-2.5">
+                    <Chip tone={flash.tone} size={34}>
+                      {flash.emoji}
+                    </Chip>
+                    <span className="k-subhead k-ink pt-1.5">{info.content}</span>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         ) : null}
       </div>
 
-      <div className="flex flex-col gap-8">
+      <div className="flex flex-col gap-6">
         {data.event ? (
-          <div className={surfaceClass({ className: 'p-5' })}>
-            <div className="flex items-start gap-4">
-              {eventDate ? (
-                <div className="flex w-14 shrink-0 flex-col items-center rounded-md bg-accent-soft py-2 text-accent">
-                  <span className="k-title-3 tabular-nums">{eventDate.getDate()}</span>
-                  <span className="k-caption-2 uppercase">
-                    {eventDate.toLocaleString('fr-FR', { month: 'short' })}
-                  </span>
+          <button
+            type="button"
+            onClick={viewEvent}
+            className="k-card k-card--interactive group overflow-hidden p-0 text-left"
+          >
+            <Media
+              src={eventImageUrl}
+              category="event"
+              ratio="4 / 3"
+              overlay={
+                <div className="flex items-end gap-3">
+                  {eventDate ? (
+                    <span className="k-glass-thick flex w-14 shrink-0 flex-col items-center rounded-md py-1.5 text-cat-event-ink">
+                      <span className="k-title-3 tabular-nums">{eventDate.getDate()}</span>
+                      <span className="k-caption-2 uppercase">
+                        {eventDate.toLocaleString('fr-FR', { month: 'short' })}
+                      </span>
+                    </span>
+                  ) : null}
+                  <Badge tone="event" emoji="🎉" onMedia>
+                    Événement
+                  </Badge>
                 </div>
+              }
+            />
+            <div className="p-5">
+              <h3 className="k-title-3 text-balance">{data.event.title}</h3>
+              {eventLocation ? (
+                <p className="k-footnote k-ink-secondary mt-2 flex items-center gap-1.5">
+                  <Icon name="mapPin" size={15} className="shrink-0 text-cat-event" />
+                  {eventLocation}
+                </p>
               ) : null}
-              <div className="min-w-0">
-                <h3 className="k-callout font-semibold text-balance">{data.event.title}</h3>
-                {eventLocation ? (
-                  <p className="k-footnote k-ink-secondary mt-1 flex items-center gap-1.5">
-                    <Icon name="mapPin" size={14} className="shrink-0" />
-                    {eventLocation}
-                  </p>
-                ) : null}
-              </div>
+              <span className="k-subhead mt-4 inline-flex items-center gap-1.5 font-semibold text-accent-ink">
+                Voir les détails
+                <Icon
+                  name="arrowRight"
+                  size={16}
+                  className="transition-transform duration-200 group-hover:translate-x-1"
+                />
+              </span>
             </div>
-            <Button variant="secondary" block onClick={viewEvent} className="mt-4">
-              Voir les détails
-            </Button>
-          </div>
+          </button>
         ) : null}
 
         {data.sondage ? (
-          <div className={surfaceClass({ className: 'p-5' })}>
-            <Badge tone="accent" className="mb-3">
-              Sondage
-            </Badge>
-            <h3 className="k-callout font-semibold text-balance">{data.sondage.question}</h3>
+          <div className="k-card overflow-hidden p-0">
+            <div className="k-banner--consult px-5 py-4">
+              <div className="flex items-center gap-2">
+                <span aria-hidden="true" className="text-xl leading-none">
+                  🗳️
+                </span>
+                <p className="k-caption k-vibrant uppercase tracking-wider">Sondage express</p>
+              </div>
+              <h3 className="k-callout k-vibrant mt-2 text-balance font-semibold">
+                {data.sondage.question}
+              </h3>
+              {castVotes > 0 ? (
+                <p className="k-footnote mt-1.5 text-white/85 tabular-nums">
+                  {castVotes} vote{castVotes > 1 ? 's' : ''} déjà exprimé
+                  {castVotes > 1 ? 's' : ''}
+                </p>
+              ) : (
+                <p className="k-footnote mt-1.5 text-white/85">Soyez le premier à répondre.</p>
+              )}
+            </div>
 
             {hasVoted ? (
-              <div className="mt-4 flex flex-col gap-3">
-                {sondageOptions.map((option) => {
+              <div className="flex flex-col gap-4 p-5">
+                {sondageOptions.map((option, index) => {
                   const percentage = Math.round(((option.vote_count ?? 0) / totalVotes) * 100);
                   return (
                     <div key={option.id ?? option.option_text}>
                       <div className="mb-1.5 flex items-baseline justify-between gap-3">
-                        <span className="k-subhead">{option.option_text}</span>
-                        <span className="k-footnote k-ink-secondary tabular-nums">
+                        <span className="k-subhead font-medium">{option.option_text}</span>
+                        <span className="k-footnote font-semibold text-cat-consult-ink tabular-nums">
                           {percentage}%
                         </span>
                       </div>
                       <Progress
                         value={percentage}
+                        tone={RESULT_TONES[index % RESULT_TONES.length]}
                         label={`${option.option_text ?? 'Option'} : ${percentage}%`}
                       />
                     </div>
                   );
                 })}
-                <p className="k-footnote k-ink-tertiary mt-1 flex items-center gap-1.5">
-                  <Icon name="checkCircle" size={15} className="text-success" />
+                <p className="k-footnote k-ink-secondary flex items-center gap-2">
+                  <span aria-hidden="true">✅</span>
                   Merci d&apos;avoir voté.
                 </p>
               </div>
             ) : (
-              <div className="mt-4 flex flex-col gap-2">
+              <div className="flex flex-col gap-2.5 p-4">
                 {sondageOptions.map((option, index) => (
-                  <Button
+                  <button
                     key={option.id ?? index}
-                    variant="secondary"
-                    block
+                    type="button"
                     onClick={() => voteForOption(option, index)}
-                    className="justify-start text-left"
+                    className="k-card k-card--flat k-card--interactive flex items-center gap-3 p-3 text-left"
                   >
-                    {option.option_text}
-                  </Button>
+                    <Chip tone="consult" size={34}>
+                      {OPTION_MARKERS[index % OPTION_MARKERS.length]}
+                    </Chip>
+                    <span className="k-subhead min-w-0 flex-1 font-semibold">
+                      {option.option_text}
+                    </span>
+                    <Icon name="chevronRight" size={18} className="k-ink-quaternary shrink-0" />
+                  </button>
                 ))}
               </div>
             )}
@@ -238,7 +336,7 @@ export default function AlaUne({
       {isAdmin ? (
         <div className="lg:col-span-3">
           <Button
-            variant="ghost"
+            variant="tinted"
             size="sm"
             onClick={onManage}
             leading={<Icon name="settings" size={16} />}

@@ -329,7 +329,7 @@ hr {
 .k-ink { color: var(--k-ink); }
 .k-ink-secondary { color: var(--k-ink-secondary); }
 .k-ink-tertiary { color: var(--k-ink-tertiary); }
-.k-ink-accent { color: var(--k-accent); }
+.k-ink-accent { color: var(--k-accent-ink); }
 
 /* Largeur de lecture confortable pour le texte long. */
 .k-measure {

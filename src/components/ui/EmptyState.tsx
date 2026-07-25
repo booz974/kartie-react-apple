@@ -3,6 +3,8 @@ import Icon, { type IconName } from './Icon';
 
 type EmptyStateProps = {
   icon?: IconName;
+  /** Préféré à l'icône : un émoji rend l'écran vide accueillant plutôt que sec. */
+  emoji?: string;
   title: string;
   /** Dit quoi faire ensuite. Un état vide sans issue est une impasse. */
   description?: ReactNode;
@@ -12,6 +14,7 @@ type EmptyStateProps = {
 
 export default function EmptyState({
   icon = 'sparkles',
+  emoji,
   title,
   description,
   action,
@@ -20,7 +23,13 @@ export default function EmptyState({
   return (
     <div className={['k-empty', className].filter(Boolean).join(' ')}>
       <span className="k-empty__icon">
-        <Icon name={icon} size={24} />
+        {emoji ? (
+          <span aria-hidden="true" className="text-[1.75rem] leading-none">
+            {emoji}
+          </span>
+        ) : (
+          <Icon name={icon} size={26} />
+        )}
       </span>
       <p className="k-title-3">{title}</p>
       {description ? <p className="k-subhead k-ink-secondary k-measure">{description}</p> : null}

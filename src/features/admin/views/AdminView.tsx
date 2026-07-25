@@ -8,37 +8,50 @@ import {
 } from '@/api/associations';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
+import Chip from '@/components/ui/Chip';
 import { useConfirm } from '@/components/ui/Confirm';
-import EmptyState from '@/components/ui/EmptyState';
-import Icon, { type IconName } from '@/components/ui/Icon';
+import Icon from '@/components/ui/Icon';
 import { Page, PageHeader, Section } from '@/components/ui/Page';
 import SafeImage from '@/components/ui/SafeImage';
 import Skeleton from '@/components/ui/Skeleton';
-import { surfaceClass } from '@/components/ui/Surface';
 import { useToast } from '@/components/ui/Toast';
 import ModuleQuartiers from '@/features/territory/components/ModuleQuartiers';
 import ModuleSynthese from '@/features/territory/components/ModuleSynthese';
 import ModuleThematiques from '@/features/territory/components/ModuleThematiques';
 import { associationKeys } from '@/queries/associations';
 import { useAuthStore } from '@/stores/authStore';
+import type { CategoryKey } from '@/design/categories';
 import type { Association } from '@/lib/types/contract';
 
-const QUICK_ACTIONS: { to: string; icon: IconName; title: string; description: string }[] = [
+/**
+ * Les trois portes d'entrée de l'administration. Chacune porte la couleur et
+ * l'émoji du contenu qu'elle gouverne, comme sur la page d'accueil.
+ */
+const QUICK_ACTIONS: {
+  to: string;
+  emoji: string;
+  tone: CategoryKey;
+  title: string;
+  description: string;
+}[] = [
   {
     to: '/admin/alaune',
-    icon: 'newspaper',
+    emoji: '🔥',
+    tone: 'news',
     title: 'Gérer « À la une »',
     description: 'Les contenus mis en avant sur la page d’accueil.',
   },
   {
     to: '/admin/sondages',
-    icon: 'chartBar',
+    emoji: '🗳️',
+    tone: 'consult',
     title: 'Consulter les sondages',
     description: 'Les résultats des consultations citoyennes, par quartier.',
   },
   {
     to: '/admin/rag',
-    icon: 'robot',
+    emoji: '🤖',
+    tone: 'project',
     title: 'Documents IA (RAG)',
     description: 'La base de connaissances de l’assistant conversationnel.',
   },
@@ -110,31 +123,38 @@ export default function AdminView() {
   return (
     <Page className="pt-8">
       <PageHeader
-        eyebrow="Administration"
+        eyebrow="⚙️ Administration"
         title="Tableau de bord"
         description="Les contenus mis en avant, les consultations, la base de l’assistant et les associations en attente."
       />
 
-      <Section title="Actions rapides">
+      <Section title="⚡ Actions rapides">
         <div className="k-grid">
           {QUICK_ACTIONS.map((action) => (
             <Link
               key={action.to}
               to={action.to}
-              className={surfaceClass({ interactive: true, className: 'p-5' })}
+              className="k-card k-card--interactive group flex items-start gap-4 p-5"
             >
-              <span className="mb-3 grid h-10 w-10 place-items-center rounded-md bg-accent-soft text-accent">
-                <Icon name={action.icon} size={20} />
+              <Chip tone={action.tone} size={52}>
+                {action.emoji}
+              </Chip>
+              <span className="min-w-0 flex-1">
+                <span className="k-title-3 block">{action.title}</span>
+                <span className="k-subhead k-ink-secondary mt-1 block">{action.description}</span>
               </span>
-              <h3 className="k-title-3">{action.title}</h3>
-              <p className="k-subhead k-ink-secondary mt-1">{action.description}</p>
+              <Icon
+                name="chevronRight"
+                size={20}
+                className="k-ink-quaternary mt-1 shrink-0 transition-transform duration-200 group-hover:translate-x-1"
+              />
             </Link>
           ))}
         </div>
       </Section>
 
       <Section
-        title="Associations à valider"
+        title="🤝 Associations à valider"
         description="Vérifiez les nouvelles associations avant leur publication."
         action={
           <Button
@@ -149,10 +169,10 @@ export default function AdminView() {
         }
       >
         {isLoadingAssociations ? (
-          <div className="k-list border-t border-separator" aria-busy="true">
+          <div className="flex flex-col gap-3" aria-busy="true">
             {[0, 1].map((row) => (
-              <div key={row} className="flex items-start gap-4 py-5">
-                <Skeleton width="3rem" height="3rem" radius="var(--k-radius-md)" />
+              <div key={row} className="k-card flex items-start gap-4 p-5">
+                <Skeleton width="3.5rem" height="3.5rem" radius="var(--k-radius-md)" />
                 <div className="flex min-w-0 flex-1 flex-col gap-2">
                   <Skeleton width="40%" height="1.125rem" />
                   <Skeleton width="70%" height="0.875rem" />
@@ -161,31 +181,42 @@ export default function AdminView() {
             ))}
           </div>
         ) : pendingAssociations.length === 0 ? (
-          <EmptyState
-            icon="handshake"
-            title="Aucune association en attente"
-            description="Les nouvelles demandes apparaîtront ici dès leur dépôt."
-          />
+          <div className="k-card k-empty">
+            <span className="text-5xl leading-none" aria-hidden="true">
+              🤝
+            </span>
+            <p className="k-title-3">Aucune association en attente</p>
+            <p className="k-subhead k-ink-secondary k-measure">
+              Les nouvelles demandes apparaîtront ici dès leur dépôt.
+            </p>
+          </div>
         ) : (
-          <ul className="k-list border-t border-separator">
+          <ul className="flex flex-col gap-3">
             {pendingAssociations.map((association) => (
-              <li key={association.id} className="py-5">
+              <li key={association.id} className="k-card p-5">
                 <div className="flex items-start gap-4">
                   <SafeImage
                     src={
                       typeof association.logo_url === 'string' ? association.logo_url : null
                     }
                     alt={association.name}
-                    className="h-12 w-12 shrink-0 rounded-md object-cover"
+                    className="h-14 w-14 shrink-0 rounded-md object-cover"
+                    fallback={
+                      <span aria-hidden="true" className="text-2xl">
+                        🤝
+                      </span>
+                    }
                   />
 
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <h3 className="k-callout min-w-0 font-semibold">{association.name}</h3>
-                      <Badge tone="warning" dot>
+                      <Badge tone="warning" emoji="⏳" dot>
                         {association.status_label}
                       </Badge>
-                      <Badge tone="outline">{association.category_label}</Badge>
+                      <Badge tone="asso" emoji="🏷️">
+                        {association.category_label}
+                      </Badge>
                     </div>
                     <p className="k-footnote k-ink-tertiary mt-1">
                       Quartier{' '}
@@ -205,6 +236,7 @@ export default function AdminView() {
                         onClick={() =>
                           void handleAssociationStatusChange(association, 'active')
                         }
+                        leading={<span aria-hidden="true">✅</span>}
                       >
                         Valider
                       </Button>
@@ -244,7 +276,7 @@ export default function AdminView() {
         )}
       </Section>
 
-      <Section title="Activité du territoire">
+      <Section title="📈 Activité du territoire">
         <div className="flex flex-col gap-8">
           <ModuleSynthese />
           <ModuleQuartiers />

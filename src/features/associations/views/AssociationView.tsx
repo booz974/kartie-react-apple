@@ -1,18 +1,22 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
+import Chip from '@/components/ui/Chip';
 import EmptyState from '@/components/ui/EmptyState';
 import Icon from '@/components/ui/Icon';
+import Media from '@/components/ui/Media';
 import { Page } from '@/components/ui/Page';
 import Segmented from '@/components/ui/Segmented';
 import Skeleton, { SkeletonText } from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
 import AssociationEventCard from '@/features/associations/components/AssociationEventCard';
+import { associationCategoryStyle } from '@/features/associations/components/AssociationCard';
 import AssociationFollowButton from '@/features/associations/components/AssociationFollowButton';
 import AssociationHeader from '@/features/associations/components/AssociationHeader';
 import { useAssociation } from '@/queries/associations';
 import { useAuthStore } from '@/stores/authStore';
+import type { CategoryKey } from '@/design/categories';
 import type { AssociationEvent } from '@/lib/types/contract';
 
 const TABS = [
@@ -22,6 +26,28 @@ const TABS = [
 ] as const;
 
 type TabId = (typeof TABS)[number]['value'];
+
+type SectionTone = CategoryKey | 'accent' | 'warm';
+
+/** Titre de section porté par une pastille colorée plutôt que par un filet gris. */
+function SectionTitle({
+  emoji,
+  tone,
+  children,
+}: {
+  emoji: string;
+  tone: SectionTone;
+  children: string;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <Chip tone={tone} size={34}>
+        {emoji}
+      </Chip>
+      <h2 className="k-title-3">{children}</h2>
+    </div>
+  );
+}
 
 export default function AssociationView() {
   const navigate = useNavigate();
@@ -44,6 +70,17 @@ export default function AssociationView() {
     isLoading,
     isNotFound,
   } = useAssociation(idParam, session?.user?.id, profile?.role);
+
+  // Les compteurs vivent sur les onglets : on sait ce qu'on va trouver avant
+  // d'y aller.
+  const tabOptions = useMemo(
+    () => [
+      { value: 'about' as const, label: TABS[0].label },
+      { value: 'posts' as const, label: TABS[1].label, count: posts.length },
+      { value: 'events' as const, label: TABS[2].label, count: events.length },
+    ],
+    [posts.length, events.length],
+  );
 
   function goBack() {
     if (association?.quartier_id) {
@@ -70,9 +107,9 @@ export default function AssociationView() {
     return (
       <Page className="pt-6 md:pt-10">
         <div className="flex flex-col gap-5">
-          <Skeleton height="9rem" radius="var(--k-radius-xl)" />
+          <Skeleton height="11rem" radius="var(--k-radius-2xl)" />
           <div className="flex items-start gap-4">
-            <Skeleton width="4rem" height="4rem" radius="var(--k-radius-xl)" />
+            <Skeleton width="5.5rem" height="5.5rem" radius="var(--k-radius-xl)" />
             <div className="flex-1">
               <Skeleton height="1rem" width="8rem" />
               <Skeleton height="2rem" width="60%" className="mt-3" />
@@ -108,10 +145,14 @@ export default function AssociationView() {
   const followersCount = Math.max(0, (association.followers_count || 0) + followersDelta);
   const activities = Array.isArray(association.activities) ? association.activities : [];
   const audiences = Array.isArray(association.audiences) ? association.audiences : [];
+  const style = associationCategoryStyle(
+    association.category as string | null | undefined,
+    association.category_label,
+  );
 
   return (
     <Page className="pt-6 md:pt-10">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
         <Button
           variant="plain"
           onClick={goBack}
@@ -147,31 +188,35 @@ export default function AssociationView() {
         }
       />
 
-      <div className="mt-10 grid gap-10 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:gap-14">
+      <div className="mt-10 grid grid-cols-1 gap-10 lg:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)] lg:gap-14">
         <div>
           <Segmented
             label="Contenus de l’association"
             value={activeTab}
             onChange={setActiveTab}
-            options={TABS}
+            options={tabOptions}
             className="mb-7"
           />
 
           {activeTab === 'about' ? (
             <div className="flex flex-col gap-8">
               {association.full_description ? (
-                <section>
-                  <h2 className="k-title-3">À propos</h2>
-                  <p className="k-body k-ink-secondary k-measure mt-3 whitespace-pre-line">
+                <section className="k-card p-5 md:p-6">
+                  <SectionTitle emoji="📖" tone={style.tone}>
+                    À propos
+                  </SectionTitle>
+                  <p className="k-body k-ink-secondary k-measure mt-4 whitespace-pre-line">
                     {association.full_description as string}
                   </p>
                 </section>
               ) : null}
 
               {association.mission ? (
-                <section>
-                  <h2 className="k-title-3">Mission</h2>
-                  <p className="k-body k-ink-secondary k-measure mt-3 whitespace-pre-line">
+                <section className="k-card p-5 md:p-6">
+                  <SectionTitle emoji="🎯" tone="warm">
+                    Mission
+                  </SectionTitle>
+                  <p className="k-body k-ink-secondary k-measure mt-4 whitespace-pre-line">
                     {association.mission as string}
                   </p>
                 </section>
@@ -179,11 +224,15 @@ export default function AssociationView() {
 
               {activities.length > 0 ? (
                 <section>
-                  <h2 className="k-title-3">Activités</h2>
-                  <ul className="mt-3 flex flex-wrap gap-2">
+                  <SectionTitle emoji="🎪" tone="event">
+                    Activités
+                  </SectionTitle>
+                  <ul className="mt-4 flex flex-wrap gap-2">
                     {activities.map((activity) => (
                       <li key={String(activity)}>
-                        <Badge>{String(activity)}</Badge>
+                        <Badge tone="event" size="lg" emoji="✨">
+                          {String(activity)}
+                        </Badge>
                       </li>
                     ))}
                   </ul>
@@ -192,11 +241,13 @@ export default function AssociationView() {
 
               {audiences.length > 0 ? (
                 <section>
-                  <h2 className="k-title-3">Publics concernés</h2>
-                  <ul className="mt-3 flex flex-wrap gap-2">
+                  <SectionTitle emoji="🧑‍🤝‍🧑" tone="quartier">
+                    Publics concernés
+                  </SectionTitle>
+                  <ul className="mt-4 flex flex-wrap gap-2">
                     {audiences.map((audience) => (
                       <li key={String(audience)}>
-                        <Badge tone="accent">
+                        <Badge tone="quartier" size="lg">
                           {String(audience)}
                         </Badge>
                       </li>
@@ -226,21 +277,35 @@ export default function AssociationView() {
                 description="Les publications de l’association apparaîtront ici, ainsi que dans le fil du quartier."
               />
             ) : (
-              <div className="k-list">
+              <div className="flex flex-col gap-5">
                 {posts.map((post) => (
-                  <article key={post.id} className="py-6 first:pt-0">
-                    {post.title ? <h2 className="k-title-3">{post.title}</h2> : null}
-                    <p className="k-body k-ink-secondary k-measure mt-2 whitespace-pre-line">
-                      {post.content as string}
-                    </p>
+                  <article key={post.id} className="k-card overflow-hidden p-0">
                     {post.image_url ? (
-                      <img
+                      <Media
                         src={post.image_url}
                         alt={post.title || association.name}
-                        loading="lazy"
-                        className="mt-4 max-h-80 w-full rounded-lg border border-separator object-cover"
+                        category="news"
+                        emoji="📣"
+                        ratio="16 / 9"
+                        veil={false}
                       />
                     ) : null}
+
+                    <div className="flex flex-col gap-3 p-5">
+                      <div className="flex items-center gap-3">
+                        <Chip tone={style.tone} size={38}>
+                          {style.emoji}
+                        </Chip>
+                        <div className="min-w-0">
+                          <p className="k-footnote k-ink-tertiary">{association.name}</p>
+                          {post.title ? <h2 className="k-title-3">{post.title}</h2> : null}
+                        </div>
+                      </div>
+
+                      <p className="k-body k-ink-secondary k-measure whitespace-pre-line">
+                        {post.content as string}
+                      </p>
+                    </div>
                   </article>
                 ))}
               </div>
@@ -255,7 +320,7 @@ export default function AssociationView() {
                 description="Dès qu’un événement est programmé, il apparaît ici et dans l’agenda du quartier."
               />
             ) : (
-              <div className="k-grid">
+              <div className="k-grid k-grid--wide">
                 {events.map((event) => (
                   <AssociationEventCard key={event.id} event={event} onOpen={openEvent} />
                 ))}
@@ -264,13 +329,17 @@ export default function AssociationView() {
           ) : null}
         </div>
 
-        <aside className="flex flex-col gap-10">
-          <section>
-            <h2 className="k-title-3">Infos pratiques</h2>
-            <dl className="k-list mt-3">
+        <aside className="flex flex-col gap-8">
+          <section className="k-card p-5 md:p-6">
+            <SectionTitle emoji="📇" tone="accent">
+              Infos pratiques
+            </SectionTitle>
+            <dl className="k-list mt-4">
               {association.address_text ? (
                 <div className="flex items-start gap-3 py-3 first:pt-0">
-                  <Icon name="mapPin" size={18} className="k-ink-tertiary mt-0.5" />
+                  <Chip tone="quartier" size={34}>
+                    📍
+                  </Chip>
                   <div className="min-w-0">
                     <dt className="k-caption k-ink-tertiary">Adresse</dt>
                     <dd className="k-subhead k-ink break-words">
@@ -282,13 +351,15 @@ export default function AssociationView() {
 
               {association.contact_email ? (
                 <div className="flex items-start gap-3 py-3 first:pt-0">
-                  <Icon name="mail" size={18} className="k-ink-tertiary mt-0.5" />
+                  <Chip tone="news" size={34}>
+                    ✉️
+                  </Chip>
                   <div className="min-w-0">
                     <dt className="k-caption k-ink-tertiary">E-mail</dt>
                     <dd className="k-subhead break-words">
                       <a
                         href={`mailto:${association.contact_email as string}`}
-                        className="text-accent hover:underline"
+                        className="text-accent-ink font-medium hover:underline"
                       >
                         {association.contact_email as string}
                       </a>
@@ -299,13 +370,15 @@ export default function AssociationView() {
 
               {association.contact_phone ? (
                 <div className="flex items-start gap-3 py-3 first:pt-0">
-                  <Icon name="phone" size={18} className="k-ink-tertiary mt-0.5" />
+                  <Chip tone="asso" size={34}>
+                    ☎️
+                  </Chip>
                   <div className="min-w-0">
                     <dt className="k-caption k-ink-tertiary">Téléphone</dt>
                     <dd className="k-subhead break-words">
                       <a
                         href={`tel:${association.contact_phone as string}`}
-                        className="text-accent hover:underline"
+                        className="text-accent-ink font-medium hover:underline"
                       >
                         {association.contact_phone as string}
                       </a>
@@ -316,7 +389,9 @@ export default function AssociationView() {
 
               {association.website_url ? (
                 <div className="flex items-start gap-3 py-3 first:pt-0">
-                  <Icon name="link" size={18} className="k-ink-tertiary mt-0.5" />
+                  <Chip tone="project" size={34}>
+                    🔗
+                  </Chip>
                   <div className="min-w-0">
                     <dt className="k-caption k-ink-tertiary">Site web</dt>
                     <dd className="k-subhead break-words">
@@ -324,7 +399,7 @@ export default function AssociationView() {
                         href={association.website_url as string}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex items-center gap-1.5 text-accent hover:underline"
+                        className="text-accent-ink inline-flex items-center gap-1.5 font-medium hover:underline"
                       >
                         Ouvrir le site
                         <Icon name="externalLink" size={15} />
@@ -335,31 +410,42 @@ export default function AssociationView() {
               ) : null}
 
               <div className="flex items-start gap-3 py-3 first:pt-0">
-                <Icon name="users" size={18} className="k-ink-tertiary mt-0.5" />
+                <Chip tone="warm" size={34}>
+                  👥
+                </Chip>
                 <div className="min-w-0">
                   <dt className="k-caption k-ink-tertiary">Communauté</dt>
-                  <dd className="k-subhead k-ink tabular-nums">{followersCount} abonné{followersCount > 1 ? 's' : ''}</dd>
+                  <dd className="k-subhead k-ink tabular-nums">
+                    {followersCount} abonné{followersCount > 1 ? 's' : ''}
+                  </dd>
                 </div>
               </div>
             </dl>
           </section>
 
-          <section>
-            <h2 className="k-title-3">Présence locale</h2>
-            <p className="k-subhead k-ink-secondary mt-3">
-              Cette association est rattachée au quartier {quartierName} et ses publications peuvent
-              apparaître dans le fil local.
-            </p>
-            {association.quartier_id ? (
-              <Button
-                variant="secondary"
-                className="mt-4"
-                onClick={() => navigate(`/quartiers/${association.quartier_id}/associations`)}
-                trailing={<Icon name="arrowRight" size={16} />}
-              >
-                Associations du quartier
-              </Button>
-            ) : null}
+          <section className="k-card overflow-hidden p-0">
+            <div className="k-banner--accent flex items-center gap-3 px-5 py-4">
+              <span aria-hidden="true" className="text-2xl leading-none">
+                🏘️
+              </span>
+              <h2 className="k-title-3">Présence locale</h2>
+            </div>
+            <div className="p-5">
+              <p className="k-subhead k-ink-secondary">
+                Cette association est rattachée au quartier {quartierName} et ses publications
+                peuvent apparaître dans le fil local.
+              </p>
+              {association.quartier_id ? (
+                <Button
+                  variant="secondary"
+                  className="mt-4"
+                  onClick={() => navigate(`/quartiers/${association.quartier_id}/associations`)}
+                  trailing={<Icon name="arrowRight" size={16} />}
+                >
+                  Associations du quartier
+                </Button>
+              ) : null}
+            </div>
           </section>
         </aside>
       </div>

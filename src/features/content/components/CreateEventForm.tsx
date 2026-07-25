@@ -39,8 +39,12 @@ export default function CreateEventForm({ onCancel, onCreateEvent }: CreateEvent
   return (
     <Modal
       onClose={onCancel}
-      title="Ajouter un événement"
-      description="Il apparaîtra dans l'agenda du quartier."
+      title={
+        <>
+          <span aria-hidden="true">🎉 </span>Ajouter un événement
+        </>
+      }
+      description="Il rejoindra l'agenda du quartier, avec son affiche, sa date et son lieu."
       footer={
         <>
           <Button variant="secondary" onClick={onCancel}>
@@ -109,7 +113,11 @@ export default function CreateEventForm({ onCancel, onCreateEvent }: CreateEvent
         {/* L'uploader porte déjà son propre libellé lié à son input : on ne
             l'enveloppe pas dans un Field, dont le `for` ne viserait rien. */}
         <div className="k-field">
-          <p className="k-field__label">Image de l&apos;événement</p>
+          <p className="k-field__label">Affiche de l&apos;événement</p>
+          <p className="k-field__hint">
+            C&apos;est elle qu&apos;on voit en premier dans l&apos;agenda : une bonne photo remplit
+            une salle.
+          </p>
           <ImageUploader
             onUploadSuccess={(url) => {
               setForm((f) => ({ ...f, image: url }));

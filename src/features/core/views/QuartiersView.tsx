@@ -64,7 +64,7 @@ export default function QuartiersView() {
     <Page>
       <PageHeader
         className="pt-10 md:pt-14"
-        eyebrow="Territoires"
+        eyebrow="🗺️ Territoires"
         title="Les quartiers de Saint-Denis"
         description={
           total > 0
@@ -108,7 +108,7 @@ export default function QuartiersView() {
       {isLoading ? (
         <div className="k-grid">
           {Array.from({ length: 9 }, (_, index) => (
-            <div key={index} className="k-skeleton aspect-[4/3] rounded-xl" aria-hidden="true" />
+            <div key={index} className="k-skeleton aspect-[4/3] rounded-lg" aria-hidden="true" />
           ))}
         </div>
       ) : visible.length > 0 ? (

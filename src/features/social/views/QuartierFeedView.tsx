@@ -2,6 +2,7 @@ import { lazy, Suspense, useCallback, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate, useParams } from 'react-router';
 import Button from '@/components/ui/Button';
+import Chip from '@/components/ui/Chip';
 import EmptyState from '@/components/ui/EmptyState';
 import Icon from '@/components/ui/Icon';
 import Notice from '@/components/ui/Notice';
@@ -15,7 +16,7 @@ import type { CreatePostPayload } from '@/features/social/components/CreatePost'
 import FeedPost from '@/features/social/components/FeedPost';
 import CompleteProfileModal from '@/features/identity/CompleteProfileModal';
 
-/** Defer CreatePost (+ Leaflet/ImageUploader) until an authenticated composer is shown — NFR-5 feed LCP. */
+/** Defer CreatePost (+ Leaflet/ImageUploader) until an authenticated composer is shown (NFR-5 feed LCP). */
 const CreatePost = lazy(() => import('@/features/social/components/CreatePost'));
 import {
   socialKeys,
@@ -32,12 +33,23 @@ import { useAuthStore } from '@/stores/authStore';
 import type { Circle, FeedPost as FeedPostType } from '@/lib/types/contract';
 
 const tabs = [
-  { value: 'all', label: 'Tout' },
-  { value: 'village', label: 'Place du Village', icon: 'stadium' },
-  { value: 'circles', label: 'Cercles', icon: 'users' },
+  { value: 'all', emoji: '✨', label: 'Tout' },
+  { value: 'village', emoji: '🏘️', label: 'Place du Village' },
+  { value: 'circles', emoji: '👥', label: 'Cercles' },
 ] as const;
 
 type TabId = (typeof tabs)[number]['value'];
+
+/** L'émoji donne le repère, le mot porte le sens : il reste seul à être lu. */
+const tabOptions = tabs.map((tab) => ({
+  value: tab.value,
+  label: (
+    <>
+      <span aria-hidden="true">{tab.emoji}</span>
+      {tab.label}
+    </>
+  ),
+}));
 
 function filterPosts(
   feed: FeedPostType[],
@@ -63,13 +75,13 @@ function getEmptyMessage(activeTab: TabId, selectedCircle: Circle | null): strin
   return 'Soyez le premier à publier dans ce quartier !';
 }
 
-/** Le gabarit reprend la forme réelle d'une publication : rien ne saute au remplacement. */
+/** Le gabarit reprend la forme réelle d'une carte : rien ne saute au remplacement. */
 function FeedSkeleton() {
   return (
-    <div className="k-list" aria-hidden="true">
+    <div className="flex flex-col gap-5" aria-hidden="true">
       {[0, 1, 2].map((index) => (
-        <div key={index} className="flex gap-3 py-6">
-          <Skeleton width="2.5rem" height="2.5rem" radius="var(--k-radius-full)" />
+        <div key={index} className="k-card flex gap-3 p-4 sm:p-5">
+          <Skeleton width="2.75rem" height="2.75rem" radius="var(--k-radius-full)" />
           <div className="min-w-0 flex-1">
             <Skeleton width="9rem" height="0.9rem" />
             <Skeleton width="6rem" height="0.75rem" className="mt-2" />
@@ -400,18 +412,23 @@ export default function QuartierFeedView() {
         className="mb-6"
         value={activeTab}
         onChange={switchTab}
-        options={tabs}
+        options={tabOptions}
       />
 
       {selectedCircle ? (
-        <div className="k-hairline-all mb-6 flex flex-wrap items-start justify-between gap-3 rounded-lg p-4">
-          <div className="min-w-0">
-            <h2 className="k-title-3">{selectedCircle.name}</h2>
-            {selectedCircle.description ? (
-              <p className="k-subhead k-ink-secondary mt-1">
-                {String(selectedCircle.description)}
-              </p>
-            ) : null}
+        <div className="k-card mb-6 flex flex-wrap items-center justify-between gap-3 p-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <Chip tone="quartier" size={44}>
+              👥
+            </Chip>
+            <div className="min-w-0">
+              <h2 className="k-title-3">{selectedCircle.name}</h2>
+              {selectedCircle.description ? (
+                <p className="k-subhead k-ink-secondary mt-1">
+                  {String(selectedCircle.description)}
+                </p>
+              ) : null}
+            </div>
           </div>
           <Button
             size="sm"
@@ -438,7 +455,7 @@ export default function QuartierFeedView() {
 
       {activeTab === 'circles' && !selectedCircle ? (
         <Section
-          title="Cercles de voisins"
+          title="👥 Cercles de voisins"
           description="Des espaces plus petits, autour d’un sujet commun."
           action={
             session ? (
@@ -463,7 +480,7 @@ export default function QuartierFeedView() {
       ) : (
         <section id="posts-container" aria-label="Publications">
           {filteredPosts.length > 0 ? (
-            <div className="k-list">
+            <div className="flex flex-col gap-5">
               {filteredPosts.map((post) => (
                 <FeedPost
                   key={post.id}

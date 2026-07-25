@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Button from '@/components/ui/Button';
+import Chip from '@/components/ui/Chip';
 import Field, { Checkbox, Input, Select, Textarea } from '@/components/ui/Field';
 import Icon from '@/components/ui/Icon';
 import ImageUploader from '@/components/ui/ImageUploader';
@@ -8,6 +9,7 @@ import {
   type AlaUneFormOptionDraft,
   type AlaUneFormValues,
 } from '@/api/alaUne';
+import type { CategoryKey } from '@/design/categories';
 import type { AlaUneContent, AlaUneContentType } from '@/lib/types/contract';
 
 interface AlaUneFormProps {
@@ -15,6 +17,37 @@ interface AlaUneFormProps {
   onCancel: () => void;
   onSubmit: (form: AlaUneFormValues) => void;
 }
+
+/**
+ * Chaque type d'élément a sa couleur et son émoji, comme partout ailleurs dans
+ * le produit : on reconnaît ce que l'on est en train de composer avant même de
+ * lire le formulaire.
+ */
+/** Repères des options d'un sondage, identiques à ceux de la page d'accueil. */
+const OPTION_MARKERS = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣'];
+
+const TYPE_LOOK: Record<AlaUneContentType, { emoji: string; tone: CategoryKey; hint: string }> = {
+  article: {
+    emoji: '📰',
+    tone: 'news',
+    hint: 'Une actualité, en tête de la page d’accueil, avec sa photo.',
+  },
+  event: {
+    emoji: '🎉',
+    tone: 'event',
+    hint: 'Un rendez-vous à venir, avec sa date, son lieu et sa photo.',
+  },
+  sondage: {
+    emoji: '🗳️',
+    tone: 'consult',
+    hint: 'Une question courte et ses réponses, votables en un geste.',
+  },
+  flash_info: {
+    emoji: '⚡',
+    tone: 'petition',
+    hint: 'Une brève, affichée dans le bandeau des flashs info.',
+  },
+};
 
 /**
  * Formulaire « À la Une ». Les champs affichés dépendent du type choisi : on
@@ -72,8 +105,17 @@ export default function AlaUneForm({
   const showEventFields = form.type === 'event';
   const showSondageOptions = form.type === 'sondage';
 
+  const look = TYPE_LOOK[form.type] ?? TYPE_LOOK.article;
+
   return (
     <form onSubmit={handleSubmit} className="k-measure flex flex-col gap-6">
+      <div className="k-card flex items-center gap-4 p-4">
+        <Chip tone={look.tone} size={48}>
+          {look.emoji}
+        </Chip>
+        <p className="k-subhead k-ink-secondary min-w-0 flex-1">{look.hint}</p>
+      </div>
+
       <Field
         label={"Type d'élément"}
         hint={isEditing ? 'Le type ne peut plus changer après création.' : undefined}
@@ -169,6 +211,9 @@ export default function AlaUneForm({
           <div className="flex flex-col gap-2">
             {form.sondage_options.map((option: AlaUneFormOptionDraft, index: number) => (
               <div key={index} className="flex items-center gap-2">
+                <Chip tone="consult" size={34}>
+                  {OPTION_MARKERS[index % OPTION_MARKERS.length]}
+                </Chip>
                 <Input
                   type="text"
                   value={option.text}
@@ -199,11 +244,13 @@ export default function AlaUneForm({
         </fieldset>
       ) : null}
 
-      <Checkbox
-        checked={form.is_active}
-        onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
-        label="Actif (visible sur la page d’accueil)"
-      />
+      <div className="k-card k-card--flat p-4">
+        <Checkbox
+          checked={form.is_active}
+          onChange={(e) => setForm((f) => ({ ...f, is_active: e.target.checked }))}
+          label="Actif (visible sur la page d’accueil)"
+        />
+      </div>
 
       <div className="flex flex-wrap justify-end gap-3 border-t border-separator pt-5">
         <Button variant="ghost" onClick={onCancel}>

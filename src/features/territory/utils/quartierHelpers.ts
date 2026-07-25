@@ -37,15 +37,15 @@ export function getResultPercentage(votes: number, details: ConsultationDetails 
 }
 
 export function formatDateShort(dateString: string | null | undefined): string {
-  if (!dateString) return '—';
+  if (!dateString) return '·';
   try {
     const date = new Date(dateString);
-    if (Number.isNaN(date.getTime())) return '—';
+    if (Number.isNaN(date.getTime())) return '·';
     const day = date.getDate();
     const month = date.toLocaleDateString('fr-FR', { month: 'short' }).replace('.', '');
     return `${day} ${month}`;
   } catch {
-    return '—';
+    return '·';
   }
 }
 

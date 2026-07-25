@@ -17,8 +17,10 @@ interface AssociationFollowButtonProps {
 /**
  * Bascule d'abonnement.
  *
- * L'état n'est pas seulement peint : `aria-pressed` l'expose, et le libellé
- * change avec lui pour que la bascule reste lisible sans la couleur.
+ * S'abonner est un geste d'engagement : le bouton est franc et chaud tant que
+ * l'on ne suit pas, et devient une pastille teintée cochée une fois suivi. La
+ * couleur n'est pas le seul porteur de l'état : `aria-pressed` l'expose, et le
+ * libellé change avec lui pour que la bascule reste lisible sans elle.
  */
 export default function AssociationFollowButton({
   associationId,
@@ -65,7 +67,7 @@ export default function AssociationFollowButton({
 
   return (
     <Button
-      variant={isFollowing ? 'secondary' : 'primary'}
+      variant={isFollowing ? 'tinted' : 'warm'}
       loading={isLoading}
       disabled={!session}
       aria-pressed={isFollowing}

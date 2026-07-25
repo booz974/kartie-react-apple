@@ -73,7 +73,7 @@ export default function AuthModal({ onClose }: AuthModalProps) {
     <Modal
       onClose={onClose}
       size="narrow"
-      title="Rejoindre Kartie"
+      title="👋 Rejoindre Kartie"
       description="Participez aux consultations, soutenez les pétitions et échangez avec votre quartier."
     >
       <Segmented

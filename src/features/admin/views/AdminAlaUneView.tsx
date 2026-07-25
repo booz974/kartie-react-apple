@@ -2,14 +2,15 @@ import { useMemo, useState } from 'react';
 import AlaUneForm from '@/features/admin/components/AlaUneForm';
 import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
+import Chip from '@/components/ui/Chip';
 import { useConfirm } from '@/components/ui/Confirm';
-import EmptyState from '@/components/ui/EmptyState';
 import Icon from '@/components/ui/Icon';
 import Modal from '@/components/ui/Modal';
 import { Page, PageHeader, Section } from '@/components/ui/Page';
 import Progress from '@/components/ui/Progress';
 import Skeleton from '@/components/ui/Skeleton';
 import { useToast } from '@/components/ui/Toast';
+import type { CategoryKey } from '@/design/categories';
 import {
   useAdminAlaUneList,
   useDeleteAlaUne,
@@ -18,19 +19,28 @@ import {
 import type { AlaUneContent, AlaUneSondageOption } from '@/lib/types/contract';
 import type { AlaUneFormValues } from '@/api/alaUne';
 
-type TypeBadgeTone = 'accent' | 'warm' | 'warning' | 'neutral';
+type TypeMeta = { label: string; tone: CategoryKey; emoji: string };
 
-/** Un type de contenu = une teinte et un mot lisible, pas une constante brute. */
-const TYPE_META: Record<string, { label: string; tone: TypeBadgeTone }> = {
-  article: { label: 'Article', tone: 'accent' },
-  event: { label: 'Événement', tone: 'warm' },
-  sondage: { label: 'Sondage', tone: 'neutral' },
-  flash_info: { label: 'Flash info', tone: 'warning' },
+/**
+ * Un type de contenu = une teinte, un émoji et un mot lisible. C'est ce qui
+ * permet de balayer la liste sans lire, exactement comme sur la page d'accueil.
+ */
+const TYPE_META: Record<string, TypeMeta> = {
+  article: { label: 'Article', tone: 'news', emoji: '📰' },
+  event: { label: 'Événement', tone: 'event', emoji: '🎉' },
+  sondage: { label: 'Sondage', tone: 'consult', emoji: '🗳️' },
+  flash_info: { label: 'Flash info', tone: 'petition', emoji: '⚡' },
 };
 
-function typeMeta(type: string): { label: string; tone: TypeBadgeTone } {
-  return TYPE_META[type] ?? { label: type, tone: 'neutral' };
+function typeMeta(type: string): TypeMeta {
+  return TYPE_META[type] ?? { label: type, tone: 'quartier', emoji: '✨' };
 }
+
+/** Repères des options, communs au formulaire et à la page d'accueil. */
+const OPTION_MARKERS = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣'];
+
+/** Teintes des barres de résultat : trois séries suffisent à distinguer. */
+const RESULT_TONES = ['accent', 'warm', 'success'] as const;
 
 function getPercentage(votes: number, total: number): number {
   if (total === 0) return 0;
@@ -145,7 +155,7 @@ export default function AdminAlaUneView() {
       <PageHeader
         back={{ to: '/admin', label: 'Administration' }}
         eyebrow="Administration"
-        title="Gestion « À la une »"
+        title="🔥 Gestion « À la une »"
         description="Les contenus mis en avant sur la page d’accueil : articles, événements, sondages et flashs info."
         actions={
           <Button
@@ -160,49 +170,67 @@ export default function AdminAlaUneView() {
 
       <Section>
         {isLoading ? (
-          <ul className="k-list border-t border-separator" aria-busy="true">
+          <ul className="flex flex-col gap-3" aria-busy="true">
             {[0, 1, 2].map((row) => (
-              <li key={row} className="flex items-center gap-3 py-4">
-                <Skeleton width="5.5rem" height="1.25rem" />
-                <Skeleton width="40%" height="1rem" />
+              <li key={row} className="k-card flex items-center gap-4 p-4">
+                <Skeleton width="2.75rem" height="2.75rem" radius="var(--k-radius-full)" />
+                <div className="flex min-w-0 flex-1 flex-col gap-2">
+                  <Skeleton width="40%" height="1.125rem" />
+                  <Skeleton width="5.5rem" height="0.875rem" />
+                </div>
               </li>
             ))}
           </ul>
         ) : items.length === 0 ? (
-          <EmptyState
-            icon="newspaper"
-            title="Aucun contenu à la une"
-            description="Ajoutez un article, un événement, un sondage ou un flash info pour ouvrir la page d’accueil."
-            action={
-              <Button variant="primary" onClick={openCreateForm}>
-                Créer un élément
-              </Button>
-            }
-          />
+          <div className="k-card k-empty">
+            <span className="text-5xl leading-none" aria-hidden="true">
+              🗞️
+            </span>
+            <p className="k-title-3">Aucun contenu à la une</p>
+            <p className="k-subhead k-ink-secondary k-measure">
+              Ajoutez un article, un événement, un sondage ou un flash info pour ouvrir la page
+              d’accueil.
+            </p>
+            <Button variant="primary" onClick={openCreateForm} className="mt-2">
+              Créer un élément
+            </Button>
+          </div>
         ) : (
-          <ul className="k-list border-t border-separator">
+          <ul className="flex flex-col gap-3">
             {items.map((item) => {
               const meta = typeMeta(item.type);
               return (
                 <li
                   key={item.id}
-                  className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3 py-4"
+                  className="k-card flex flex-wrap items-center justify-between gap-x-4 gap-y-3 p-4"
                 >
                   <div className="flex min-w-0 flex-1 items-center gap-3">
-                    <Badge tone={meta.tone}>{meta.label}</Badge>
-                    <span className="k-body min-w-0 flex-1 truncate font-medium">
-                      {itemLabel(item)}
-                    </span>
-                    {item.is_active === false ? (
-                      <Badge tone="outline" dot>
-                        Inactif
-                      </Badge>
-                    ) : null}
+                    <Chip tone={meta.tone} size={44}>
+                      {meta.emoji}
+                    </Chip>
+                    <div className="min-w-0 flex-1">
+                      <p className="k-body truncate font-semibold">{itemLabel(item)}</p>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-2">
+                        <Badge tone={meta.tone} emoji={meta.emoji}>
+                          {meta.label}
+                        </Badge>
+                        {item.is_active === false ? (
+                          <Badge tone="outline" dot>
+                            Inactif
+                          </Badge>
+                        ) : (
+                          <Badge tone="success" dot live>
+                            En ligne
+                          </Badge>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   <div className="flex shrink-0 items-center gap-1">
                     {item.type === 'sondage' ? (
-                      <Button variant="ghost" size="sm" onClick={() => showSondageResults(item)}>
+                      <Button variant="tinted" size="sm" onClick={() => showSondageResults(item)}>
+                        <span aria-hidden="true">📊</span>
                         Résultats
                       </Button>
                     ) : null}
@@ -247,13 +275,19 @@ export default function AdminAlaUneView() {
                 return (
                   <div key={index}>
                     <div className="mb-2 flex items-baseline justify-between gap-3">
-                      <span className="k-subhead font-medium">{row.option_text}</span>
-                      <span className="k-subhead k-ink-secondary tabular-nums">
+                      <span className="k-subhead font-medium">
+                        <span aria-hidden="true" className="mr-1.5">
+                          {OPTION_MARKERS[index % OPTION_MARKERS.length]}
+                        </span>
+                        {row.option_text}
+                      </span>
+                      <span className="k-subhead font-semibold text-accent-ink tabular-nums">
                         {percentage}%
                       </span>
                     </div>
                     <Progress
                       value={percentage}
+                      tone={RESULT_TONES[index % RESULT_TONES.length]}
                       label={`${row.option_text ?? 'Option'} : ${percentage}%`}
                     />
                     <p className="k-footnote k-ink-tertiary mt-1.5">

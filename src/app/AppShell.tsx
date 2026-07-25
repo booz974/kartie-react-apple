@@ -161,10 +161,10 @@ export default function AppShell() {
 
             <div className="flex flex-col gap-2">
               <p className="k-eyebrow">Explorer</p>
-              <Link to="/quartiers" className="k-footnote k-ink-secondary hover:text-accent">
+              <Link to="/quartiers" className="k-footnote k-ink-secondary hover:text-accent-ink">
                 Les 20 quartiers
               </Link>
-              <Link to="/chat" className="k-footnote k-ink-secondary hover:text-accent">
+              <Link to="/chat" className="k-footnote k-ink-secondary hover:text-accent-ink">
                 Assistant Kartie
               </Link>
             </div>
@@ -172,7 +172,7 @@ export default function AppShell() {
             <div className="max-w-xs">
               <p className="k-eyebrow">Sources</p>
               <p className="k-caption k-ink-tertiary mt-2">
-                INSEE, Mairie de Saint-Denis, SIG, DEAL — 2021 à 2025.
+                INSEE, Mairie de Saint-Denis, SIG et DEAL, de 2021 à 2025.
               </p>
               <p className="k-caption k-ink-tertiary mt-3">Portrait de Saint-Denis 2025</p>
             </div>

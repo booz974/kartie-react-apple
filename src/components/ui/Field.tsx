@@ -37,7 +37,7 @@ export function Field({ label, hint, error, optional, className, children }: Fie
       {label ? (
         <label className="k-field__label" htmlFor={id}>
           {label}
-          {optional ? <span className="k-field__optional"> — facultatif</span> : null}
+          {optional ? <span className="k-field__optional"> (facultatif)</span> : null}
         </label>
       ) : null}
 

@@ -23,17 +23,17 @@ export default function ModuleSynthese() {
   return (
     <Section title="Synthèse de la semaine">
       <dl className="k-hairline-top k-hairline-bottom grid gap-x-8 gap-y-6 py-6 sm:grid-cols-2">
-        <div className="flex flex-col-reverse gap-1">
-          <dt className="k-caption k-ink-tertiary">Volume d’interactions</dt>
-          <dd className="k-title-1 tabular-nums">{interactions}</dd>
+        <div className="flex flex-col gap-1">
+          <dt className="k-caption k-ink-tertiary order-2">Volume d’interactions</dt>
+          <dd className="k-title-1 tabular-nums order-1">{interactions}</dd>
         </div>
 
-        <div className="flex flex-col-reverse gap-1">
-          <dt className="k-caption k-ink-tertiary">
+        <div className="flex flex-col gap-1">
+          <dt className="k-caption k-ink-tertiary order-2">
             Consultation la plus active
             {sondageChaud ? ` · ${sondageChaud.vote_count} votes` : ''}
           </dt>
-          <dd className="k-title-3 text-balance">
+          <dd className="k-title-3 text-balance order-1">
             {sondageChaud?.title || 'Aucune cette semaine'}
           </dd>
         </div>

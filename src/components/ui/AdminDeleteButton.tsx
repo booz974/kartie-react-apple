@@ -40,7 +40,9 @@ export default function AdminDeleteButton({
       loading={isDeleting}
       onClick={handleDelete}
       aria-label="Supprimer cet élément"
-      className="absolute right-2 top-2 z-10 rounded-full shadow-sm hover:text-danger"
+      // Posée sur une photo, l'action a besoin de sa propre matière et d'une
+      // ombre franche : sans elles, elle disparaît sur les images claires.
+      className="absolute right-2.5 top-2.5 z-10 rounded-full shadow-md hover:bg-danger hover:text-ink-on-accent"
     >
       <Icon name="trash" size={16} />
     </Button>

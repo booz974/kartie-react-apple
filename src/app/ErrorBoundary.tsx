@@ -30,11 +30,11 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
           role="alert"
           className="flex min-h-dvh items-center justify-center px-5 py-16"
         >
-          <div className="flex max-w-md flex-col items-center text-center">
-            <span className="mb-4 grid h-14 w-14 place-items-center rounded-full bg-danger-soft text-danger">
-              <Icon name="alert" size={26} />
+          <div className="k-card flex max-w-md flex-col items-center p-8 text-center md:p-10">
+            <span className="mb-5 text-6xl leading-none" aria-hidden="true">
+              🛠️
             </span>
-            <h1 className="k-title-1">Une erreur est survenue</h1>
+            <h1 className="k-title-1 text-balance">Une erreur est survenue</h1>
             <p className="k-callout k-ink-secondary mt-3">
               L&apos;affichage de cette page s&apos;est interrompu. Rien de ce que vous avez
               publié n&apos;est perdu.
@@ -48,6 +48,7 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
                 Réessayer
               </Button>
               <a href="/" className={buttonClass({ variant: 'secondary' })}>
+                <span aria-hidden="true">🏠</span>
                 Retour à l&apos;accueil
               </a>
             </div>

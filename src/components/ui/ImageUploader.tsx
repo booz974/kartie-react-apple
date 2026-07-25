@@ -1,6 +1,8 @@
 import { useEffect, useId, useState } from 'react';
 import { uploadImage } from '@/api/storage';
+import Badge from './Badge';
 import Button from './Button';
+import Chip from './Chip';
 import Icon from './Icon';
 import Notice from './Notice';
 import Spinner from './Spinner';
@@ -13,8 +15,8 @@ interface ImageUploaderProps {
 }
 
 /**
- * Dépôt d'image : une seule zone, qui montre l'aperçu dès qu'il existe plutôt
- * que d'empiler un cadre autour d'un cadre.
+ * Dépôt d'image : une seule zone, accueillante, qui montre l'aperçu en grand dès
+ * qu'il existe plutôt que d'empiler un cadre autour d'un cadre.
  */
 export default function ImageUploader({
   initialImageUrl = null,
@@ -75,13 +77,20 @@ export default function ImageUploader({
     <div className="flex flex-col gap-3">
       {imageUrl ? (
         <div className="flex flex-col items-start gap-3">
-          <img
-            src={imageUrl}
-            alt="Aperçu de l'image"
-            className="max-h-56 w-full rounded-lg border border-separator object-cover"
-          />
+          {/* L'aperçu occupe toute la largeur : on juge une photo en grand, pas
+              dans une vignette. */}
+          <div className="k-card relative w-full overflow-hidden rounded-xl">
+            <img
+              src={imageUrl}
+              alt="Aperçu de l'image"
+              className="max-h-72 w-full object-cover"
+            />
+            <Badge tone="asso" emoji="✅" onMedia className="absolute left-3 top-3">
+              Image en place
+            </Badge>
+          </div>
           <Button
-            variant="ghost"
+            variant="tinted"
             size="sm"
             onClick={resetUploader}
             leading={<Icon name="refresh" size={15} />}
@@ -93,8 +102,10 @@ export default function ImageUploader({
         <div
           // La bordure suit le geste : elle se teinte dès que le fichier survole
           // la zone, sans attendre le dépôt.
-          className={`rounded-lg border border-dashed p-6 text-center transition-colors ${
-            isDragging ? 'border-accent bg-accent-soft' : 'border-separator-strong bg-surface-secondary'
+          className={`k-glass-thin rounded-xl border-2 border-dashed p-7 text-center transition-colors ${
+            isDragging
+              ? 'border-accent bg-accent-soft'
+              : 'border-[color:var(--k-separator-strong)]'
           }`}
           onDragOver={(event) => {
             event.preventDefault();
@@ -108,17 +119,23 @@ export default function ImageUploader({
         >
           {isUploading ? (
             <div className="flex flex-col items-center gap-3 py-4">
-              <Spinner size={22} className="text-accent" label="Envoi de l'image en cours" />
-              <p className="k-subhead k-ink-secondary">Envoi en cours…</p>
+              <Spinner size={26} className="text-accent-ink" label="Envoi de l'image en cours" />
+              <p className="k-subhead k-ink font-medium">Envoi en cours…</p>
+              <p className="k-caption k-ink-tertiary">Encore quelques instants.</p>
             </div>
           ) : (
             <label
               htmlFor={inputId}
-              className="k-press flex cursor-pointer flex-col items-center gap-2 rounded-md focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[color:var(--k-focus-ring)]"
+              className="k-press flex cursor-pointer flex-col items-center gap-2 rounded-lg focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-[color:var(--k-focus-ring)]"
             >
-              <Icon name="image" size={26} className="k-ink-tertiary" />
-              <span className="k-subhead k-ink">
-                <span className="font-semibold text-accent">Cliquez pour choisir</span> ou
+              <Chip tone="accent" size={56} className="mb-1">
+                🖼️
+              </Chip>
+              <span className="k-callout k-ink font-semibold">
+                {isDragging ? 'Déposez votre image ici' : 'Ajoutez une image'}
+              </span>
+              <span className="k-subhead k-ink-secondary">
+                <span className="font-semibold text-accent-ink">Cliquez pour choisir</span> ou
                 glissez-déposez une image
               </span>
               <span className="k-caption k-ink-tertiary">PNG, JPG, GIF jusqu&apos;à 2 Mo</span>

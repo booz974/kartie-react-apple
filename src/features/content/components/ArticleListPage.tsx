@@ -1,5 +1,6 @@
+import Badge from '@/components/ui/Badge';
 import Button from '@/components/ui/Button';
-import EmptyState from '@/components/ui/EmptyState';
+import Chip from '@/components/ui/Chip';
 import Icon from '@/components/ui/Icon';
 import { Page, PageHeader, Section } from '@/components/ui/Page';
 import ArticleCard from '@/features/content/components/ArticleCard';
@@ -30,9 +31,20 @@ export default function ArticleListPage({
       </Button>
 
       <PageHeader
-        eyebrow="Réalisations"
-        title={`Nos réalisations à ${quartierName}`}
-        description="Ce qui a été construit, rénové ou lancé dans le quartier."
+        eyebrow={
+          <>
+            <span aria-hidden="true">🏗️ </span>Réalisations
+          </>
+        }
+        title={`Ce qui a changé à ${quartierName}`}
+        description="Construit, rénové, planté, ouvert : tout ce qui a pris forme dans le quartier."
+        meta={
+          articles.length > 0 ? (
+            <Badge tone="project" size="lg" emoji="🏗️">
+              {articles.length} {articles.length > 1 ? 'réalisations' : 'réalisation'}
+            </Badge>
+          ) : null
+        }
       />
 
       <Section>
@@ -43,16 +55,22 @@ export default function ArticleListPage({
             ))}
           </div>
         ) : (
-          <EmptyState
-            icon="document"
-            title="Aucune réalisation pour l'instant"
-            description={`Rien n'a encore été publié pour ${quartierName}. Revenez au quartier pour découvrir ce qui s'y passe.`}
-            action={
+          <div className="k-empty">
+            <Chip tone="project" size={72}>
+              🏗️
+            </Chip>
+            <p className="k-title-3">Rien à montrer ici, pour l&apos;instant</p>
+            <p className="k-subhead k-ink-secondary k-measure">
+              Aucune réalisation n&apos;a encore été publiée à {quartierName}. Le quartier vit
+              ailleurs : allez voir ses événements et ses actualités.
+            </p>
+            <div className="mt-2">
               <Button variant="tinted" onClick={onBack}>
+                <span aria-hidden="true">📍</span>
                 Retour à {quartierName}
               </Button>
-            }
-          />
+            </div>
+          </div>
         )}
       </Section>
     </Page>

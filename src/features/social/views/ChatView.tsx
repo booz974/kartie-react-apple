@@ -9,18 +9,24 @@ import {
   type ChatHistoryMessage,
 } from '@/api/chatRag';
 import Button from '@/components/ui/Button';
+import Chip from '@/components/ui/Chip';
 import Icon from '@/components/ui/Icon';
 import { Input } from '@/components/ui/Field';
 import Notice from '@/components/ui/Notice';
 import { useToast } from '@/components/ui/Toast';
+import type { CategoryKey } from '@/design/categories';
 import { useAuthStore } from '@/stores/authStore';
 import { formatMessage } from '@/features/social/chat/formatMessage';
 
-const SUGGESTIONS = [
-  'Quels événements ont lieu cette semaine ?',
-  'Que faire pour signaler un lampadaire cassé ?',
-  'Parlez-moi du quartier du Chaudron',
-  'Comment participer à une consultation ?',
+/**
+ * Amorces de conversation. Chacune porte son émoji et sa teinte : une rangée de
+ * pilules colorées invite à cliquer là où quatre lignes grises ne disent rien.
+ */
+const SUGGESTIONS: { emoji: string; text: string; tone: CategoryKey }[] = [
+  { emoji: '🎉', text: 'Quels événements ont lieu cette semaine ?', tone: 'event' },
+  { emoji: '🚨', text: 'Que faire pour signaler un lampadaire cassé ?', tone: 'petition' },
+  { emoji: '📍', text: 'Parlez-moi du quartier du Chaudron', tone: 'quartier' },
+  { emoji: '🗳️', text: 'Comment participer à une consultation ?', tone: 'consult' },
 ];
 
 /** Au-delà de ce reste de défilement, on considère que l'utilisateur a remonté. */
@@ -133,9 +139,9 @@ export default function ChatView() {
       style={{ height: 'calc(100dvh - var(--k-nav-height))' }}
     >
       <header className="k-hairline-bottom flex shrink-0 items-center gap-3 py-3">
-        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
-          <Icon name="robot" size={20} />
-        </span>
+        <Chip tone="accent" size={40}>
+          ✨
+        </Chip>
 
         <div className="min-w-0 flex-1">
           <h1 className="k-title-3 truncate">Assistant Kartie</h1>
@@ -175,27 +181,33 @@ export default function ChatView() {
         style={{ overscrollBehaviorY: 'contain' }}
       >
         {isEmpty ? (
-          <div className="flex flex-col items-center gap-5 py-8 text-center">
-            <span className="grid h-14 w-14 place-items-center rounded-full bg-accent-soft text-accent">
-              <Icon name="sparkles" size={26} />
-            </span>
+          <div className="k-animate-rise flex flex-col items-center gap-5 py-8 text-center">
+            <Chip tone="accent" size={72}>
+              👋
+            </Chip>
             <div>
               <p className="k-title-2">Bonjour !</p>
               <p className="k-subhead k-ink-secondary k-measure mt-2">
-                Les événements, les quartiers, les démarches, les actualités — posez la question
+                Les événements, les quartiers, les démarches, les actualités : posez la question
                 dans vos mots.
               </p>
             </div>
 
             <ul className="flex flex-wrap justify-center gap-2">
               {SUGGESTIONS.map((suggestion) => (
-                <li key={suggestion}>
+                <li key={suggestion.text}>
                   <button
                     type="button"
-                    onClick={() => void sendMessage(suggestion)}
-                    className="k-press k-footnote k-ink-secondary rounded-full bg-surface-secondary px-4 py-2 text-left hover:bg-surface-tertiary hover:text-ink"
+                    onClick={() => void sendMessage(suggestion.text)}
+                    style={{ backgroundColor: `var(--k-cat-${suggestion.tone}-soft)` }}
+                    className="k-press k-footnote inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-left font-semibold hover:shadow-md"
                   >
-                    {suggestion}
+                    <span aria-hidden="true" className="text-base leading-none">
+                      {suggestion.emoji}
+                    </span>
+                    <span style={{ color: `var(--k-cat-${suggestion.tone}-ink)` }}>
+                      {suggestion.text}
+                    </span>
                   </button>
                 </li>
               ))}
@@ -211,16 +223,18 @@ export default function ChatView() {
               key={index}
               className={
                 msg.role === 'user'
-                  ? 'k-animate-rise max-w-[85%] self-end rounded-2xl rounded-br-sm bg-accent px-4 py-2.5 text-ink-on-accent'
-                  : 'k-animate-rise flex max-w-[92%] gap-3 self-start'
+                  ? // La bulle de l'utilisateur est un aplat de l'accent en
+                    // dégradé : c'est elle qui porte la couleur du fil.
+                    'k-animate-rise max-w-[85%] self-end rounded-2xl rounded-br-sm bg-accent-gradient px-4 py-2.5 text-ink-on-accent shadow-md'
+                  : 'k-animate-rise flex max-w-[92%] gap-2.5 self-start'
               }
             >
               {msg.role === 'model' ? (
                 <>
-                  <span className="mt-0.5 grid h-7 w-7 shrink-0 place-items-center rounded-full bg-accent-soft text-accent">
-                    <Icon name="robot" size={15} />
-                  </span>
-                  <div className="min-w-0 flex-1 rounded-2xl rounded-bl-sm bg-surface px-4 py-3">
+                  <Chip tone="accent" size={30} className="mt-0.5">
+                    ✨
+                  </Chip>
+                  <div className="k-glass min-w-0 flex-1 rounded-2xl rounded-bl-sm px-4 py-3">
                     <span className="k-visually-hidden">Assistant :</span>
                     <div
                       className="k-body k-ink whitespace-pre-line [&_strong]:font-semibold"
@@ -237,10 +251,27 @@ export default function ChatView() {
           {isThinking ? (
             <div
               data-testid="chat-thinking"
-              className="k-footnote k-ink-tertiary flex items-center gap-2 self-start rounded-2xl rounded-bl-sm bg-surface px-4 py-3"
+              className="k-animate-rise flex max-w-[92%] items-center gap-2.5 self-start"
             >
-              <Icon name="sparkles" size={15} />
-              L&apos;assistant rédige sa réponse…
+              <Chip tone="accent" size={30}>
+                ✨
+              </Chip>
+              <span className="k-glass k-footnote k-ink-secondary inline-flex items-center gap-2 rounded-2xl rounded-bl-sm px-4 py-3">
+                {/* Trois points qui battent : l'attente reste vivante sans
+                    devenir un mouvement vestibulaire. */}
+                <span aria-hidden="true" className="flex items-center gap-1">
+                  <span className="k-badge__dot k-badge__dot--live bg-accent" />
+                  <span
+                    className="k-badge__dot k-badge__dot--live bg-accent"
+                    style={{ animationDelay: '160ms' }}
+                  />
+                  <span
+                    className="k-badge__dot k-badge__dot--live bg-accent"
+                    style={{ animationDelay: '320ms' }}
+                  />
+                </span>
+                L&apos;assistant rédige sa réponse…
+              </span>
             </div>
           ) : null}
 

@@ -97,3 +97,29 @@ export const POST_TYPE_EMOJI: Record<string, string> = {
   association_event: '🎉',
   regular: '💬',
 };
+
+/**
+ * Rattache une catégorie libre (saisie en base) à une couleur du système.
+ *
+ * Sans cela, une grille de réalisations serait entièrement violette : la
+ * catégorie serait affichée mais ne se verrait pas.
+ */
+export function categoryKeyFor(label: string | null | undefined): CategoryKey {
+  const value = (label ?? '').toLowerCase();
+  if (value.includes('travaux') || value.includes('voirie') || value.includes('mobilité')) {
+    return 'quartier';
+  }
+  if (value.includes('culture') || value.includes('patrimoine') || value.includes('sport')) {
+    return 'project';
+  }
+  if (value.includes('environnement') || value.includes('nature') || value.includes('social')) {
+    return 'asso';
+  }
+  if (value.includes('économie') || value.includes('economie') || value.includes('emploi')) {
+    return 'petition';
+  }
+  if (value.includes('éducation') || value.includes('education') || value.includes('jeunesse')) {
+    return 'consult';
+  }
+  return 'project';
+}
