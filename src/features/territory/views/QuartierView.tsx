@@ -283,7 +283,7 @@ export default function QuartierView() {
         title={quartier.name}
         description="Ce qui s’y passe, ce qui s’y construit, et ce sur quoi vous pouvez peser."
         meta={
-          <Badge tone={stats?.pauvrete ? 'warning' : 'accent'} pill>
+          <Badge tone={stats?.pauvrete ? 'warning' : 'accent'}>
             {stats?.pauvrete ? 'Quartier prioritaire' : 'Quartier dynamique'}
           </Badge>
         }

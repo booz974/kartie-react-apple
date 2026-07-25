@@ -28,8 +28,12 @@ body {
   line-height: var(--k-text-body-leading);
   letter-spacing: var(--k-text-body-tracking);
   color: var(--k-ink);
+  /*
+   * Le dégradé maillé est fixe : il ne défile pas, ne s'anime pas, et c'est
+   * lui que les surfaces en verre captent et diffusent. Sans lui, le verre
+   * n'aurait rien à montrer et l'interface retomberait à plat.
+   */
   background-color: var(--k-canvas);
-  background-image: none;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-synthesis-weight: none;
@@ -40,6 +44,22 @@ body {
  * mais un geste horizontal dans un carrousel ne doit pas être volé. */
 body {
   overscroll-behavior-y: none;
+}
+
+/*
+ * La toile de fond vit sur sa propre couche fixe, derrière tout le reste. Posée
+ * sur `body`, elle n'aurait peint que la hauteur de la fenêtre et le bas des
+ * pages longues serait retombé à plat.
+ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: var(--k-canvas);
+  background-image: var(--k-canvas-mesh);
+  background-repeat: no-repeat;
+  pointer-events: none;
 }
 
 ::selection {
@@ -317,9 +337,34 @@ hr {
 }
 
 /* -------------------------------------------------------------- Matériaux
- * Trois poids seulement. Une surface translucide ne se pose jamais sur une
- * autre surface translucide : la lisibilité s'effondrerait.
+ * Le verre est une matière, pas un fond blanc transparent : il floute,
+ * sursature pour faire remonter la couleur du fond, et rend la lumière sur sa
+ * tranche haute. Trois épaisseurs seulement, et jamais l'une sur l'autre.
  */
+.k-glass {
+  background-color: var(--k-glass-bg);
+  backdrop-filter: var(--k-glass-filter);
+  -webkit-backdrop-filter: var(--k-glass-filter);
+  border: var(--k-hairline) solid var(--k-glass-border);
+  box-shadow: var(--k-glass-sheen), var(--k-shadow-md);
+}
+
+.k-glass-thin {
+  background-color: var(--k-glass-thin-bg);
+  backdrop-filter: var(--k-glass-thin-filter);
+  -webkit-backdrop-filter: var(--k-glass-thin-filter);
+  border: var(--k-hairline) solid var(--k-glass-border);
+  box-shadow: var(--k-glass-sheen), var(--k-shadow-sm);
+}
+
+.k-glass-thick {
+  background-color: var(--k-glass-thick-bg);
+  backdrop-filter: var(--k-glass-thick-filter);
+  -webkit-backdrop-filter: var(--k-glass-thick-filter);
+  border: var(--k-hairline) solid var(--k-glass-border);
+  box-shadow: var(--k-glass-sheen), var(--k-shadow-lg);
+}
+
 .k-material-chrome {
   background-color: var(--k-material-chrome-bg);
   backdrop-filter: var(--k-material-chrome-filter);

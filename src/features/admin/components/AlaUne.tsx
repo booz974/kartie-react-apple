@@ -120,7 +120,7 @@ export default function AlaUne({
                 alt={data.article.title ?? "Image de l'article"}
                 className="h-64 w-full rounded-lg object-cover"
               />
-              <Badge tone="warm" pill className="absolute left-3 top-3">
+              <Badge tone="warm" className="absolute left-3 top-3">
                 Actualité
               </Badge>
             </div>

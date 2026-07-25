@@ -65,13 +65,15 @@ export function TopBar({ session, profile, onSignIn, accountItems }: TopBarProps
 
   return (
     <header
-      className="k-material-chrome sticky top-0 z-40 transition-[border-color] duration-200"
+      className="k-material-chrome sticky top-0 z-40 transition-[border-color,box-shadow] duration-200"
       style={{
-        // Le filet n'existe que là où quelque chose passe réellement dessous.
-        borderBottom: `1px solid ${scrolled ? 'var(--k-separator)' : 'transparent'}`,
+        // Le filet et l'ombre n'existent que là où du contenu passe réellement
+        // sous la chrome.
+        borderBottom: `1px solid ${scrolled ? 'var(--k-glass-border)' : 'transparent'}`,
+        boxShadow: scrolled ? 'var(--k-shadow-sm)' : 'none',
       }}
     >
-      <div className="mx-auto flex h-14 max-w-page items-center gap-2 px-5 md:px-8">
+      <div className="mx-auto flex h-[var(--k-nav-height)] max-w-page items-center gap-2 px-5 md:px-8">
         <Link
           to="/"
           className="k-press-subtle mr-1 flex shrink-0 items-center gap-2.5"
@@ -94,10 +96,10 @@ export function TopBar({ session, profile, onSignIn, accountItems }: TopBarProps
               to={item.to}
               end={item.end}
               className={({ isActive }) =>
-                `k-press k-subhead flex items-center gap-2 rounded-md px-3 py-2 font-medium transition-colors ${
+                `k-press k-subhead flex items-center gap-2 rounded-full px-4 py-2 font-semibold transition-colors ${
                   isActive
-                    ? 'bg-accent-soft text-accent'
-                    : 'k-ink-secondary hover:bg-surface-secondary hover:text-ink'
+                    ? 'bg-accent-gradient text-ink-on-accent shadow-[var(--k-shadow-glow-accent)]'
+                    : 'k-ink-secondary hover:bg-white/60 hover:text-ink'
                 }`
               }
             >
@@ -188,17 +190,20 @@ export function TabBar({ onAccount, isAuthenticated }: TabBarProps) {
               key={item.to}
               to={item.to}
               end={item.end}
-              className="k-press flex flex-1 flex-col items-center justify-center gap-1 pt-1"
+              className="k-press flex flex-1 flex-col items-center justify-center gap-1 pt-1.5"
               aria-current={active ? 'page' : undefined}
             >
-              <Icon
-                name={item.icon}
-                size={22}
-                strokeWidth={active ? 1.9 : 1.6}
-                className={active ? 'text-accent' : 'k-ink-tertiary'}
-              />
+              {/* La pastille colorée derrière l'icône rend l'onglet actif
+                  lisible d'un coup d'œil, sans agrandir la cible. */}
               <span
-                className={`k-caption-2 k-vibrant ${active ? 'text-accent' : 'k-ink-tertiary'}`}
+                className={`flex h-8 w-14 items-center justify-center rounded-full transition-colors duration-200 ${
+                  active ? 'bg-accent-gradient text-ink-on-accent' : 'k-ink-tertiary'
+                }`}
+              >
+                <Icon name={item.icon} size={21} strokeWidth={active ? 2 : 1.7} />
+              </span>
+              <span
+                className={`k-caption-2 k-vibrant ${active ? 'text-accent-ink' : 'k-ink-tertiary'}`}
               >
                 {item.label}
               </span>
@@ -209,9 +214,11 @@ export function TabBar({ onAccount, isAuthenticated }: TabBarProps) {
         <button
           type="button"
           onClick={onAccount}
-          className="k-press flex flex-1 flex-col items-center justify-center gap-1 pt-1"
+          className="k-press flex flex-1 flex-col items-center justify-center gap-1 pt-1.5"
         >
-          <Icon name={isAuthenticated ? 'user' : 'logIn'} size={22} className="k-ink-tertiary" />
+          <span className="k-ink-tertiary flex h-8 w-14 items-center justify-center">
+            <Icon name={isAuthenticated ? 'user' : 'logIn'} size={21} strokeWidth={1.7} />
+          </span>
           <span className="k-caption-2 k-vibrant k-ink-tertiary">
             {isAuthenticated ? 'Compte' : 'Connexion'}
           </span>

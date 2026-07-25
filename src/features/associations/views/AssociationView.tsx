@@ -183,7 +183,7 @@ export default function AssociationView() {
                   <ul className="mt-3 flex flex-wrap gap-2">
                     {activities.map((activity) => (
                       <li key={String(activity)}>
-                        <Badge pill>{String(activity)}</Badge>
+                        <Badge>{String(activity)}</Badge>
                       </li>
                     ))}
                   </ul>
@@ -196,7 +196,7 @@ export default function AssociationView() {
                   <ul className="mt-3 flex flex-wrap gap-2">
                     {audiences.map((audience) => (
                       <li key={String(audience)}>
-                        <Badge tone="accent" pill>
+                        <Badge tone="accent">
                           {String(audience)}
                         </Badge>
                       </li>
