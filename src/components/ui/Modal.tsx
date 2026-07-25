@@ -1,10 +1,11 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useEscapeKey, useFocusTrap, useScrollLock } from '@/design/a11y';
 import { prefersReducedMotion } from '@/design/motion';
 import { useIsCompact } from '@/design/useMediaQuery';
 import { useSheetGesture } from '@/design/useSheetGesture';
+import { useVirtualKeyboardInset } from '@/design/useVirtualKeyboard';
 import Button from './Button';
 import Icon from './Icon';
 import LiquidGlassLayer from './LiquidGlassLayer';
@@ -71,6 +72,42 @@ export default function Modal({
   const containerRef = useFocusTrap(true);
   useScrollLock(true);
   useEscapeKey(dismissible, requestClose);
+  useVirtualKeyboardInset(true);
+
+  /*
+   * Remonter le champ qui vient de prendre le focus.
+   *
+   * Dégager la surface de dessous le clavier ne suffit pas : dans un
+   * formulaire un peu long, le champ visé peut se trouver plus bas que la
+   * partie visible du corps, qui défile. On attend que le clavier ait fini de
+   * s'ouvrir avant de mesurer, sinon on viserait la position d'avant.
+   */
+  useEffect(() => {
+    const node = containerRef.current;
+    if (!node) return;
+
+    let timer = 0;
+
+    function onFocusIn(event: FocusEvent) {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (!target.matches('input, textarea, select, [contenteditable="true"]')) return;
+
+      window.clearTimeout(timer);
+      timer = window.setTimeout(() => {
+        target.scrollIntoView({
+          block: 'center',
+          behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+        });
+      }, 300);
+    }
+
+    node.addEventListener('focusin', onFocusIn);
+    return () => {
+      window.clearTimeout(timer);
+      node.removeEventListener('focusin', onFocusIn);
+    };
+  }, [containerRef]);
 
   const { sheetRef, handleProps } = useSheetGesture({
     onDismiss: onClose,

@@ -639,6 +639,12 @@ select.k-input {
   align-items: center;
   justify-content: center;
   padding: var(--k-space-4);
+  /*
+   * Le clavier virtuel ne rétrécit pas le viewport de mise en page : sans ce
+   * retrait, une surface ancrée en bas passerait derrière lui et on saisirait
+   * à l'aveugle. La variable vaut zéro tant qu'aucun clavier n'est ouvert.
+   */
+  padding-bottom: calc(var(--k-space-4) + var(--k-keyboard-inset, 0px));
 }
 
 /* Sur mobile la surface arrive par le bas et repart par le bas : elle
@@ -646,13 +652,17 @@ select.k-input {
 .k-modal-root--sheet {
   align-items: flex-end;
   padding: 0;
+  padding-bottom: var(--k-keyboard-inset, 0px);
 }
 
 .k-modal {
   position: relative;
   width: 100%;
   max-width: 32rem;
-  max-height: calc(100dvh - var(--k-space-8));
+  /* La place prise par le clavier est retirée de la hauteur disponible :
+   * la surface se resserre et c'est son corps qui défile, plutôt que de
+   * déborder sous le clavier. */
+  max-height: calc(100dvh - var(--k-space-8) - var(--k-keyboard-inset, 0px));
   display: flex;
   flex-direction: column;
   background-color: var(--k-material-sheet-bg);
@@ -670,10 +680,14 @@ select.k-input {
 
 .k-modal--sheet {
   max-width: 100%;
-  max-height: 92dvh;
+  max-height: calc(92dvh - var(--k-keyboard-inset, 0px));
   border-radius: var(--k-radius-2xl) var(--k-radius-2xl) 0 0;
   border-bottom: 0;
-  padding-bottom: var(--k-safe-bottom);
+  /* La zone sûre protège du geste de retour à l'accueil ; quand le clavier
+   * occupe le bas de l'écran, ce geste n'existe plus et la réserve ne serait
+   * qu'un vide entre le dernier champ et les touches. Elle se résorbe donc à
+   * mesure que le clavier monte. */
+  padding-bottom: max(0px, calc(var(--k-safe-bottom) - var(--k-keyboard-inset, 0px)));
   animation: k-sheet-in var(--k-spring-smooth-duration) var(--k-spring-smooth) both;
   /* Le geste écrit directement dans le transform : on ne le laisse pas se
    * battre avec une transition CSS. */

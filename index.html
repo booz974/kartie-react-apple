@@ -4,8 +4,17 @@
     <meta charset="UTF-8" />
     <link rel="icon" href="/favicon.ico" />
     <!-- viewport-fit=cover pour que la barre d'onglets puisse s'appuyer sur la
-         zone sûre des appareils à encoche plutôt que de flotter au-dessus. -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+         zone sûre des appareils à encoche plutôt que de flotter au-dessus.
+
+         interactive-widget=resizes-content fait rétrécir le viewport de mise en
+         page à l'ouverture du clavier virtuel : une feuille ancrée en bas se
+         replace alors d'elle-même au-dessus des touches, au lieu de passer
+         derrière. Chrome sur Android l'applique ; Safari sur iOS l'ignore, et
+         c'est `useVirtualKeyboardInset` qui y prend le relais. -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
+    />
     <meta name="theme-color" content="#eaf0f4" />
     <meta
       name="description"
